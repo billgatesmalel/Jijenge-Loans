@@ -51,12 +51,16 @@ export const Navbar: React.FC<NavbarProps> = ({ currentTab, onTabChange, onOpenS
           aria-label="Jijenge Loans — Home"
         >
           <img
-            src="/logo.png"
-            alt="Jijenge Loans"
+            src="/favicon.svg"
+            alt=""
             className="nav-logo-img"
-            width="120"
-            height="34"
+            width="28"
+            height="28"
           />
+          <div className="brand-text-wrapper">
+            <span className="brand-title">Jijenge Loans</span>
+            <span className="brand-tagline">Fast Business Funding</span>
+          </div>
         </a>
 
         {/* ── Desktop nav links ── */}

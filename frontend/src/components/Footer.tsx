@@ -14,14 +14,20 @@ export const Footer: React.FC<FooterProps> = ({ onTabChange }) => {
 
         {/* Col 1: Brand */}
         <div className="footer-col footer-col--brand">
-          <img
-            src="/logo.png"
-            alt="Jijenge Loans"
-            className="footer-logo"
-            width="130"
-            height="36"
-            loading="lazy"
-          />
+          <div className="footer-brand-wrap">
+            <img
+              src="/favicon.svg"
+              alt=""
+              className="footer-logo-icon"
+              width="32"
+              height="32"
+              loading="lazy"
+            />
+            <div className="footer-brand-text">
+              <span className="footer-brand-title">Jijenge Loans</span>
+              <span className="footer-brand-tagline">Fast Business Funding</span>
+            </div>
+          </div>
           <p className="footer-desc">
             Fast, collateral-free business loans approved daily for Kenyan entrepreneurs.
             Powered by digital credit scoring.

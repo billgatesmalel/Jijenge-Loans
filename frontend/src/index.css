@@ -97,15 +97,40 @@ body {
 .nav-brand {
     display: flex;
     align-items: center;
+    gap: 0.55rem;
     text-decoration: none;
     flex-shrink: 0;
 }
 
 .nav-logo-img {
-    height: 30px;
-    width: auto;
+    height: 28px !important;
+    width: 28px !important;
+    max-height: 28px !important;
+    max-width: 28px !important;
     object-fit: contain;
     display: block;
+}
+
+.brand-text-wrapper {
+    display: flex;
+    flex-direction: column;
+    line-height: 1.1;
+}
+
+.brand-title {
+    font-size: 1.15rem;
+    font-weight: 800;
+    color: var(--brand-dark);
+    letter-spacing: -0.025em;
+    font-family: var(--font-family);
+}
+
+.brand-tagline {
+    font-size: 0.65rem;
+    font-weight: 600;
+    color: var(--text-muted);
+    letter-spacing: 0.01em;
+    font-family: var(--font-family);
 }
 
 /* Desktop nav links — clean horizontal, NO pill box */
@@ -1203,13 +1228,45 @@ body {
 
 .footer-col--brand { gap: 1rem; }
 
-.footer-logo {
-    height: 30px;
-    width: auto;
+.footer-brand-wrap {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+}
+
+.footer-logo-icon {
+    height: 32px !important;
+    width: 32px !important;
+    max-height: 32px !important;
+    max-width: 32px !important;
     object-fit: contain;
     /* Invert to white for dark footer */
     filter: brightness(0) invert(1);
-    opacity: 0.9;
+    opacity: 0.95;
+    display: block;
+}
+
+.footer-brand-text {
+    display: flex;
+    flex-direction: column;
+    line-height: 1.1;
+    text-align: left;
+}
+
+.footer-brand-title {
+    font-size: 1.2rem;
+    font-weight: 800;
+    color: #ffffff;
+    letter-spacing: -0.025em;
+    font-family: var(--font-family);
+}
+
+.footer-brand-tagline {
+    font-size: 0.68rem;
+    font-weight: 600;
+    color: #64848e;
+    letter-spacing: 0.01em;
+    font-family: var(--font-family);
 }
 
 .footer-desc {
