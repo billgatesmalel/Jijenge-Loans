@@ -1,72 +1,232 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Navbar } from './components/Navbar';
 import { Hero } from './components/Hero';
-import { LoanCalculator } from './components/LoanCalculator';
-import { SectorMosaic } from './components/SectorMosaic';
 import { Footer } from './components/Footer';
 import { ApplicationFormModal } from './components/ApplicationFormModal';
 import { CustomerDashboardModal } from './components/CustomerDashboardModal';
 import { AdminDashboardModal } from './components/AdminDashboardModal';
 import { SupportChatModal } from './components/SupportChatModal';
+import { TrackLoanView } from './components/TrackLoanView';
 
 export const App: React.FC = () => {
-  const [applyModalOpen, setApplyModalOpen] = useState(false);
-  const [customerModalOpen, setCustomerModalOpen] = useState(false);
-  const [adminModalOpen, setAdminModalOpen] = useState(false);
-  const [supportModalOpen, setSupportModalOpen] = useState(false);
+  const [currentHash, setCurrentHash] = useState(window.location.hash || '#home');
+  const [supportOpen, setSupportOpen] = useState(false);
 
-  const [selectedPkg, setSelectedPkg] = useState('Jijenge Micro Booster');
-  const [selectedAmount, setSelectedAmount] = useState(25000);
+  useEffect(() => {
+    const handleHashChange = () => {
+      setCurrentHash(window.location.hash || '#home');
+    };
+    window.addEventListener('hashchange', handleHashChange);
+    window.addEventListener('popstate', handleHashChange);
+    return () => {
+      window.removeEventListener('hashchange', handleHashChange);
+      window.removeEventListener('popstate', handleHashChange);
+    };
+  }, []);
 
-  const handleSelectPackage = (packageName: string, amount: number) => {
-    setSelectedPkg(packageName);
-    setSelectedAmount(amount);
-    setApplyModalOpen(true);
+  const switchTab = (tabId: string) => {
+    window.location.hash = tabId;
   };
 
+  const getActiveTab = () => {
+    const hash = currentHash.replace('#', '');
+    const validTabs = ['home', 'apply', 'how-it-works', 'faqs'];
+    return validTabs.includes(hash) ? hash : 'home';
+  };
+
+  const activeTab = getActiveTab();
+
+  // Route views based on hash
+  if (currentHash === '#customer') {
+    return (
+      <div className="portal-container login-active">
+        <CustomerDashboardModal onClose={() => switchTab('home')} />
+        <SupportChatModal isOpen={supportOpen} onClose={() => setSupportOpen(false)} />
+      </div>
+    );
+  }
+
+  if (currentHash === '#admin') {
+    return (
+      <div>
+        <AdminDashboardModal onClose={() => switchTab('home')} />
+      </div>
+    );
+  }
+
+  if (currentHash === '#track') {
+    return (
+      <div>
+        <TrackLoanView onTabChange={switchTab} onOpenSupport={() => setSupportOpen(true)} />
+        <SupportChatModal isOpen={supportOpen} onClose={() => setSupportOpen(false)} />
+      </div>
+    );
+  }
+
   return (
-    <div className="min-h-screen bg-slate-950 text-slate-100 flex flex-col font-sans selection:bg-emerald-500 selection:text-white">
+    <div className="site-wrapper" style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column' }}>
       <Navbar
-        onOpenApply={() => setApplyModalOpen(true)}
-        onOpenCustomer={() => setCustomerModalOpen(true)}
-        onOpenAdmin={() => setAdminModalOpen(true)}
-        onOpenSupport={() => setSupportModalOpen(true)}
+        currentTab={activeTab}
+        onTabChange={switchTab}
+        onOpenSupport={() => setSupportOpen(true)}
       />
 
-      <main className="flex-1">
-        <Hero
-          onOpenApply={() => setApplyModalOpen(true)}
-          onOpenCustomer={() => setCustomerModalOpen(true)}
-        />
+      <main className="tab-content-wrapper" style={{ flex: 1 }}>
+        {/* Tab 1: Home View */}
+        <section className={`tab-pane ${activeTab === 'home' ? 'active' : ''}`} id="tab-home">
+          <Hero onTabChange={switchTab} />
 
-        <LoanCalculator onSelectPackage={handleSelectPackage} />
+          {/* Why Business Owners Trust Us Section */}
+          <div className="container trust-section" style={{ marginTop: '4rem' }}>
+            <div className="section-title-wrap text-center">
+              <span className="sub-tag">Trusted Across Kenya</span>
+              <h2 className="section-heading">Why business owners trust us</h2>
+              <p className="section-subheading">Fast, transparent, and collateral-free funding built specifically for Kenyan SMEs and entrepreneurs.</p>
+            </div>
 
-        <SectorMosaic />
+            <div className="trust-grid">
+              <div className="trust-card">
+                <div className="trust-icon-box">⚡</div>
+                <h3>Instant M-Pesa Disbursal</h3>
+                <p>Approved funds hit your registered M-Pesa line in under 15 minutes, 24/7/365.</p>
+              </div>
+
+              <div className="trust-card">
+                <div className="trust-icon-box">🛡️</div>
+                <h3>100% Collateral-Free</h3>
+                <p>No physical guarantors, logbooks, or land title deeds required. Digital credit scoring.</p>
+              </div>
+
+              <div className="trust-card">
+                <div className="trust-icon-box">🏛️</div>
+                <h3>CBK Licensed Security</h3>
+                <p>Licensed by Central Bank of Kenya with full ODPC Data Protection compliance.</p>
+              </div>
+
+              <div className="trust-card">
+                <div className="trust-icon-box">📊</div>
+                <h3>Transparent & Fair Terms</h3>
+                <p>No hidden maintenance fees or surprise penalties. Clear upfront repayment schedule.</p>
+              </div>
+            </div>
+
+            {/* Trust Stats Strip */}
+            <div className="trust-stats-strip">
+              <div className="stat-box">
+                <span className="stat-number">50,000+</span>
+                <span className="stat-label">Kenyan Businesses Funded</span>
+              </div>
+              <div className="stat-box">
+                <span className="stat-number">KES 2.5B+</span>
+                <span className="stat-label">Capital Disbursed</span>
+              </div>
+              <div className="stat-box">
+                <span className="stat-number">&lt; 15 Mins</span>
+                <span className="stat-label">Average Payout Time</span>
+              </div>
+              <div className="stat-box">
+                <span className="stat-number">99.4%</span>
+                <span className="stat-label">Customer Satisfaction</span>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        {/* Tab 2: Apply Form View */}
+        <section className={`tab-pane ${activeTab === 'apply' ? 'active' : ''}`} id="tab-apply">
+          <ApplicationFormModal onTabChange={switchTab} />
+        </section>
+
+        {/* Tab 3: How It Works View */}
+        <section className={`tab-pane ${activeTab === 'how-it-works' ? 'active' : ''}`} id="tab-how-it-works">
+          <div className="container">
+            <div className="section-title-wrap">
+              <span className="sub-tag">Simple Process</span>
+              <h2>Apply in 3 Easy Steps</h2>
+              <p>No physical forms, no branch visits, 100% digital application</p>
+            </div>
+
+            <div className="process-stepper">
+              <div className="process-step active">
+                <div className="step-num">1</div>
+                <h3>1. Apply Online</h3>
+                <p>Fill in your personal & business details in under 2 minutes.</p>
+              </div>
+
+              <div className="process-line"></div>
+
+              <div className="process-step active">
+                <div className="step-num">2</div>
+                <h3>2. Automated Credit Assessment</h3>
+                <p>Our credit scoring engine assesses your financial profile and matches an offer instantly.</p>
+              </div>
+
+              <div className="process-line"></div>
+
+              <div className="process-step active">
+                <div className="step-num">3</div>
+                <h3>3. Receive M-Pesa</h3>
+                <p>Accept your matched offer and receive funds directly to your registered M-Pesa line.</p>
+              </div>
+            </div>
+
+            <div className="tab-cta-box" style={{ marginTop: '3rem' }}>
+              <h3>Ready to get funded?</h3>
+              <button className="btn-cta-large" onClick={() => switchTab('apply')}>Fill Application Details Now &rarr;</button>
+            </div>
+          </div>
+        </section>
+
+        {/* Tab 4: FAQs View */}
+        <section className={`tab-pane ${activeTab === 'faqs' ? 'active' : ''}`} id="tab-faqs">
+          <div className="container">
+            <div className="section-title-wrap">
+              <span className="sub-tag">Got Questions?</span>
+              <h2>Frequently Asked Questions</h2>
+              <p>Everything you need to know about Jijenge Loans</p>
+            </div>
+
+            <div className="faq-accordion">
+              <details className="faq-item">
+                <summary className="faq-question">What are the requirements to apply?</summary>
+                <div className="faq-answer">
+                  <p>To qualify for a Jijenge Loan, you must be a Kenyan citizen over 18 years old, possess a valid National ID, and have an active M-Pesa account used for mobile money transactions.</p>
+                </div>
+              </details>
+
+              <details className="faq-item">
+                <summary className="faq-question">How fast will I receive funds in M-Pesa?</summary>
+                <div className="faq-answer">
+                  <p>Once your application is submitted and approved, funds are automatically disbursed to your M-Pesa line within seconds, 24 hours a day, 7 days a week.</p>
+                </div>
+              </details>
+
+              <details className="faq-item">
+                <summary className="faq-question">Is any collateral or guarantor needed?</summary>
+                <div className="faq-answer">
+                  <p>No! All Jijenge Loans are 100% collateral-free and require zero physical guarantors. Approval is based on your digital credit score.</p>
+                </div>
+              </details>
+
+              <details className="faq-item">
+                <summary className="faq-question">How do I repay my loan?</summary>
+                <div className="faq-answer">
+                  <p>You can repay directly via our M-Pesa Paybill number or using the automated M-Pesa STK push prompt sent before your due date.</p>
+                </div>
+              </details>
+            </div>
+
+            <div className="tab-cta-box" style={{ marginTop: '3rem', textAlign: 'center', background: '#ffffff', padding: '2.5rem', borderRadius: '16px', border: '1px solid #e2e8f0' }}>
+              <h3 style={{ fontSize: '1.5rem', fontWeight: 800, color: '#0f172a', marginBottom: '0.5rem' }}>Have more questions or ready to get funded?</h3>
+              <p style={{ fontSize: '0.95rem', color: '#64748b', marginBottom: '1.5rem' }}>Get approved in under 15 minutes with zero collateral required.</p>
+              <button className="btn-cta-large" onClick={() => switchTab('apply')} style={{ maxWidth: '320px', margin: '0 auto' }}>Apply Now &rarr;</button>
+            </div>
+          </div>
+        </section>
       </main>
 
-      <Footer />
-
-      <ApplicationFormModal
-        isOpen={applyModalOpen}
-        onClose={() => setApplyModalOpen(false)}
-        initialPackage={selectedPkg}
-        initialAmount={selectedAmount}
-      />
-
-      <CustomerDashboardModal
-        isOpen={customerModalOpen}
-        onClose={() => setCustomerModalOpen(false)}
-      />
-
-      <AdminDashboardModal
-        isOpen={adminModalOpen}
-        onClose={() => setAdminModalOpen(false)}
-      />
-
-      <SupportChatModal
-        isOpen={supportModalOpen}
-        onClose={() => setSupportModalOpen(false)}
-      />
+      <Footer onTabChange={switchTab} />
+      <SupportChatModal isOpen={supportOpen} onClose={() => setSupportOpen(false)} />
     </div>
   );
 };

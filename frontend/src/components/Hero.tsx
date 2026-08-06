@@ -1,75 +1,106 @@
 import React from 'react';
-import { ShieldCheck, Zap, ArrowRight, Building2, TrendingUp, Users } from 'lucide-react';
-import { formatKSh } from '../lib/shared';
 
 interface HeroProps {
-  onOpenApply: () => void;
-  onOpenCustomer: () => void;
+  onTabChange: (tabId: string) => void;
 }
 
-export const Hero: React.FC<HeroProps> = ({ onOpenApply, onOpenCustomer }) => {
+export const Hero: React.FC<HeroProps> = ({ onTabChange }) => {
   return (
-    <section className="relative overflow-hidden pt-12 pb-20 lg:pt-20 lg:pb-28">
-      <div className="absolute top-1/4 left-1/2 -translate-x-1/2 w-[600px] h-[300px] bg-emerald-500/10 blur-[120px] rounded-full pointer-events-none" />
-      <div className="absolute top-1/3 right-10 w-[300px] h-[300px] bg-teal-500/10 blur-[100px] rounded-full pointer-events-none" />
+    <div className="container hero-layout">
+      {/* Left Hero Content */}
+      <div className="hero-content">
+        <div className="hero-trust-tag">
+          Trusted business loans approved daily across Kenya
+        </div>
 
-      <div className="max-w-7xl mx-auto px-4 lg:px-8 relative z-10">
-        <div className="text-center max-w-3xl mx-auto space-y-6">
-          <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full glass-panel border-emerald-500/30 text-emerald-400 text-xs font-semibold tracking-wide shadow-inner">
-            <ShieldCheck className="w-4 h-4 text-emerald-400" />
-            <span>Licensed Non-Deposit Taking Microfinance Lender by CBK</span>
+        <h1 className="hero-headline">
+          Grow your business with fast, collateral-free funding
+        </h1>
+
+        <p className="hero-subtext">
+          Get flexible, friction-free capital from <strong>Ksh 5,000 to Ksh 100,000</strong>. Apply entirely online in under 15 minutes and receive money directly on your M-Pesa line.
+        </p>
+
+        <div className="hero-cta-group">
+          <button
+            type="button"
+            className="btn-hero-primary"
+            onClick={() => onTabChange('apply')}
+          >
+            <span>Apply now</span>
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+              <line x1="5" y1="12" x2="19" y2="12"></line>
+              <polyline points="12 5 19 12 12 19"></polyline>
+            </svg>
+          </button>
+
+          <button
+            type="button"
+            className="btn-hero-secondary"
+            onClick={() => onTabChange('how-it-works')}
+          >
+            <span>How it works</span>
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <polyline points="9 18 15 12 9 6"></polyline>
+            </svg>
+          </button>
+        </div>
+
+        {/* Trust Checkmarks Row */}
+        <div className="hero-checkmarks">
+          <div className="check-item">
+            <span className="check-icon">✓</span>
+            <span>No physical guarantors</span>
           </div>
-
-          <h1 className="text-4xl sm:text-5xl lg:text-6xl font-extrabold text-white tracking-tight leading-[1.15]">
-            Supercharge Your Business Growth with{' '}
-            <span className="emerald-gradient-text">Jijenge Loans</span>
-          </h1>
-
-          <p className="text-base sm:text-lg text-slate-300 font-normal leading-relaxed">
-            Fast, non-collateral working capital loans up to <strong className="text-white font-semibold">{formatKSh(150000)}</strong> for Kenyan SMEs, traders, and entrepreneurs. Approved in under 5 minutes with instant M-Pesa disbursement.
-          </p>
-
-          <div className="flex flex-col sm:flex-row items-center justify-center gap-4 pt-4">
-            <button
-              onClick={onOpenApply}
-              className="w-full sm:w-auto px-8 py-4 rounded-2xl bg-gradient-to-r from-emerald-500 to-teal-400 text-slate-950 font-bold text-base shadow-xl shadow-emerald-500/25 hover:from-emerald-400 hover:to-teal-300 transition-all hover:scale-[1.02] flex items-center justify-center gap-3"
-            >
-              <span>Apply For Business Loan</span>
-              <ArrowRight className="w-5 h-5" />
-            </button>
-
-            <button
-              onClick={onOpenCustomer}
-              className="w-full sm:w-auto px-8 py-4 rounded-2xl glass-panel text-white font-semibold text-base hover:bg-slate-900 border-slate-800 hover:border-emerald-500/40 transition-all flex items-center justify-center gap-2"
-            >
-              <span>Track Loan Application</span>
-            </button>
+          <div className="check-item">
+            <span className="check-icon">✓</span>
+            <span>Instant M-Pesa payout</span>
           </div>
-
-          <div className="pt-8 grid grid-cols-2 md:grid-cols-4 gap-4 text-left">
-            <div className="glass-panel p-4 rounded-2xl border-slate-800/80">
-              <Zap className="w-6 h-6 text-emerald-400 mb-2" />
-              <div className="text-sm font-bold text-white">Instant STK Fee</div>
-              <div className="text-xs text-slate-400">Automated M-Pesa processing</div>
-            </div>
-            <div className="glass-panel p-4 rounded-2xl border-slate-800/80">
-              <TrendingUp className="w-6 h-6 text-emerald-400 mb-2" />
-              <div className="text-sm font-bold text-white">No Guarantors</div>
-              <div className="text-xs text-slate-400">No physical collateral required</div>
-            </div>
-            <div className="glass-panel p-4 rounded-2xl border-slate-800/80">
-              <Building2 className="w-6 h-6 text-emerald-400 mb-2" />
-              <div className="text-sm font-bold text-white">6 Business Sectors</div>
-              <div className="text-xs text-slate-400">Tailored package matching</div>
-            </div>
-            <div className="glass-panel p-4 rounded-2xl border-slate-800/80">
-              <Users className="w-6 h-6 text-emerald-400 mb-2" />
-              <div className="text-sm font-bold text-white">25,000+ Clients</div>
-              <div className="text-xs text-slate-400">Empowered across Kenya</div>
-            </div>
+          <div className="check-item">
+            <span className="check-icon">✓</span>
+            <span>ODPC data protected</span>
           </div>
         </div>
       </div>
-    </section>
+
+      {/* Right Hero Mosaic Grid */}
+      <div className="hero-mosaic-grid">
+        <div className="mosaic-col">
+          <div className="sector-card card-tall">
+            <img src="/images/retail_shop.jpg" alt="Retail & small shops" onError={(e) => { e.currentTarget.src = 'https://images.unsplash.com/photo-1542838132-92c53300491e?auto=format&fit=crop&q=80&w=600'; }} />
+            <div className="sector-pill">Retail & small shops</div>
+          </div>
+
+          <div className="sector-card card-short">
+            <img src="/images/wholesale.jpg" alt="Wholesale & distribution" onError={(e) => { e.currentTarget.src = 'https://images.unsplash.com/photo-1601597111158-2fceff292cdc?auto=format&fit=crop&q=80&w=600'; }} />
+            <div className="sector-pill">Wholesale & distribution</div>
+          </div>
+        </div>
+
+        <div className="mosaic-col">
+          <div className="sector-card card-short">
+            <img src="/images/agriculture.jpg" alt="Agriculture & farming" onError={(e) => { e.currentTarget.src = 'https://images.unsplash.com/photo-1593113598332-cd288d649433?auto=format&fit=crop&q=80&w=600'; }} />
+            <div className="sector-pill">Agriculture & farming</div>
+          </div>
+
+          <div className="sector-card card-extra-tall">
+            <img src="/images/salon.jpg" alt="Salon & beauty services" onError={(e) => { e.currentTarget.src = 'https://images.unsplash.com/photo-1560066984-138dadb4c035?auto=format&fit=crop&q=80&w=600'; }} />
+            <div className="sector-pill">Salon & beauty services</div>
+          </div>
+        </div>
+
+        <div className="mosaic-col">
+          <div className="sector-card card-medium">
+            <img src="/images/transport.jpg" alt="Transport services" onError={(e) => { e.currentTarget.src = 'https://images.unsplash.com/photo-1494412574643-ff11b0a5c1c3?auto=format&fit=crop&q=80&w=600'; }} />
+            <div className="sector-pill">Transport services</div>
+          </div>
+
+          <div className="sector-card card-medium">
+            <img src="/images/food.jpg" alt="Food & restaurant vendors" onError={(e) => { e.currentTarget.src = 'https://images.unsplash.com/photo-1565299624946-b28f40a0ae38?auto=format&fit=crop&q=80&w=600'; }} />
+            <div className="sector-pill">Food & restaurant vendors</div>
+          </div>
+        </div>
+      </div>
+    </div>
   );
 };

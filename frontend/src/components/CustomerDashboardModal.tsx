@@ -1,183 +1,404 @@
-import React, { useState } from 'react';
-import { X, UserCheck, Wallet, ArrowUpRight, Loader2 } from 'lucide-react';
-import { formatKSh } from '../lib/shared';
+import React, { useState, useEffect } from 'react';
 
-interface CustomerDashboardModalProps {
-  isOpen: boolean;
+interface CustomerDashboardProps {
   onClose: () => void;
 }
 
-export const CustomerDashboardModal: React.FC<CustomerDashboardModalProps> = ({ isOpen, onClose }) => {
+export const CustomerDashboardModal: React.FC<CustomerDashboardProps> = ({ onClose }) => {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
-  const [phone, setPhone] = useState('0712345678');
-  const [pin, setPin] = useState('1234');
-  const [loading, setLoading] = useState(false);
-  const [withdrawAmount, setWithdrawAmount] = useState('15000');
+  const [phone, setPhone] = useState('');
+  const [pin, setPin] = useState('');
+  const [loginLoading, setLoginLoading] = useState(false);
+  const [error, setError] = useState('');
+
+  // Dashboard details
+  const [userData, setUserData] = useState<any>(null);
+  const [latestLoan, setLatestLoan] = useState<any>(null);
+  const [allocatedBalance, setAllocatedBalance] = useState(0);
+  const [withdrawals, setWithdrawals] = useState<any[]>([]);
+
+  // Action states
   const [withdrawLoading, setWithdrawLoading] = useState(false);
   const [withdrawSuccess, setWithdrawSuccess] = useState(false);
 
-  const [dashboardData, setDashboardData] = useState({
-    user: { fullName: 'Samuel Mwangi', phoneNumber: '0712345678', nationalId: '28945123' },
-    totalAllocatedBalance: 25000,
-    latestLoan: {
-      transactionRef: 'JJG-78A92K',
-      packageName: 'Jijenge Micro Booster',
-      amount: 25000,
-      allocatedBalance: 25000,
-      status: 'Approved',
-      feeStatus: 'Paid'
+  // Check login on load
+  useEffect(() => {
+    const token = sessionStorage.getItem('bl_customer_token');
+    if (token) {
+      setIsLoggedIn(true);
+      loadDashboardData(token);
     }
-  });
+  }, []);
 
-  if (!isOpen) return null;
+  const loadDashboardData = async (token: string) => {
+    try {
+      const res = await fetch('/api/customer/dashboard', {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      const data = await res.json();
 
-  const handleLogin = async (e: React.FormEvent) => {
+      if (res.ok && data.success) {
+        setUserData(data.user);
+        setLatestLoan(data.latestLoan);
+        setAllocatedBalance(data.totalAllocatedBalance);
+        if (data.latestLoan && data.latestLoan.withdrawals) {
+          setWithdrawals(data.latestLoan.withdrawals);
+        }
+      } else {
+        // Token expired
+        sessionStorage.removeItem('bl_customer_token');
+        setIsLoggedIn(false);
+      }
+    } catch (e) {
+      setError('Connection error. Failed to load dashboard.');
+    }
+  };
+
+  const handleLoginSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setLoading(true);
+    if (!phone.trim() || !pin.trim()) return;
+
+    setLoginLoading(true);
+    setError('');
+
     try {
       const res = await fetch('/api/auth/customer/login', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ phone, pin })
+        body: JSON.stringify({ phone: phone.trim(), pin: pin.trim() }),
       });
       const data = await res.json();
-      if (data.accessToken) {
+
+      if (res.ok && data.accessToken) {
+        sessionStorage.setItem('bl_customer_token', data.accessToken);
         setIsLoggedIn(true);
+        loadDashboardData(data.accessToken);
       } else {
-        setIsLoggedIn(true);
+        setError(data.message || 'Authentication failed. Please verify your phone and PIN.');
       }
-    } catch {
-      setIsLoggedIn(true);
+    } catch (err) {
+      setError('Network connection error. Please try again.');
     } finally {
-      setLoading(false);
+      setLoginLoading(false);
     }
   };
 
-  const handleWithdraw = async () => {
-    setWithdrawLoading(true);
-    setTimeout(() => {
-      setWithdrawLoading(false);
-      setWithdrawSuccess(true);
-      setDashboardData((prev) => ({
-        ...prev,
-        totalAllocatedBalance: Math.max(0, prev.totalAllocatedBalance - Number(withdrawAmount))
-      }));
-    }, 2000);
+  const handleLogout = () => {
+    sessionStorage.removeItem('bl_customer_token');
+    setIsLoggedIn(false);
+    setUserData(null);
+    setLatestLoan(null);
+    setAllocatedBalance(0);
+    setWithdrawals([]);
+    onClose();
   };
 
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-md overflow-y-auto">
-      <div className="relative w-full max-w-2xl glass-panel p-6 sm:p-8 rounded-3xl border-slate-800 my-8 shadow-2xl">
-        <button
-          onClick={onClose}
-          className="absolute top-5 right-5 p-2 rounded-xl text-slate-400 hover:text-white hover:bg-slate-900 transition-colors"
-        >
-          <X className="w-5 h-5" />
-        </button>
+  const handleWithdrawFunds = async () => {
+    if (!latestLoan || allocatedBalance <= 0) return;
+    const token = sessionStorage.getItem('bl_customer_token');
+    if (!token) return;
 
+    setWithdrawLoading(true);
+    setError('');
+
+    try {
+      const res = await fetch('/api/customer/withdraw', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          loanId: latestLoan.id,
+          amount: allocatedBalance,
+        }),
+      });
+
+      const data = await res.json();
+      if (res.ok && data.success) {
+        setWithdrawSuccess(true);
+        // Start polling updates
+        setTimeout(() => {
+          loadDashboardData(token);
+        }, 1500);
+      } else {
+        setError(data.message || 'Failed to submit withdrawal request.');
+        setWithdrawLoading(false);
+      }
+    } catch (err) {
+      setError('Connection error. Failed to initiate withdrawal.');
+      setWithdrawLoading(false);
+    }
+  };
+
+  const closeSuccessOverlay = () => {
+    setWithdrawSuccess(false);
+    setWithdrawLoading(false);
+    const token = sessionStorage.getItem('bl_customer_token');
+    if (token) loadDashboardData(token);
+  };
+
+  // Helper status color classes
+  const getStatusBadgeClass = (status: string) => {
+    if (!status) return 'badge-review';
+    const s = status.toLowerCase();
+    if (s.includes('review') || s.includes('process') || s.includes('pending')) {
+      return 'badge-review';
+    } else if (s.includes('approved') || s.includes('active') || s.includes('paid')) {
+      return 'badge-approved';
+    } else if (s.includes('disbursed')) {
+      return 'badge-disbursed';
+    }
+    return 'badge-failed';
+  };
+
+  const formattedFee = Math.round(allocatedBalance * 0.02) || 50;
+
+  return (
+    <div style={{ minHeight: '100vh', width: '100%', background: '#f8fafc', boxSizing: 'border-box' }}>
+      {/* Top Header */}
+      <header className="cust-header" style={{ background: '#ffffff', borderBottom: '1px solid #e2e8f0', width: '100%' }}>
+        <div className="cust-nav-container" style={{ display: 'flex', justifyContent: 'between', alignItems: 'center', width: '100%', maxWidth: '1100px', margin: '0 auto', padding: '0 1rem' }}>
+          <a href="#home" className="cust-brand" onClick={onClose} style={{ display: 'flex', alignItems: 'center', gap: '0.65rem', textDecoration: 'none', color: '#0f172a', fontWeight: 800, fontSize: '1.2rem' }}>
+            <div className="cust-brand-pill" style={{ background: '#233e4d', color: '#ffffff', padding: '0.35rem 0.65rem', borderRadius: '8px', fontSize: '0.85rem' }}>BL</div>
+            <span>Jijenge Loans</span>
+          </a>
+
+          <div className="cust-nav-links" style={{ display: 'flex', gap: '1rem', alignItems: 'center' }}>
+            <a href="#home" className="cust-nav-link" onClick={onClose} style={{ color: '#64748b', textDecoration: 'none', fontWeight: 700, fontSize: '0.9rem' }}>Home</a>
+            {isLoggedIn && (
+              <button
+                type="button"
+                className="btn-logout"
+                onClick={handleLogout}
+                style={{ background: '#f1f5f9', color: '#0f172a', border: '1px solid #cbd5e1', padding: '0.45rem 1rem', borderRadius: '8px', fontSize: '0.85rem', fontWeight: 700, cursor: 'pointer' }}
+              >
+                Sign Out
+              </button>
+            )}
+          </div>
+        </div>
+      </header>
+
+      {/* Main Content Area */}
+      <div style={{ maxWidth: '900px', margin: '2.5rem auto', padding: '0 1.5rem' }}>
+        {/* LOGIN FORM (Not Logged In) */}
         {!isLoggedIn ? (
-          <div>
-            <div className="flex items-center gap-3 mb-6">
-              <div className="w-10 h-10 rounded-xl bg-emerald-500/10 border border-emerald-500/30 flex items-center justify-center text-emerald-400">
-                <UserCheck className="w-5 h-5" />
-              </div>
-              <div>
-                <h3 className="text-xl font-bold text-white font-display">Customer Portal Login</h3>
-                <p className="text-xs text-slate-400">Access your allocated loan balance & withdraw to M-Pesa</p>
-              </div>
+          <div className="portal-card" style={{ maxWidth: '440px', margin: '0 auto', background: '#ffffff', border: '1.5px solid #e2e8f0', padding: '2.5rem 2rem', borderRadius: '24px', boxShadow: '0 10px 30px rgba(0,0,0,0.03)' }}>
+            <div style={{ textAlign: 'center', marginBottom: '1.75rem' }}>
+              <div style={{ background: '#e0f2fe', color: '#0284c7', width: '48px', height: '48px', borderRadius: '12px', display: 'flex', alignItems: 'center', fontSize: '1.5rem', margin: '0 auto 0.75rem auto', justifyContent: 'center' }}>🔐</div>
+              <h2 style={{ fontSize: '1.35rem', fontWeight: 800, color: '#0f172a', margin: '0 0 0.25rem 0' }}>Customer Portal Login</h2>
+              <p style={{ fontSize: '0.85rem', color: '#64748b', margin: 0 }}>Access your allocated loan balance & withdraw to M-Pesa</p>
             </div>
 
-            <form onSubmit={handleLogin} className="space-y-4">
-              <div>
-                <label className="text-xs font-semibold text-slate-300 block mb-1">M-Pesa Registered Phone</label>
+            <form onSubmit={handleLoginSubmit}>
+              <div className="form-group" style={{ marginBottom: '1.15rem' }}>
+                <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 700, color: '#1e293b', marginBottom: '0.4rem' }}>Registered M-Pesa Phone Number</label>
                 <input
                   type="tel"
-                  required
+                  placeholder="e.g. 07XXXXXXXX"
                   value={phone}
                   onChange={(e) => setPhone(e.target.value)}
-                  className="w-full px-4 py-3 rounded-xl bg-slate-950 border border-slate-800 text-white text-sm focus:border-emerald-500 focus:outline-none"
+                  style={{ width: '100%', padding: '0.8rem 1.1rem', borderRadius: '12px', border: '2px solid #cbd5e1', fontSize: '0.95rem', outline: 'none', boxSizing: 'border-box' }}
+                  required
                 />
               </div>
 
-              <div>
-                <label className="text-xs font-semibold text-slate-300 block mb-1">4-Digit Access PIN</label>
+              <div className="form-group" style={{ marginBottom: '1.5rem' }}>
+                <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 700, color: '#1e293b', marginBottom: '0.4rem' }}>4-Digit Security PIN</label>
                 <input
                   type="password"
+                  placeholder="Enter PIN"
                   maxLength={4}
-                  required
                   value={pin}
                   onChange={(e) => setPin(e.target.value)}
-                  className="w-full px-4 py-3 rounded-xl bg-slate-950 border border-slate-800 text-white text-sm focus:border-emerald-500 focus:outline-none tracking-widest font-mono"
+                  style={{ width: '100%', padding: '0.8rem 1.1rem', borderRadius: '12px', border: '2px solid #cbd5e1', fontSize: '0.95rem', outline: 'none', boxSizing: 'border-box' }}
+                  required
                 />
               </div>
 
               <button
                 type="submit"
-                disabled={loading}
-                className="w-full py-4 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-400 text-slate-950 font-bold text-sm shadow-lg shadow-emerald-500/20 hover:from-emerald-400 hover:to-teal-300 transition-all flex items-center justify-center gap-2"
+                className="btn-submit"
+                disabled={loginLoading}
+                style={{ width: '100%', background: '#0284c7', color: '#ffffff', padding: '0.85rem 1.5rem', borderRadius: '12px', fontSize: '1rem', fontWeight: 800, border: 'none', cursor: 'pointer', boxShadow: '0 4px 14px rgba(2, 132, 199, 0.3)' }}
               >
-                {loading ? <Loader2 className="w-5 h-5 animate-spin" /> : <span>Login to Portal</span>}
+                {loginLoading ? 'Verifying PIN...' : 'Verify Credentials'}
               </button>
             </form>
+
+            {error && (
+              <div style={{ marginTop: '1.25rem', background: '#fef2f2', border: '1.5px solid #fecaca', padding: '0.85rem 1.1rem', borderRadius: '12px', color: '#991b1b', fontSize: '0.88rem', fontWeight: 600 }}>
+                {error}
+              </div>
+            )}
           </div>
         ) : (
-          <div className="space-y-6">
-            <div className="flex items-center justify-between border-b border-slate-800 pb-4">
-              <div>
-                <h3 className="text-xl font-bold text-white font-display">{dashboardData.user.fullName}</h3>
-                <p className="text-xs text-slate-400">ID: {dashboardData.user.nationalId} | Phone: {dashboardData.user.phoneNumber}</p>
-              </div>
-              <span className="px-3 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 text-xs font-semibold">
-                Account Active
-              </span>
-            </div>
-
-            <div className="bg-gradient-to-tr from-emerald-950 to-slate-900 border border-emerald-500/40 p-6 rounded-2xl relative overflow-hidden">
-              <div className="flex justify-between items-start mb-4">
+          /* PORTAL DASHBOARD (Logged In) */
+          userData && (
+            <div className="portal-card" style={{ background: '#ffffff', border: '1.5px solid #e2e8f0', padding: '2.5rem', borderRadius: '24px', boxShadow: '0 10px 30px rgba(0,0,0,0.03)' }}>
+              {/* Header Info */}
+              <div style={{ display: 'flex', justifyContent: 'between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '1rem', borderBottom: '1.5px solid #f1f5f9', paddingBottom: '1.5rem', marginBottom: '2rem' }}>
                 <div>
-                  <div className="text-xs text-emerald-400 font-medium">Allocated Loan Balance</div>
-                  <div className="text-3xl font-extrabold text-white font-display mt-1">
-                    {formatKSh(dashboardData.totalAllocatedBalance)}
-                  </div>
+                  <h2 id="welcome-name" style={{ fontSize: '1.6rem', fontWeight: 800, color: '#0f172a', margin: '0 0 0.35rem 0' }}>
+                    Welcome, {userData.fullName}!
+                  </h2>
+                  <p id="welcome-phone" style={{ fontSize: '0.88rem', color: '#64748b', margin: 0, fontWeight: 600 }}>
+                    📱 Phone: {userData.phoneNumber} {latestLoan && `| Ref: ${latestLoan.transactionRef}`}
+                  </p>
                 </div>
-                <div className="w-10 h-10 rounded-xl bg-emerald-500/20 flex items-center justify-center text-emerald-400">
-                  <Wallet className="w-5 h-5" />
+
+                {latestLoan && (
+                  <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end' }}>
+                    <span style={{ fontSize: '0.75rem', color: '#94a3b8', fontWeight: 700, textTransform: 'uppercase', marginBottom: '0.25rem' }}>Loan Status</span>
+                    <span className={`badge-status ${getStatusBadgeClass(latestLoan.status)}`} style={{ padding: '0.4rem 0.85rem', borderRadius: '20px', fontSize: '0.825rem', fontWeight: 800 }}>
+                      {latestLoan.status.replace(/_/g, ' ')}
+                    </span>
+                  </div>
+                )}
+              </div>
+
+              {/* Balance Cards Row */}
+              <div className="dash-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(230px, 1fr))', gap: '1.25rem', marginBottom: '2.5rem' }}>
+                <div className="dash-card card-allocated" style={{ background: '#ecfdf5', border: '1.5px solid #a7f3d0', borderRadius: '16px', padding: '1.5rem' }}>
+                  <span style={{ fontSize: '0.75rem', color: '#047857', fontWeight: 700, display: 'block', textTransform: 'uppercase', marginBottom: '0.25rem' }}>Allocated Loan Balance</span>
+                  <strong style={{ fontSize: '1.75rem', color: '#047857', fontWeight: 800 }}>
+                    KES {allocatedBalance.toLocaleString()}
+                  </strong>
+                </div>
+
+                <div className="dash-card card-fee" style={{ background: '#f8fafc', border: '1.5px solid #e2e8f0', borderRadius: '16px', padding: '1.5rem' }}>
+                  <span style={{ fontSize: '0.75rem', color: '#64748b', fontWeight: 700, display: 'block', textTransform: 'uppercase', marginBottom: '0.25rem' }}>M-Pesa Disbursal Fee</span>
+                  <strong style={{ fontSize: '1.75rem', color: '#475569', fontWeight: 800 }}>
+                    KES {formattedFee.toLocaleString()}
+                  </strong>
+                </div>
+
+                <div className="dash-card card-receive" style={{ background: '#f0f9ff', border: '1.5px solid #38bdf8', borderRadius: '16px', padding: '1.5rem' }}>
+                  <span style={{ fontSize: '0.75rem', color: '#0369a1', fontWeight: 700, display: 'block', textTransform: 'uppercase', marginBottom: '0.25rem' }}>Amount You Will Receive</span>
+                  <strong style={{ fontSize: '1.75rem', color: '#0369a1', fontWeight: 800 }}>
+                    KES {allocatedBalance.toLocaleString()}
+                  </strong>
                 </div>
               </div>
 
-              {withdrawSuccess ? (
-                <div className="bg-emerald-500/20 border border-emerald-500/40 p-3 rounded-xl text-xs text-emerald-300 font-medium">
-                  ✅ Withdrawal request of {formatKSh(withdrawAmount)} submitted! M-Pesa disbursal in progress.
-                </div>
-              ) : (
-                <div className="flex gap-3 mt-4">
-                  <input
-                    type="number"
-                    value={withdrawAmount}
-                    onChange={(e) => setWithdrawAmount(e.target.value)}
-                    className="w-1/2 px-3 py-2 rounded-xl bg-slate-950 border border-slate-800 text-white text-xs focus:outline-none"
-                  />
+              {/* Withdraw Action panel */}
+              {latestLoan && allocatedBalance > 0 && (
+                <div style={{ background: '#f0f9ff', border: '1.5px solid #bae6fd', borderRadius: '16px', padding: '1.5rem', marginBottom: '2.5rem' }}>
+                  <h3 style={{ fontSize: '1.1rem', fontWeight: 800, color: '#0369a1', margin: '0 0 0.5rem 0' }}>
+                    Withdraw Funds to M-Pesa
+                  </h3>
+                  <p style={{ fontSize: '0.88rem', color: '#475569', margin: '0 0 1.25rem 0', lineHeight: 1.5 }}>
+                    Your matched loan is active and pre-approved for immediate cashout. Press the button below to initiate disbursal.
+                  </p>
                   <button
-                    onClick={handleWithdraw}
-                    disabled={withdrawLoading || dashboardData.totalAllocatedBalance === 0}
-                    className="w-1/2 py-2.5 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold text-xs flex items-center justify-center gap-1.5 transition-all"
+                    type="button"
+                    className="btn-submit"
+                    onClick={handleWithdrawFunds}
+                    disabled={withdrawLoading}
+                    style={{ maxWidth: '280px', margin: 0 }}
                   >
-                    {withdrawLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <><span>Withdraw to M-Pesa</span><ArrowUpRight className="w-4 h-4" /></>}
+                    {withdrawLoading ? 'Initiating...' : '💸 Request Withdrawal to M-Pesa'}
                   </button>
                 </div>
               )}
-            </div>
 
-            <div className="bg-slate-950/80 p-4 rounded-2xl border border-slate-800 text-xs space-y-2">
-              <div className="text-slate-400 font-semibold mb-2">Active Loan Status</div>
-              <div className="flex justify-between"><span>Ref:</span><span className="font-mono text-emerald-400">{dashboardData.latestLoan.transactionRef}</span></div>
-              <div className="flex justify-between"><span>Package:</span><span className="text-white">{dashboardData.latestLoan.packageName}</span></div>
-              <div className="flex justify-between"><span>Fee Status:</span><span className="text-emerald-400">{dashboardData.latestLoan.feeStatus}</span></div>
-              <div className="flex justify-between"><span>Loan Status:</span><span className="text-emerald-400 font-bold">{dashboardData.latestLoan.status}</span></div>
+              {/* Withdrawal History Table */}
+              <div>
+                <h3 style={{ fontSize: '1.15rem', fontWeight: 800, color: '#0f172a', marginBottom: '1rem' }}>
+                  Withdrawal Transaction History
+                </h3>
+                <div style={{ overflowX: 'auto' }}>
+                  <table className="history-table" style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.9rem' }}>
+                    <thead>
+                      <tr style={{ background: '#edf2f5', textAlign: 'left' }}>
+                        <th style={{ padding: '0.75rem 1rem', color: '#475569', fontWeight: 700 }}>Date Requested</th>
+                        <th style={{ padding: '0.75rem 1rem', color: '#475569', fontWeight: 700 }}>Disbursed Amount</th>
+                        <th style={{ padding: '0.75rem 1rem', color: '#475569', fontWeight: 700 }}>Withdrawal Fee</th>
+                        <th style={{ padding: '0.75rem 1rem', color: '#475569', fontWeight: 700 }}>Transaction ID</th>
+                        <th style={{ padding: '0.75rem 1rem', color: '#475569', fontWeight: 700 }}>Disbursal Status</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {withdrawals.length > 0 ? (
+                        withdrawals.map((w) => (
+                          <tr key={w.id} style={{ borderBottom: '1px solid #e2e8f0' }}>
+                            <td style={{ padding: '0.9rem 1rem', fontWeight: 500 }}>
+                              {new Date(w.createdAt).toLocaleDateString('en-GB', {
+                                day: '2-digit', month: '2-digit', year: 'numeric',
+                                hour: '2-digit', minute: '2-digit'
+                              })}
+                            </td>
+                            <td style={{ padding: '0.9rem 1rem', fontWeight: 800 }}>KES {w.amount.toLocaleString()}</td>
+                            <td style={{ padding: '0.9rem 1rem' }}>KES {w.withdrawalFee.toLocaleString()}</td>
+                            <td style={{ padding: '0.9rem 1rem' }}><code style={{ fontSize: '0.8rem', background: '#f1f5f9', padding: '0.2rem 0.4rem', borderRadius: '4px' }}>{w.checkoutRequestId}</code></td>
+                            <td style={{ padding: '0.9rem 1rem' }}>
+                              <span className={`badge-status ${getStatusBadgeClass(w.status)}`} style={{ padding: '0.25rem 0.6rem', borderRadius: '12px', fontSize: '0.78rem', fontWeight: 700 }}>
+                                {w.status}
+                              </span>
+                            </td>
+                          </tr>
+                        ))
+                      ) : (
+                        <tr>
+                          <td colSpan={5} style={{ textAlign: 'center', color: '#94a3b8', padding: '2rem 1.5rem' }}>
+                            No withdrawals recorded yet.
+                          </td>
+                        </tr>
+                      )}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
             </div>
-          </div>
+          )
         )}
       </div>
+
+      {/* Withdrawal Processing Dialog Modal */}
+      {withdrawLoading && !withdrawSuccess && (
+        <div className="modal-backdrop" style={{ display: 'flex', zIndex: 999 }}>
+          <div className="modal-dialog" style={{ maxWidth: '440px', textAlign: 'center', padding: '2.5rem 1.75rem', background: '#ffffff', borderRadius: '16px' }}>
+            <div className="processing-box">
+              <div className="spinner-ring" style={{ width: '56px', height: '56px', borderWidth: '5px', borderTopColor: '#0284c7', margin: '0 auto 1.25rem auto' }}></div>
+              <h3 style={{ fontSize: '1.35rem', fontWeight: 800, color: '#0f172a', marginBottom: '0.35rem' }}>
+                Initiating M-Pesa Withdrawal...
+              </h3>
+              <p className="processing-sub" style={{ fontSize: '0.9rem', color: '#64748b', margin: '0 0 1.25rem 0', lineHeight: 1.5 }}>
+                Sending cashout prompt to phone <strong>{userData?.phoneNumber}</strong>. Please enter your secret PIN to authorize withdrawal fee payment of <strong>KES {formattedFee.toLocaleString()}</strong>.
+              </p>
+              <div className="progress-bar-wrap" style={{ height: '10px', borderRadius: '5px', background: '#e2e8f0', overflow: 'hidden' }}>
+                <div className="progress-bar-fill" style={{ width: '60%', background: '#0284c7', height: '100%' }}></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Withdrawal Success Dialog Modal */}
+      {withdrawSuccess && (
+        <div className="modal-backdrop" style={{ display: 'flex', zIndex: 999 }}>
+          <div className="modal-dialog" style={{ maxWidth: '480px', textAlign: 'center', padding: '2.5rem 2rem', background: '#ffffff', borderRadius: '16px' }}>
+            <div className="success-icon" style={{ fontSize: '3rem', marginBottom: '1rem' }}>🎉</div>
+            <h2 className="success-title" style={{ fontSize: '1.5rem', fontWeight: 800, color: '#0f172a', marginBottom: '0.75rem' }}>
+              Withdrawal Request Received Successfully
+            </h2>
+            <div className="success-body" style={{ fontSize: '0.9rem', color: '#475569', lineHeight: 1.6, marginBottom: '1.5rem' }}>
+              Your withdrawal request has been received.<br /><br />
+              Your funds are now being processed and will be sent to your registered M-Pesa number in <strong>less than 20 minutes</strong>.<br /><br />
+              If your money has not arrived after 20 minutes, please contact our support team.
+            </div>
+            <button
+              type="button"
+              className="btn-submit"
+              onClick={closeSuccessOverlay}
+              style={{ maxWidth: '240px', margin: '0 auto' }}
+            >
+              Go to Dashboard
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
