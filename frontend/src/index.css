@@ -819,7 +819,7 @@ body {
     color: var(--brand-dark);
 }
 
-.faq-item[open] .faq-question::after { content: '−'; }
+.faq-item[open] .faq-question::after { content: 'âˆ’'; }
 
 .faq-answer {
     padding: 0 1.5rem 1.25rem 1.5rem;
@@ -1336,7 +1336,7 @@ button, input, select, textarea, a {
 }
 
 /* ==========================================================================
-   📞 Client Floating Support Chat Widget Styles
+   ðŸ“ž Client Floating Support Chat Widget Styles
    ========================================================================== */
 .support-chat-wrapper {
     position: fixed;
@@ -1827,7 +1827,7 @@ button, input, select, textarea, a {
 }
 
 /* ==========================================================================
-   📱 Master Cross-Device Responsive System (320px to 2560px 4K)
+   ðŸ“± Master Cross-Device Responsive System (320px to 2560px 4K)
    ========================================================================== */
 
 /* Universal Modal Safety for Mobile & Landscape Views */
@@ -1880,7 +1880,7 @@ button, input, select, textarea, a {
 }
 
 /* ==========================================================================
-   📱 Master Zero-Overflow Mobile Responsiveness Engine (Requirements 1-11)
+   ðŸ“± Master Zero-Overflow Mobile Responsiveness Engine (Requirements 1-11)
    ========================================================================== */
 
 *, *::before, *::after {

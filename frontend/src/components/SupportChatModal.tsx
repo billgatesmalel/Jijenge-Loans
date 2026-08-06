@@ -137,8 +137,8 @@ export const SupportChatModal: React.FC<SupportChatModalProps> = ({ isOpen, onCl
   if (!isOpen) return null;
 
   return (
-    <div className="modal-backdrop" style={{ display: 'flex', zIndex: 99999 }}>
-      <div className="modal-dialog" style={{ maxWidth: '480px', width: '100%', borderRadius: '24px', background: '#ffffff', padding: '2rem', display: 'flex', flexDirection: 'column', height: '560px', border: '1.5px solid #cbd5e1', boxShadow: '0 10px 40px rgba(0,0,0,0.06)' }}>
+    <div style={{ position: 'fixed', inset: 0, background: 'rgba(10,25,40,0.65)', backdropFilter: 'blur(4px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 99999, padding: '1rem' }}>
+      <div style={{ maxWidth: '480px', width: '100%', borderRadius: '24px', background: '#ffffff', padding: '2rem', display: 'flex', flexDirection: 'column', height: '560px', border: '1.5px solid #cbd5e1', boxShadow: '0 10px 40px rgba(0,0,0,0.12)' }}>
         {/* Header */}
         <div style={{ display: 'flex', justifyContent: 'between', alignItems: 'center', borderBottom: '1.5px solid #f1f5f9', paddingBottom: '0.75rem', marginBottom: '1rem', width: '100%', boxSizing: 'border-box' }}>
           <div>

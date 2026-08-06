@@ -15,12 +15,11 @@ export const Navbar: React.FC<NavbarProps> = ({
     <header className="navbar">
       <div className="nav-container">
         <a href="#home" className="nav-brand" onClick={() => onTabChange('home')}>
-          <div className="brand-logo-pill">BL</div>
-          <span className="brand-title">Jijenge Loans</span>
+          <img src="/logo.png" alt="Jijenge Loans Logo" style={{ height: '40px', width: 'auto', objectFit: 'contain' }} />
         </a>
 
-        {/* Center Tabs */}
-        <div className="nav-tabs hidden md:flex">
+        {/* Center Tabs — desktop */}
+        <div className="nav-tabs">
           <button
             type="button"
             className={`tab-link ${currentTab === 'home' ? 'active' : ''}`}
@@ -44,10 +43,11 @@ export const Navbar: React.FC<NavbarProps> = ({
           </button>
           <button
             type="button"
-            className="tab-link"
+            className="tab-link support-tab-btn"
             onClick={onOpenSupport}
+            style={{ color: '#0284c7', fontWeight: 700 }}
           >
-            Support Chat
+            💬 Support Chat
           </button>
         </div>
 

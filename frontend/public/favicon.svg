@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" fill="none">
+  <!-- Navy outer ring -->
+  <circle cx="32" cy="32" r="30" fill="#0f2d4a" />
+  <!-- Green inner circle -->
+  <circle cx="32" cy="32" r="23" fill="#1db954" />
+  <!-- White border ring -->
+  <circle cx="32" cy="32" r="26" fill="none" stroke="#ffffff" stroke-width="2" />
+  <!-- Growth chart / arrow icon in white -->
+  <polyline points="19,40 26,33 32,37 42,24" stroke="#ffffff" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+  <polygon points="42,24 36,24 42,30" fill="#ffffff"/>
+</svg>
