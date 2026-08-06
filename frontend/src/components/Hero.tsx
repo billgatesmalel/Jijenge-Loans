@@ -20,9 +20,10 @@ export const Hero: React.FC<HeroProps> = ({ onTabChange }) => {
 
           {/* Headline */}
           <h1 className="hero-headline">
-            Grow your business with{' '}
-            <em className="hero-headline__accent">fast, collateral&#8209;free</em>{' '}
-            funding
+            Grow your business<br />
+            with{' '}
+            <em className="hero-headline__accent">fast, collateral&#8209;free</em>
+            <br />funding
           </h1>
 
           {/* Sub text */}
@@ -41,7 +42,9 @@ export const Hero: React.FC<HeroProps> = ({ onTabChange }) => {
               aria-label="Start your loan application"
             >
               Apply Now
-              <ArrowRight size={18} strokeWidth={2.5} aria-hidden="true" />
+              <span className="cta-arrow" aria-hidden="true">
+                <ArrowRight size={18} strokeWidth={2.5} />
+              </span>
             </button>
             <button
               type="button"
