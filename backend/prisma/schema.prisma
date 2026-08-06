@@ -1,5 +1,5 @@
 // ============================================================================
-// Jijenge Loans - Prisma Database Schema for Supabase PostgreSQL
+// Jijenge Loans - Prisma Database Schema for Neon Serverless PostgreSQL
 // ============================================================================
 
 generator client {

@@ -1,6 +1,11 @@
-# Jijenge Loans - Database Schema & Supabase PostgreSQL Guide
+# Jijenge Loans - Database Schema & Neon PostgreSQL Guide
 
-The database is built on **Supabase PostgreSQL** and managed exclusively via **Prisma ORM**.
+The database is built on **Neon Serverless PostgreSQL** and managed exclusively via **Prisma ORM**.
+
+## Neon PostgreSQL Connection Setup
+Neon provides two connection strings:
+1. `DATABASE_URL`: Pooled connection string (`sslmode=require` with `-pooler` endpoint) for application queries & serverless runtime.
+2. `DIRECT_URL`: Direct unpooled connection string for Prisma schema migrations (`npx prisma migrate dev`).
 
 ## Core Relational Tables
 
@@ -14,8 +19,3 @@ The database is built on **Supabase PostgreSQL** and managed exclusively via **P
 8. **`SmsTemplate` & `SmsLog`**: SMS message body templates & Capcom6 gateway dispatch logs.
 9. **`SupportTicket` & `SupportMessage`**: Live customer support ticket conversations.
 10. **`AuditLog`**: System audit trail logging all sensitive admin allocations and updates.
-
-## Indexing & Performance Optimization
-- `User(phoneNumber)`, `User(nationalId)` indexed for instant login lookups.
-- `LoanApplication(phoneNumber, createdAt DESC)` indexed for customer dashboard queries.
-- `LoanApplication(transactionRef)` indexed for instant M-Pesa webhook callback resolution.

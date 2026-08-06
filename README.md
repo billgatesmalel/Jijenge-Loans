@@ -1,6 +1,6 @@
-# Jijenge Loans - Enterprise Fintech Loan Platform (Monorepo)
+# Jijenge Loans - Enterprise Fintech Loan Platform
 
-**Jijenge Loans (Licensed by CBK)** is a modern commercial fintech web application for business growth loans in Kenya. Rebuilt and modernized from the Booster Loans repository into a high-performance monorepo using **React 19**, **NestJS**, **TypeScript**, **Prisma ORM**, and **Supabase PostgreSQL**.
+**Jijenge Loans (Licensed by CBK)** is a modern commercial fintech web application for business growth loans in Kenya. Rebuilt and modernized from the Booster Loans repository into a high-performance full-stack application using **React 19**, **NestJS**, **TypeScript**, **Prisma ORM**, and **Neon Serverless PostgreSQL**.
 
 ---
 
@@ -14,48 +14,37 @@
 
 ---
 
-## 📁 Monorepo Layout
+## 📁 Architecture
 
 ```
 Jijenge-Loans/
-├── apps/
-│   ├── frontend/        # React 19 + Vite + TailwindCSS + TanStack Query + Framer Motion
-│   └── backend/         # NestJS + Prisma ORM + Argon2 + Winston + Swagger OpenAPI
-├── packages/
-│   ├── types/           # Shared TypeScript Interfaces, Enums & DTOs
-│   ├── shared/          # Shared Utilities, Formatters, & Phone Validators
-│   └── ui/              # Shared React UI Component Library
-├── prisma/              # Schema, Migrations, & Production Seeders
-├── docs/                # Architecture, API, Database, & Deployment Documentation
-├── vercel.json          # Vercel Frontend Deployment Config
-└── render.yaml          # Render Backend Deployment Config
+├── frontend/        # React 19 + Vite + TailwindCSS + TanStack Query + Framer Motion
+├── backend/         # NestJS + Prisma ORM + Neon PostgreSQL + Argon2 + Swagger
+├── docs/            # Architecture, API, Database, & Deployment Documentation
+├── vercel.json      # Vercel Frontend Deployment Config
+└── render.yaml      # Render Backend Deployment Config
 ```
 
 ---
 
 ## 🛠️ Getting Started (Local Development)
 
-### 1. Install Dependencies
+### 1. Configure Environment Variables
+Copy `.env.example` to `.env` inside both `frontend/` and `backend/` directories, and add your Neon PostgreSQL connection strings.
+
+### 2. Backend Setup & Prisma Generation
 ```bash
+cd backend
 npm install
+npm run prisma:generate
+npm run start:dev
 ```
 
-### 2. Configure Environment Variables
-Copy `.env.example` to `.env` and fill in your Supabase PostgreSQL credentials and JWT secret.
-
-### 3. Setup Database Schema & Seed Data
+### 3. Frontend Setup
 ```bash
-npm run prisma:migrate
-npm run prisma:seed
-```
-
-### 4. Run Development Servers
-```bash
-# Terminal 1: Backend Service (NestJS - http://localhost:5000)
-npm run dev:backend
-
-# Terminal 2: Frontend App (Vite React - http://localhost:3000)
-npm run dev:frontend
+cd frontend
+npm install
+npm run dev
 ```
 
 ---
