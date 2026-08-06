@@ -1,18 +1,69 @@
 import React from 'react';
-import { ArrowRight, ChevronRight, ShieldCheck, Zap, Lock } from 'lucide-react';
+import {
+  ArrowRight,
+  ShieldCheck,
+  Zap,
+  Lock,
+  Store,
+  Leaf,
+  Truck,
+  Package,
+  Scissors,
+  Utensils,
+} from 'lucide-react';
 
 interface HeroProps {
   onTabChange: (tabId: string) => void;
 }
 
+const SECTORS = [
+  {
+    img: '/images/retail_shop.jpg',
+    fallback: 'https://images.unsplash.com/photo-1542838132-92c53300491e?auto=format&fit=crop&q=80&w=600',
+    label: 'Retail & small shops',
+    Icon: Store,
+  },
+  {
+    img: '/images/agriculture.jpg',
+    fallback: 'https://images.unsplash.com/photo-1593113598332-cd288d649433?auto=format&fit=crop&q=80&w=600',
+    label: 'Agriculture & farming',
+    Icon: Leaf,
+  },
+  {
+    img: '/images/transport.jpg',
+    fallback: 'https://images.unsplash.com/photo-1494412574643-ff11b0a5c1c3?auto=format&fit=crop&q=80&w=600',
+    label: 'Transport services',
+    Icon: Truck,
+  },
+  {
+    img: '/images/wholesale.jpg',
+    fallback: 'https://images.unsplash.com/photo-1601597111158-2fceff292cdc?auto=format&fit=crop&q=80&w=600',
+    label: 'Wholesale & distribution',
+    Icon: Package,
+  },
+  {
+    img: '/images/salon.jpg',
+    fallback: 'https://images.unsplash.com/photo-1560066984-138dadb4c035?auto=format&fit=crop&q=80&w=600',
+    label: 'Salon & beauty services',
+    Icon: Scissors,
+  },
+  {
+    img: '/images/food.jpg',
+    fallback: 'https://images.unsplash.com/photo-1565299624946-b28f40a0ae38?auto=format&fit=crop&q=80&w=600',
+    label: 'Food & restaurant vendors',
+    Icon: Utensils,
+  },
+];
+
 export const Hero: React.FC<HeroProps> = ({ onTabChange }) => {
   return (
     <div className="hero-section">
       <div className="container hero-layout">
+
         {/* ── Left: Hero Content ── */}
         <div className="hero-content">
 
-          {/* Trust tag with live pulse */}
+          {/* Trust tag */}
           <div className="hero-trust-tag" aria-label="Licensed financial institution">
             <span className="trust-pulse" aria-hidden="true" />
             CBK Licensed Business Lender · Kenya
@@ -21,16 +72,16 @@ export const Hero: React.FC<HeroProps> = ({ onTabChange }) => {
           {/* Headline */}
           <h1 className="hero-headline">
             Grow your business<br />
-            with{' '}
-            <em className="hero-headline__accent">fast, collateral&#8209;free</em>
-            <br />funding
+            with <em className="hero-headline__accent">fast,<br />
+            collateral-free</em><br />
+            funding
           </h1>
 
           {/* Sub text */}
           <p className="hero-subtext">
             Get flexible capital from{' '}
-            <strong>Ksh&nbsp;5,000 to Ksh&nbsp;100,000</strong>. Apply entirely online in
-            under&nbsp;2&nbsp;minutes and receive funds directly on your M-Pesa line — 24/7.
+            <strong>Ksh 5,000 to Ksh 100,000</strong>. Apply entirely online in
+            under 2 minutes and receive funds directly on your M-Pesa line — 24/7.
           </p>
 
           {/* CTAs */}
@@ -53,92 +104,66 @@ export const Hero: React.FC<HeroProps> = ({ onTabChange }) => {
               aria-label="Learn how our loan process works"
             >
               How it works
-              <ChevronRight size={17} strokeWidth={2} aria-hidden="true" />
+              <span className="cta-arrow" aria-hidden="true">
+                <ArrowRight size={17} strokeWidth={2.5} />
+              </span>
             </button>
           </div>
 
           {/* Trust checkmarks */}
           <div className="hero-checkmarks" role="list" aria-label="Key benefits">
             <div className="check-item" role="listitem">
-              <ShieldCheck size={15} strokeWidth={2.5} className="check-icon-svg" aria-hidden="true" />
+              <ShieldCheck size={16} strokeWidth={2.5} className="check-icon-svg" aria-hidden="true" />
               <span>No physical guarantors</span>
             </div>
             <div className="check-item" role="listitem">
-              <Zap size={15} strokeWidth={2.5} className="check-icon-svg" aria-hidden="true" />
+              <Zap size={16} strokeWidth={2.5} className="check-icon-svg" aria-hidden="true" />
               <span>Instant M-Pesa payout</span>
             </div>
             <div className="check-item" role="listitem">
-              <Lock size={15} strokeWidth={2.5} className="check-icon-svg" aria-hidden="true" />
+              <Lock size={16} strokeWidth={2.5} className="check-icon-svg" aria-hidden="true" />
               <span>ODPC data protected</span>
             </div>
           </div>
         </div>
 
-        {/* ── Right: Mosaic Grid ── */}
-        <div className="hero-mosaic-grid" aria-hidden="true">
-          <div className="mosaic-col">
-            <div className="sector-card card-tall">
-              <img
-                src="/images/retail_shop.jpg"
-                alt="Retail & small shops"
-                loading="lazy"
-                onError={(e) => { e.currentTarget.src = 'https://images.unsplash.com/photo-1542838132-92c53300491e?auto=format&fit=crop&q=80&w=600'; }}
-              />
-              <div className="sector-pill">Retail &amp; small shops</div>
-            </div>
-            <div className="sector-card card-short">
-              <img
-                src="/images/wholesale.jpg"
-                alt="Wholesale & distribution"
-                loading="lazy"
-                onError={(e) => { e.currentTarget.src = 'https://images.unsplash.com/photo-1601597111158-2fceff292cdc?auto=format&fit=crop&q=80&w=600'; }}
-              />
-              <div className="sector-pill">Wholesale &amp; distribution</div>
-            </div>
+        {/* ── Right: 3×2 Sector Card Grid with Pagination Dots ── */}
+        <div className="hero-right-wrap">
+          <div className="sectors-grid" aria-hidden="true">
+            {SECTORS.map(({ img, fallback, label, Icon }) => (
+              <div className="sector-card-item" key={label}>
+                <div className="sector-card-img-wrap">
+                  <img
+                    src={img}
+                    alt={label}
+                    loading="lazy"
+                    onError={(e) => { e.currentTarget.src = fallback; }}
+                  />
+                </div>
+                <div className="sector-card-footer">
+                  <div className="sector-card-icon-ring">
+                    <Icon size={14} strokeWidth={2} aria-hidden="true" />
+                  </div>
+                  <span className="sector-card-label">{label}</span>
+                  <ArrowRight
+                    size={13}
+                    strokeWidth={2.5}
+                    className="sector-card-arr"
+                    aria-hidden="true"
+                  />
+                </div>
+              </div>
+            ))}
           </div>
 
-          <div className="mosaic-col">
-            <div className="sector-card card-short">
-              <img
-                src="/images/agriculture.jpg"
-                alt="Agriculture & farming"
-                loading="lazy"
-                onError={(e) => { e.currentTarget.src = 'https://images.unsplash.com/photo-1593113598332-cd288d649433?auto=format&fit=crop&q=80&w=600'; }}
-              />
-              <div className="sector-pill">Agriculture &amp; farming</div>
-            </div>
-            <div className="sector-card card-extra-tall">
-              <img
-                src="/images/salon.jpg"
-                alt="Salon & beauty services"
-                loading="lazy"
-                onError={(e) => { e.currentTarget.src = 'https://images.unsplash.com/photo-1560066984-138dadb4c035?auto=format&fit=crop&q=80&w=600'; }}
-              />
-              <div className="sector-pill">Salon &amp; beauty services</div>
-            </div>
-          </div>
-
-          <div className="mosaic-col">
-            <div className="sector-card card-medium">
-              <img
-                src="/images/transport.jpg"
-                alt="Transport services"
-                loading="lazy"
-                onError={(e) => { e.currentTarget.src = 'https://images.unsplash.com/photo-1494412574643-ff11b0a5c1c3?auto=format&fit=crop&q=80&w=600'; }}
-              />
-              <div className="sector-pill">Transport services</div>
-            </div>
-            <div className="sector-card card-medium">
-              <img
-                src="/images/food.jpg"
-                alt="Food & restaurant vendors"
-                loading="lazy"
-                onError={(e) => { e.currentTarget.src = 'https://images.unsplash.com/photo-1565299624946-b28f40a0ae38?auto=format&fit=crop&q=80&w=600'; }}
-              />
-              <div className="sector-pill">Food &amp; restaurant vendors</div>
-            </div>
+          {/* Static decoration indicator dots underneath the grid */}
+          <div className="sectors-dots" aria-hidden="true">
+            <span className="sec-dot active"></span>
+            <span className="sec-dot"></span>
+            <span className="sec-dot"></span>
           </div>
         </div>
+
       </div>
     </div>
   );

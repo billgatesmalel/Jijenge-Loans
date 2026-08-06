@@ -10,6 +10,7 @@ import {
   ChevronRight,
   Menu,
   X,
+  ArrowRight,
 } from 'lucide-react';
 
 interface NavbarProps {
@@ -84,14 +85,19 @@ export const Navbar: React.FC<NavbarProps> = ({ currentTab, onTabChange, onOpenS
           >
             Support
           </button>
+          <a
+            href="#track"
+            className={`nav-link${currentTab === 'track' ? ' nav-link--active' : ''}`}
+            onClick={() => onTabChange('track')}
+            aria-label="Track Loan"
+          >
+            <ClipboardList size={14} strokeWidth={1.8} aria-hidden="true" />
+            Track Loan
+          </a>
         </nav>
 
         {/* ── Desktop right actions ── */}
         <div className="nav-actions" role="group" aria-label="Account actions">
-          <a href="#track" className="nav-link nav-link--icon">
-            <ClipboardList size={14} strokeWidth={1.8} aria-hidden="true" />
-            Track Loan
-          </a>
           <a href="#customer" className="btn-nav-outline">
             <LogIn size={14} strokeWidth={1.8} aria-hidden="true" />
             Customer Login
@@ -103,7 +109,7 @@ export const Navbar: React.FC<NavbarProps> = ({ currentTab, onTabChange, onOpenS
             aria-label="Start loan application"
           >
             Apply Now
-            <ChevronRight size={15} strokeWidth={2.5} aria-hidden="true" />
+            <ArrowRight size={14} strokeWidth={2.2} aria-hidden="true" />
           </button>
           <a href="#admin" className="btn-admin-link" aria-label="Admin portal">
             <ShieldCheck size={12} strokeWidth={1.8} aria-hidden="true" />

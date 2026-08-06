@@ -7,7 +7,7 @@ import { CustomerDashboardModal } from './components/CustomerDashboardModal';
 import { AdminDashboardModal } from './components/AdminDashboardModal';
 import { SupportChatModal } from './components/SupportChatModal';
 import { TrackLoanView } from './components/TrackLoanView';
-import { Zap, ShieldCheck, Landmark, BarChart3 } from 'lucide-react';
+import { Zap, ShieldCheck, Landmark, BarChart3, Lock, Users } from 'lucide-react';
 
 export const App: React.FC = () => {
   const [currentHash, setCurrentHash] = useState(window.location.hash || '#home');
@@ -78,31 +78,33 @@ export const App: React.FC = () => {
           <Hero onTabChange={switchTab} />
 
           {/* Compliance trust strip */}
-          <div className="compliance-strip">
-            <div className="container compliance-strip-inner">
-              <div className="compliance-item">
-                <ShieldCheck size={18} strokeWidth={2} aria-hidden="true" />
-                <span>CBK Licensed Lender</span>
-              </div>
-              <div className="compliance-divider" aria-hidden="true" />
-              <div className="compliance-item">
-                <span aria-hidden="true" style={{ fontSize: '1rem' }}>🔒</span>
-                <span>256-bit SSL Secure</span>
-              </div>
-              <div className="compliance-divider" aria-hidden="true" />
-              <div className="compliance-item">
-                <Zap size={18} strokeWidth={2} aria-hidden="true" />
-                <span>Funds in &lt; 15 Minutes</span>
-              </div>
-              <div className="compliance-divider" aria-hidden="true" />
-              <div className="compliance-item">
-                <Landmark size={18} strokeWidth={2} aria-hidden="true" />
-                <span>ODPC Data Protected</span>
-              </div>
-              <div className="compliance-divider" aria-hidden="true" />
-              <div className="compliance-item">
-                <BarChart3 size={18} strokeWidth={2} aria-hidden="true" />
-                <span>50,000+ Businesses Funded</span>
+          <div className="container" style={{ marginTop: '2.5rem' }}>
+            <div className="compliance-strip">
+              <div className="compliance-strip-inner">
+                <div className="compliance-item">
+                  <ShieldCheck size={18} strokeWidth={2.2} aria-hidden="true" />
+                  <span>CBK Licensed Lender</span>
+                </div>
+                <div className="compliance-divider" aria-hidden="true" />
+                <div className="compliance-item">
+                  <Lock size={18} strokeWidth={2.2} aria-hidden="true" />
+                  <span>256-bit SSL Secure</span>
+                </div>
+                <div className="compliance-divider" aria-hidden="true" />
+                <div className="compliance-item">
+                  <Zap size={18} strokeWidth={2.2} aria-hidden="true" />
+                  <span>Funds in &lt; 15 Minutes</span>
+                </div>
+                <div className="compliance-divider" aria-hidden="true" />
+                <div className="compliance-item">
+                  <Landmark size={18} strokeWidth={2.2} aria-hidden="true" />
+                  <span>ODPC Data Protected</span>
+                </div>
+                <div className="compliance-divider" aria-hidden="true" />
+                <div className="compliance-item">
+                  <Users size={18} strokeWidth={2.2} aria-hidden="true" />
+                  <span>50,000+ Businesses Funded</span>
+                </div>
               </div>
             </div>
           </div>
