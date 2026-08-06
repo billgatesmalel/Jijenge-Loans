@@ -7,6 +7,7 @@ import { CustomerDashboardModal } from './components/CustomerDashboardModal';
 import { AdminDashboardModal } from './components/AdminDashboardModal';
 import { SupportChatModal } from './components/SupportChatModal';
 import { TrackLoanView } from './components/TrackLoanView';
+import { Zap, ShieldCheck, Landmark, BarChart3 } from 'lucide-react';
 
 export const App: React.FC = () => {
   const [currentHash, setCurrentHash] = useState(window.location.hash || '#home');
@@ -76,8 +77,38 @@ export const App: React.FC = () => {
         <section className={`tab-pane ${activeTab === 'home' ? 'active' : ''}`} id="tab-home">
           <Hero onTabChange={switchTab} />
 
+          {/* Compliance trust strip */}
+          <div className="compliance-strip">
+            <div className="container compliance-strip-inner">
+              <div className="compliance-item">
+                <ShieldCheck size={18} strokeWidth={2} aria-hidden="true" />
+                <span>CBK Licensed Lender</span>
+              </div>
+              <div className="compliance-divider" aria-hidden="true" />
+              <div className="compliance-item">
+                <span aria-hidden="true" style={{ fontSize: '1rem' }}>🔒</span>
+                <span>256-bit SSL Secure</span>
+              </div>
+              <div className="compliance-divider" aria-hidden="true" />
+              <div className="compliance-item">
+                <Zap size={18} strokeWidth={2} aria-hidden="true" />
+                <span>Funds in &lt; 15 Minutes</span>
+              </div>
+              <div className="compliance-divider" aria-hidden="true" />
+              <div className="compliance-item">
+                <Landmark size={18} strokeWidth={2} aria-hidden="true" />
+                <span>ODPC Data Protected</span>
+              </div>
+              <div className="compliance-divider" aria-hidden="true" />
+              <div className="compliance-item">
+                <BarChart3 size={18} strokeWidth={2} aria-hidden="true" />
+                <span>50,000+ Businesses Funded</span>
+              </div>
+            </div>
+          </div>
+
           {/* Why Business Owners Trust Us Section */}
-          <div className="container trust-section" style={{ marginTop: '4rem' }}>
+          <div className="container trust-section">
             <div className="section-title-wrap text-center">
               <span className="sub-tag">Trusted Across Kenya</span>
               <h2 className="section-heading">Why business owners trust us</h2>
@@ -86,25 +117,33 @@ export const App: React.FC = () => {
 
             <div className="trust-grid">
               <div className="trust-card">
-                <div className="trust-icon-box">⚡</div>
+                <div className="trust-icon-box">
+                  <Zap size={22} strokeWidth={2} aria-hidden="true" />
+                </div>
                 <h3>Instant M-Pesa Disbursal</h3>
                 <p>Approved funds hit your registered M-Pesa line in under 15 minutes, 24/7/365.</p>
               </div>
 
               <div className="trust-card">
-                <div className="trust-icon-box">🛡️</div>
+                <div className="trust-icon-box">
+                  <ShieldCheck size={22} strokeWidth={2} aria-hidden="true" />
+                </div>
                 <h3>100% Collateral-Free</h3>
                 <p>No physical guarantors, logbooks, or land title deeds required. Digital credit scoring.</p>
               </div>
 
               <div className="trust-card">
-                <div className="trust-icon-box">🏛️</div>
+                <div className="trust-icon-box">
+                  <Landmark size={22} strokeWidth={2} aria-hidden="true" />
+                </div>
                 <h3>CBK Licensed Security</h3>
-                <p>Licensed by Central Bank of Kenya with full ODPC Data Protection compliance.</p>
+                <p>Licensed by the Central Bank of Kenya with full ODPC Data Protection compliance.</p>
               </div>
 
               <div className="trust-card">
-                <div className="trust-icon-box">📊</div>
+                <div className="trust-icon-box">
+                  <BarChart3 size={22} strokeWidth={2} aria-hidden="true" />
+                </div>
                 <h3>Transparent & Fair Terms</h3>
                 <p>No hidden maintenance fees or surprise penalties. Clear upfront repayment schedule.</p>
               </div>
