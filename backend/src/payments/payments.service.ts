@@ -30,6 +30,7 @@ export class PaymentsService {
     }
 
     const apiKey = process.env.PALPLUSS_API_KEY;
+    const channelId = process.env.PALPLUSS_CHANNEL_ID || '1';
     const callbackBaseUrl = process.env.PALPLUSS_CALLBACK_BASE_URL || 'https://jijengeloans.co.ke';
     const webhookSecret = process.env.PALPLUSS_WEBHOOK_SECRET || 'jijenge_secret';
     const callbackUrl = `${callbackBaseUrl.replace(/\/$/, '')}/api/webhooks/mpesa?secret=${webhookSecret}`;
@@ -57,6 +58,7 @@ export class PaymentsService {
     try {
       const payload = {
         api_key: apiKey,
+        channel_id: channelId,
         phone_number: formattedPhone,
         amount: feeAmount,
         account_reference: txRef,

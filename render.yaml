@@ -20,6 +20,8 @@ services:
         generateValue: true
       - key: PALPLUSS_API_KEY
         sync: false
+      - key: PALPLUSS_CHANNEL_ID
+        value: "1"
       - key: PALPLUSS_WEBHOOK_SECRET
         generateValue: true
       - key: SMSGATEWAY_USERNAME
