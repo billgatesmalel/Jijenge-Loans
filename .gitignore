@@ -1,0 +1,34 @@
+# Dependencies
+node_modules/
+.pnpm-store/
+
+# Build Outputs
+dist/
+build/
+.next/
+
+# Environment Variables
+.env
+.env.local
+.env.production
+.env.development
+
+# Logs & Runtime
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# System Files
+.DS_Store
+Thumbs.db
+*.suo
+*.user
+.idea/
+.vscode/
+
+# Temp & Artifacts
+temp/
+extracted/
+source.zip
+booster.zip

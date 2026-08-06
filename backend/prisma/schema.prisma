@@ -1,0 +1,250 @@
+// ============================================================================
+// Jijenge Loans - Prisma Database Schema for Supabase PostgreSQL
+// ============================================================================
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+enum Role {
+  SUPER_ADMIN
+  ADMIN
+  SUPPORT
+  CUSTOMER
+}
+
+enum LoanStatus {
+  Pending
+  Pending_STK_Fee_Payment
+  Application_Received
+  Initial_Verification
+  Document_Verification
+  Credit_Assessment
+  Risk_Assessment
+  Loan_Review
+  Under_Review
+  Processing
+  Approved
+  Awaiting_Disbursement
+  Disbursement_In_Progress
+  Disbursed
+  Loan_Completed
+  Rejected
+  Payment_Failed
+  Payment_Timed_Out
+}
+
+enum FeeStatus {
+  Pending_STK_Push
+  Paid
+  Failed
+  Cancelled
+  Expired
+}
+
+enum WithdrawalStatus {
+  Unpaid
+  Pending
+  Paid
+  Failed
+}
+
+model User {
+  id                  String            @id @default(cuid())
+  fullName            String
+  nationalId          String            @unique
+  age                 Int
+  gender              String
+  maritalStatus       String
+  dependents          String            @default("0")
+  phoneNumber         String            @unique
+  email               String?
+  businessName        String            @default("General Enterprise")
+  businessType        String
+  county              String
+  townArea            String
+  monthlyIncome       String?
+  pinHash             String?
+  failedLoginAttempts Int               @default(0)
+  lockedUntil         DateTime?
+  loanApplications    LoanApplication[]
+  refreshTokens       RefreshToken[]
+  createdAt           DateTime          @default(now())
+  updatedAt           DateTime          @updatedAt
+
+  @@index([phoneNumber])
+  @@index([nationalId])
+}
+
+model Admin {
+  id            String         @id @default(cuid())
+  email         String         @unique
+  passwordHash  String
+  role          Role           @default(ADMIN)
+  fullName      String
+  active        Boolean        @default(true)
+  refreshTokens RefreshToken[]
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+}
+
+model RefreshToken {
+  id        String   @id @default(cuid())
+  token     String   @unique
+  userId    String?
+  user      User?    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  adminId   String?
+  admin     Admin?   @relation(fields: [adminId], references: [id], onDelete: Cascade)
+  expiresAt DateTime
+  revoked   Boolean  @default(false)
+  createdAt DateTime @default(now())
+}
+
+model LoanApplication {
+  id                         String            @id @default(cuid())
+  transactionRef             String            @unique
+  userId                     String?
+  user                       User?             @relation(fields: [userId], references: [id], onDelete: SetNull)
+  fullName                   String
+  nationalId                 String
+  phoneNumber                String
+  email                      String?
+  businessName               String            @default("General Enterprise")
+  businessType               String
+  county                     String
+  townArea                   String
+  monthlyIncome              String?
+  amount                     Float             @default(25000)
+  fee                        Float?
+  processingFee              Float?
+  amountPaid                 Float?
+  packageName                String
+  tenureDays                 Int               @default(30)
+  status                     LoanStatus        @default(Pending_STK_Fee_Payment)
+  feeStatus                  FeeStatus         @default(Pending_STK_Push)
+  feeResultDesc              String?
+  palplussTxId               String?
+  checkoutRequestId          String?
+  merchantRequestId          String?
+  mpesaReceipt               String?
+  resultCode                 String?
+  resultDesc                 String?
+  callbackReceivedAt         DateTime?
+  allocatedBalance           Float             @default(0)
+  withdrawalFee              Float             @default(0)
+  withdrawalFeeStatus        WithdrawalStatus  @default(Unpaid)
+  allocationNotes            String?           @default("")
+  allocationDate             DateTime?
+  allocatedBy                String?
+  withdrawals                Withdrawal[]
+  createdAt                  DateTime          @default(now())
+  updatedAt                  DateTime          @updatedAt
+
+  @@index([phoneNumber, createdAt(sort: Desc)])
+  @@index([status])
+  @@index([transactionRef])
+}
+
+model Withdrawal {
+  id                     String           @id @default(cuid())
+  loanApplicationId      String
+  loanApplication        LoanApplication  @relation(fields: [loanApplicationId], references: [id], onDelete: Cascade)
+  amount                 Float
+  withdrawalFee          Float            @default(0)
+  status                 WithdrawalStatus @default(Pending)
+  mpesaReceipt           String?
+  checkoutRequestId      String?
+  merchantRequestId      String?
+  resultCode             String?
+  resultDesc             String?
+  createdAt              DateTime         @default(now())
+  updatedAt              DateTime         @updatedAt
+
+  @@index([loanApplicationId])
+}
+
+model EligibilityBracket {
+  id                  Int      @id @default(autoincrement())
+  name                String
+  minSalary           Float
+  maxSalary           Float
+  assignedPackageName String
+  maxLimit            Float
+  active              Boolean  @default(true)
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
+}
+
+model WorkflowStage {
+  id        Int      @id @default(autoincrement())
+  stageKey  String   @unique
+  text      String
+  active    Boolean  @default(true)
+  order     Int
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model SmsTemplate {
+  id        String   @id @default(cuid())
+  key       String   @unique
+  title     String
+  body      String
+  variables String[]
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model SmsLog {
+  id             String   @id @default(cuid())
+  recipientPhone String
+  message        String
+  gatewayId      String?
+  success        Boolean  @default(true)
+  simulated      Boolean  @default(false)
+  error          String?
+  createdAt      DateTime @default(now())
+
+  @@index([recipientPhone])
+}
+
+model SupportTicket {
+  id            String           @id @default(cuid())
+  customerPhone String
+  customerName  String
+  subject       String
+  status        String           @default("OPEN")
+  messages      SupportMessage[]
+  createdAt     DateTime         @default(now())
+  updatedAt     DateTime         @updatedAt
+
+  @@index([customerPhone])
+}
+
+model SupportMessage {
+  id         String        @id @default(cuid())
+  ticketId   String
+  ticket     SupportTicket @relation(fields: [ticketId], references: [id], onDelete: Cascade)
+  sender     String
+  senderName String
+  text       String
+  createdAt  DateTime      @default(now())
+
+  @@index([ticketId])
+}
+
+model AuditLog {
+  id         String   @id @default(cuid())
+  adminEmail String
+  action     String
+  target     String?
+  metadata   String?
+  ipAddress  String?
+  createdAt  DateTime @default(now())
+}

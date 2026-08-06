@@ -1,0 +1,180 @@
+import { Injectable, BadRequestException, Logger } from '@nestjs/common';
+import { PrismaService } from '../prisma/prisma.service';
+import { SmsService } from '../sms/sms.service';
+import { LoanStatus, FeeStatus } from '@prisma/client';
+
+@Injectable()
+export class PaymentsService {
+  private readonly logger = new Logger(PaymentsService.name);
+
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly smsService: SmsService
+  ) {}
+
+  async initiateStkPush(txRef: string, phone: string) {
+    const loan = await this.prisma.loanApplication.findUnique({
+      where: { transactionRef: txRef }
+    });
+
+    if (!loan) {
+      throw new BadRequestException('Loan application reference not found');
+    }
+
+    const feeAmount = loan.processingFee || 450;
+    const cleanPhone = phone.replace(/\D/g, '');
+
+    let formattedPhone = cleanPhone;
+    if (formattedPhone.startsWith('0')) {
+      formattedPhone = '254' + formattedPhone.slice(1);
+    }
+
+    const apiKey = process.env.PALPLUSS_API_KEY;
+    const callbackBaseUrl = process.env.PALPLUSS_CALLBACK_BASE_URL || 'https://jijengeloans.co.ke';
+    const webhookSecret = process.env.PALPLUSS_WEBHOOK_SECRET || 'jijenge_secret';
+    const callbackUrl = `${callbackBaseUrl.replace(/\/$/, '')}/api/webhooks/mpesa?secret=${webhookSecret}`;
+
+    if (!apiKey) {
+      this.logger.log(`💳 [PALPLUSS STK SIMULATION] Ref: ${txRef} | Phone: ${formattedPhone} | Fee: ${feeAmount}`);
+      const mockCheckoutId = `ws_CO_${Date.now()}_${Math.floor(Math.random() * 10000)}`;
+
+      await this.prisma.loanApplication.update({
+        where: { id: loan.id },
+        data: {
+          checkoutRequestId: mockCheckoutId,
+          feeStatus: FeeStatus.Pending_STK_Push
+        }
+      });
+
+      return {
+        success: true,
+        simulated: true,
+        message: 'STK push prompt sent to your phone. Enter M-Pesa PIN to complete payment.',
+        checkoutRequestId: mockCheckoutId
+      };
+    }
+
+    try {
+      const payload = {
+        api_key: apiKey,
+        phone_number: formattedPhone,
+        amount: feeAmount,
+        account_reference: txRef,
+        transaction_desc: `Jijenge Loan Processing Fee (${txRef})`,
+        callback_url: callbackUrl
+      };
+
+      const response = await fetch('https://api.palpluss.com/v1/stkpush', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      });
+
+      const data = await response.json();
+      this.logger.log(`💳 [PALPLUSS STK RESPONSE] Ref: ${txRef} | Data: ${JSON.stringify(data)}`);
+
+      const checkoutRequestId = data.checkout_request_id || data.CheckoutRequestID || data.tx_id;
+
+      await this.prisma.loanApplication.update({
+        where: { id: loan.id },
+        data: {
+          checkoutRequestId: checkoutRequestId || null,
+          palplussTxId: data.tx_id || null,
+          feeStatus: FeeStatus.Pending_STK_Push
+        }
+      });
+
+      return {
+        success: true,
+        message: 'STK Push sent successfully to your phone.',
+        checkoutRequestId
+      };
+    } catch (err: any) {
+      this.logger.error(`❌ [PALPLUSS STK ERROR] ${err.message}`);
+      throw new BadRequestException(`Failed to trigger M-Pesa STK Push: ${err.message}`);
+    }
+  }
+
+  async handleMpesaWebhook(body: any, secretQuery: string) {
+    const expectedSecret = process.env.PALPLUSS_WEBHOOK_SECRET;
+    if (expectedSecret && secretQuery !== expectedSecret) {
+      this.logger.warn(`⚠️ [WEBHOOK REJECTED] Secret mismatch.`);
+      return { success: false, error: 'Unauthorized webhook secret' };
+    }
+
+    this.logger.log(`📥 [MPESA WEBHOOK RECEIVED] Payload: ${JSON.stringify(body)}`);
+
+    const checkoutRequestId = body.checkout_request_id || body.CheckoutRequestID;
+    const accountRef = body.account_reference || body.AccountReference || body.tx_ref;
+    const resultCode = String(body.result_code ?? body.ResultCode ?? '0');
+    const resultDesc = body.result_desc || body.ResultDesc || 'Success';
+    const mpesaReceipt = body.mpesa_receipt || body.MpesaReceiptNumber || body.receipt;
+
+    const loan = await this.prisma.loanApplication.findFirst({
+      where: {
+        OR: [
+          { checkoutRequestId: checkoutRequestId },
+          { transactionRef: accountRef }
+        ]
+      }
+    });
+
+    if (!loan) {
+      this.logger.warn(`⚠️ Loan application record not found for webhook checkout ID: ${checkoutRequestId}`);
+      return { success: false, error: 'Loan record not found' };
+    }
+
+    if (resultCode === '0' || resultCode.toLowerCase() === 'success') {
+      await this.prisma.loanApplication.update({
+        where: { id: loan.id },
+        data: {
+          feeStatus: FeeStatus.Paid,
+          status: LoanStatus.Application_Received,
+          amountPaid: loan.processingFee,
+          mpesaReceipt: mpesaReceipt || `MP${Date.now().toString().slice(-8)}`,
+          resultCode,
+          resultDesc,
+          callbackReceivedAt: new Date()
+        }
+      });
+
+      const smsText = `Dear ${loan.fullName}, processing fee payment (M-Pesa Ref: ${mpesaReceipt}) for Jijenge Loan Ref: ${loan.transactionRef} is confirmed! Verification in progress.`;
+      this.smsService.sendSms(loan.phoneNumber, smsText).catch((e) => this.logger.error(e.message));
+
+      return { success: true, message: 'Fee payment confirmed' };
+    } else {
+      await this.prisma.loanApplication.update({
+        where: { id: loan.id },
+        data: {
+          feeStatus: FeeStatus.Failed,
+          status: LoanStatus.Payment_Failed,
+          feeResultDesc: resultDesc,
+          resultCode,
+          resultDesc,
+          callbackReceivedAt: new Date()
+        }
+      });
+
+      return { success: false, message: 'Fee payment failed' };
+    }
+  }
+
+  async checkPaymentStatus(txRef: string) {
+    const loan = await this.prisma.loanApplication.findUnique({
+      where: { transactionRef: txRef }
+    });
+
+    if (!loan) {
+      throw new BadRequestException('Loan reference not found');
+    }
+
+    return {
+      success: true,
+      transactionRef: loan.transactionRef,
+      feeStatus: loan.feeStatus,
+      status: loan.status,
+      mpesaReceipt: loan.mpesaReceipt,
+      amountPaid: loan.amountPaid
+    };
+  }
+}
