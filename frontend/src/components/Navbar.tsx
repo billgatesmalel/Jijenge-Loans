@@ -1,12 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import {
-  Home,
-  Info,
   HelpCircle,
   MessageCircle,
   ClipboardList,
   LogIn,
-  ShieldCheck,
   ChevronRight,
   Menu,
   X,
@@ -111,10 +108,6 @@ export const Navbar: React.FC<NavbarProps> = ({ currentTab, onTabChange, onOpenS
             Apply Now
             <ArrowRight size={14} strokeWidth={2.2} aria-hidden="true" />
           </button>
-          <a href="#admin" className="btn-admin-link" aria-label="Admin portal">
-            <ShieldCheck size={12} strokeWidth={1.8} aria-hidden="true" />
-            Admin
-          </a>
         </div>
 
         {/* ── Mobile hamburger ── */}

@@ -11,6 +11,13 @@ export const AdminDashboardModal: React.FC<AdminDashboardProps> = ({ onClose }) 
   const [loginLoading, setLoginLoading] = useState(false);
   const [loginError, setLoginError] = useState('');
 
+  /**
+   * Track whether the admin arrived via the "Switch to Admin Panel" button
+   * from the Customer Dashboard (using bl_customer_token). This controls
+   * whether "Back to Customer Dashboard" is shown and which token is used.
+   */
+  const [arrivedViaSwitch, setArrivedViaSwitch] = useState(false);
+
   // Sidebar navigation
   const [activeTab, setActiveTab] = useState<'applications' | 'analytics' | 'support'>('applications');
 
@@ -29,12 +36,38 @@ export const AdminDashboardModal: React.FC<AdminDashboardProps> = ({ onClose }) 
   const [supportReply, setSupportReply] = useState('');
   const [searchQuery, setSearchQuery] = useState('');
 
-  // Check login on load
+  /**
+   * Retrieve the best available token to use for admin API calls.
+   * Priority: bl_customer_token (when ADMIN role) > bl_super_admin_token.
+   */
+  const getAdminToken = (): string | null => {
+    const customerToken = sessionStorage.getItem('bl_customer_token');
+    const customerRole  = sessionStorage.getItem('bl_customer_role');
+    if (customerToken && (customerRole === 'ADMIN' || customerRole === 'SUPER_ADMIN')) {
+      return customerToken;
+    }
+    return sessionStorage.getItem('bl_super_admin_token');
+  };
+
+  // On mount: check if an ADMIN-role customer session is already active
   useEffect(() => {
-    const token = sessionStorage.getItem('bl_super_admin_token');
-    if (token) {
+    const customerRole  = sessionStorage.getItem('bl_customer_role');
+    const customerToken = sessionStorage.getItem('bl_customer_token');
+
+    if (customerToken && (customerRole === 'ADMIN' || customerRole === 'SUPER_ADMIN')) {
+      // Admin arrived via the Switch button — skip login form
       setIsAuth(true);
-      fetchAdminData(token);
+      setArrivedViaSwitch(true);
+      fetchAdminData(customerToken);
+      return;
+    }
+
+    // Fall back to the legacy super-admin token
+    const superToken = sessionStorage.getItem('bl_super_admin_token');
+    if (superToken) {
+      setIsAuth(true);
+      setArrivedViaSwitch(false);
+      fetchAdminData(superToken);
     }
   }, []);
 
@@ -42,7 +75,7 @@ export const AdminDashboardModal: React.FC<AdminDashboardProps> = ({ onClose }) 
   useEffect(() => {
     let intervalId: any;
     if (isAuth && activeTab === 'support') {
-      const token = sessionStorage.getItem('bl_super_admin_token');
+      const token = getAdminToken();
       if (token) {
         intervalId = setInterval(() => {
           syncTickets(token);
@@ -56,28 +89,20 @@ export const AdminDashboardModal: React.FC<AdminDashboardProps> = ({ onClose }) 
 
   const fetchAdminData = async (token: string) => {
     try {
-      // Applications
-      const appRes = await fetch('/api/admin/applications', {
-        headers: { Authorization: `Bearer ${token}` },
-      });
+      const [appRes, anaRes, tickRes] = await Promise.all([
+        fetch('/api/admin/applications', { headers: { Authorization: `Bearer ${token}` } }),
+        fetch('/api/admin/analytics',    { headers: { Authorization: `Bearer ${token}` } }),
+        fetch('/api/support/tickets',    { headers: { Authorization: `Bearer ${token}` } }),
+      ]);
+
       if (appRes.ok) {
         const appData = await appRes.json();
-        setApplications(appData.applications || []);
+        setApplications(appData.items || appData.applications || []);
       }
-
-      // Analytics
-      const anaRes = await fetch('/api/admin/analytics', {
-        headers: { Authorization: `Bearer ${token}` },
-      });
       if (anaRes.ok) {
         const anaData = await anaRes.json();
-        setAnalytics(anaData.analytics || null);
+        setAnalytics(anaData.metrics || anaData.analytics || null);
       }
-
-      // Support Tickets
-      const tickRes = await fetch('/api/support/tickets', {
-        headers: { Authorization: `Bearer ${token}` },
-      });
       if (tickRes.ok) {
         const tickData = await tickRes.json();
         setTickets(tickData.tickets || []);
@@ -105,6 +130,7 @@ export const AdminDashboardModal: React.FC<AdminDashboardProps> = ({ onClose }) 
     }
   };
 
+  // Legacy email/password login (for direct #admin navigation without a switch session)
   const handleAdminLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!email.trim() || !password.trim()) return;
@@ -123,6 +149,7 @@ export const AdminDashboardModal: React.FC<AdminDashboardProps> = ({ onClose }) 
       if (res.ok && data.accessToken) {
         sessionStorage.setItem('bl_super_admin_token', data.accessToken);
         setIsAuth(true);
+        setArrivedViaSwitch(false);
         fetchAdminData(data.accessToken);
       } else {
         setLoginError(data.message || 'Access Denied. Check credentials and try again.');
@@ -136,13 +163,19 @@ export const AdminDashboardModal: React.FC<AdminDashboardProps> = ({ onClose }) 
 
   const handleLogout = () => {
     sessionStorage.removeItem('bl_super_admin_token');
+    // Do NOT clear bl_customer_token / bl_customer_role — keep customer session
     setIsAuth(false);
     onClose();
   };
 
+  /** Return to Customer Dashboard, preserving the session */
+  const handleBackToCustomerDashboard = () => {
+    window.location.hash = 'customer';
+  };
+
   const handleAllocate = async (loanId: string) => {
     if (!allocateAmount) return;
-    const token = sessionStorage.getItem('bl_super_admin_token');
+    const token = getAdminToken();
     if (!token) return;
 
     try {
@@ -174,7 +207,7 @@ export const AdminDashboardModal: React.FC<AdminDashboardProps> = ({ onClose }) 
 
   const handleStatusChange = async (loanId: string) => {
     if (!newStatus) return;
-    const token = sessionStorage.getItem('bl_super_admin_token');
+    const token = getAdminToken();
     if (!token) return;
 
     try {
@@ -207,7 +240,7 @@ export const AdminDashboardModal: React.FC<AdminDashboardProps> = ({ onClose }) 
   const handleSendReply = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!supportReply.trim() || !selectedTicket) return;
-    const token = sessionStorage.getItem('bl_super_admin_token');
+    const token = getAdminToken();
     if (!token) return;
 
     try {
@@ -227,7 +260,8 @@ export const AdminDashboardModal: React.FC<AdminDashboardProps> = ({ onClose }) 
       const data = await res.json();
       if (res.ok && data.success) {
         setSupportReply('');
-        syncTickets(token);
+        const t = getAdminToken();
+        if (t) syncTickets(t);
       }
     } catch (err) {
       console.error('Failed to dispatch reply:', err);
@@ -247,14 +281,44 @@ export const AdminDashboardModal: React.FC<AdminDashboardProps> = ({ onClose }) 
 
   return (
     <div style={{ minHeight: '100vh', width: '100%', background: '#f8fafc', boxSizing: 'border-box' }}>
-      {/* Admin Header */}
+      {/* ── Admin Header ── */}
       <header className="admin-header">
         <div className="admin-brand">
           <div className="palpluss-brand-icon">🛡️</div>
           <span className="palpluss-brand-title" style={{ color: '#ffffff' }}>Jijenge Admin</span>
           <span className="admin-badge">Super Admin</span>
         </div>
-        <div>
+
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+          {/* ── Back to Customer Dashboard (visible only when arrived via switch) ── */}
+          {isAuth && arrivedViaSwitch && (
+            <button
+              id="btn-back-to-customer"
+              onClick={handleBackToCustomerDashboard}
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '0.4rem',
+                background: 'rgba(255,255,255,0.15)',
+                color: '#ffffff',
+                border: '1.5px solid rgba(255,255,255,0.35)',
+                padding: '0.45rem 1.05rem',
+                borderRadius: '8px',
+                fontSize: '0.82rem',
+                fontWeight: 700,
+                cursor: 'pointer',
+                backdropFilter: 'blur(4px)',
+                transition: 'background 0.15s',
+                letterSpacing: '0.01em',
+              }}
+              onMouseEnter={(e) => (e.currentTarget.style.background = 'rgba(255,255,255,0.25)')}
+              onMouseLeave={(e) => (e.currentTarget.style.background = 'rgba(255,255,255,0.15)')}
+              aria-label="Back to Customer Dashboard"
+            >
+              ← Back to Customer Dashboard
+            </button>
+          )}
+
           {isAuth && (
             <button
               onClick={handleLogout}
@@ -267,19 +331,20 @@ export const AdminDashboardModal: React.FC<AdminDashboardProps> = ({ onClose }) 
       </header>
 
       <div style={{ maxWidth: '1400px', margin: '2rem auto', padding: '0 1.5rem' }}>
-        {/* LOGIN OVERLAY */}
+        {/* ── LOGIN OVERLAY (shown when no admin session exists) ── */}
         {!isAuth ? (
           <div style={{ maxWidth: '420px', margin: '4rem auto', background: '#ffffff', border: '1px solid #cbd5e1', padding: '2.5rem', borderRadius: '20px', boxShadow: '0 10px 30px rgba(0,0,0,0.05)' }}>
             <div style={{ textAlign: 'center', marginBottom: '1.75rem' }}>
               <div style={{ background: '#e0e7ff', color: '#4f46e5', width: '48px', height: '48px', borderRadius: '12px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.5rem', margin: '0 auto 0.5rem auto' }}>🔐</div>
-              <h2 style={{ fontSize: '1.4rem', fontWeight: 800, margin: '0 0 0.25rem 0' }}>Super Admin Portal</h2>
-              <p style={{ fontSize: '0.85rem', color: '#64748b', margin: 0 }}>Access admin console panel dashboard control</p>
+              <h2 style={{ fontSize: '1.4rem', fontWeight: 800, margin: '0 0 0.25rem 0' }}>Admin Portal</h2>
+              <p style={{ fontSize: '0.85rem', color: '#64748b', margin: 0 }}>Enter admin credentials to access the control panel</p>
             </div>
 
             <form onSubmit={handleAdminLogin}>
               <div style={{ marginBottom: '1.15rem' }}>
                 <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 700, color: '#1e293b', marginBottom: '0.35rem' }}>Admin Email</label>
                 <input
+                  id="admin-email"
                   type="email"
                   placeholder="Enter email address"
                   value={email}
@@ -292,6 +357,7 @@ export const AdminDashboardModal: React.FC<AdminDashboardProps> = ({ onClose }) 
               <div style={{ marginBottom: '1.5rem' }}>
                 <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 700, color: '#1e293b', marginBottom: '0.35rem' }}>Security Password</label>
                 <input
+                  id="admin-password"
                   type="password"
                   placeholder="Enter password"
                   value={password}
@@ -303,10 +369,11 @@ export const AdminDashboardModal: React.FC<AdminDashboardProps> = ({ onClose }) 
 
               <button
                 type="submit"
+                id="btn-admin-login"
                 disabled={loginLoading}
                 style={{ width: '100%', padding: '0.85rem', background: '#4f46e5', color: '#ffffff', border: 'none', borderRadius: '10px', fontSize: '0.95rem', fontWeight: 800, cursor: 'pointer', boxShadow: '0 4px 12px rgba(79, 70, 229, 0.3)' }}
               >
-                {loginLoading ? 'Verifying PIN...' : 'Secure Authorization'}
+                {loginLoading ? 'Verifying...' : 'Secure Authorization'}
               </button>
             </form>
 
@@ -317,7 +384,7 @@ export const AdminDashboardModal: React.FC<AdminDashboardProps> = ({ onClose }) 
             )}
           </div>
         ) : (
-          /* CONSOLE WORKSPACE */
+          /* ── CONSOLE WORKSPACE ── */
           <div style={{ display: 'grid', gridTemplateColumns: '260px 1fr', gap: '2rem', alignItems: 'start' }}>
             {/* Sidebar nav */}
             <div className="admin-nav-tabs" style={{ height: 'auto', position: 'sticky', top: '90px' }}>
@@ -347,10 +414,11 @@ export const AdminDashboardModal: React.FC<AdminDashboardProps> = ({ onClose }) 
 
             {/* Content pane */}
             <div style={{ background: '#ffffff', border: '1px solid #cbd5e1', borderRadius: '16px', padding: '2rem', boxShadow: '0 4px 12px rgba(0,0,0,0.02)' }}>
+
               {/* APPLICATIONS TAB */}
               {activeTab === 'applications' && (
                 <div>
-                  <div style={{ display: 'flex', justifyContent: 'between', alignItems: 'center', marginBottom: '1.5rem', flexWrap: 'wrap', gap: '1rem' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem', flexWrap: 'wrap', gap: '1rem' }}>
                     <h2 style={{ fontSize: '1.4rem', fontWeight: 800, margin: 0, color: '#0f172a' }}>Application Approvals</h2>
                     <input
                       type="text"
@@ -426,7 +494,7 @@ export const AdminDashboardModal: React.FC<AdminDashboardProps> = ({ onClose }) 
                   {/* Manage application drawer */}
                   {selectedApp && (
                     <div style={{ marginTop: '2rem', padding: '1.5rem', border: '1.5px solid #e2e8f0', borderRadius: '12px', background: '#f8fafc' }}>
-                      <div style={{ display: 'flex', justifyContent: 'between', alignItems: 'center', marginBottom: '1.25rem' }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.25rem' }}>
                         <h3 style={{ fontSize: '1.1rem', fontWeight: 800, margin: 0 }}>
                           Manage: {selectedApp.fullName} ({selectedApp.transactionRef})
                         </h3>
@@ -506,15 +574,15 @@ export const AdminDashboardModal: React.FC<AdminDashboardProps> = ({ onClose }) 
                       </div>
                       <div style={{ background: '#ecfdf5', border: '1.5px solid #a7f3d0', padding: '1.5rem', borderRadius: '16px' }}>
                         <span style={{ fontSize: '0.75rem', color: '#059669', fontWeight: 800, display: 'block', textTransform: 'uppercase' }}>Disbursed Balance</span>
-                        <strong style={{ fontSize: '1.75rem', color: '#059669', fontWeight: 800 }}>KES {analytics.totalAllocatedBalance.toLocaleString()}</strong>
+                        <strong style={{ fontSize: '1.75rem', color: '#059669', fontWeight: 800 }}>KES {(analytics.totalAllocated || analytics.totalAllocatedBalance || 0).toLocaleString()}</strong>
                       </div>
                       <div style={{ background: '#eff6ff', border: '1.5px solid #bfdbfe', padding: '1.5rem', borderRadius: '16px' }}>
                         <span style={{ fontSize: '0.75rem', color: '#2563eb', fontWeight: 800, display: 'block', textTransform: 'uppercase' }}>Paid Processing Fees</span>
-                        <strong style={{ fontSize: '1.75rem', color: '#2563eb', fontWeight: 800 }}>KES {analytics.totalFeesPaid.toLocaleString()}</strong>
+                        <strong style={{ fontSize: '1.75rem', color: '#2563eb', fontWeight: 800 }}>KES {(analytics.totalRevenue || analytics.totalFeesPaid || 0).toLocaleString()}</strong>
                       </div>
                       <div style={{ background: '#fffbeb', border: '1.5px solid #fef3c7', padding: '1.5rem', borderRadius: '16px' }}>
-                        <span style={{ fontSize: '0.75rem', color: '#d97706', fontWeight: 800, display: 'block', textTransform: 'uppercase' }}>Pending Disbursements</span>
-                        <strong style={{ fontSize: '1.75rem', color: '#d97706', fontWeight: 800 }}>KES {analytics.totalPendingDisbursement.toLocaleString()}</strong>
+                        <span style={{ fontSize: '0.75rem', color: '#d97706', fontWeight: 800, display: 'block', textTransform: 'uppercase' }}>Conversion Rate</span>
+                        <strong style={{ fontSize: '1.75rem', color: '#d97706', fontWeight: 800 }}>{analytics.conversionRate || 0}%</strong>
                       </div>
                     </div>
                   ) : (

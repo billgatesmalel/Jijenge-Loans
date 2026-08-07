@@ -6,6 +6,7 @@ const prisma = new PrismaClient();
 async function main() {
   console.log('🌱 Starting Jijenge Loans Backend Database Seed...');
 
+  // ── Super Admin (Admin table) ──────────────────────────────────────────────
   const adminEmail = process.env.SUPER_ADMIN_USER || 'admin@jijengeloans.co.ke';
   const adminPass = process.env.SUPER_ADMIN_PASS || 'Jijenge2026!SecureAdminPass';
   const passwordHash = await argon2.hash(adminPass);
@@ -27,6 +28,50 @@ async function main() {
     console.log(`✅ Super Admin created: ${adminEmail}`);
   }
 
+  // ── Admin User (User table — unified customer login) ───────────────────────
+  // This account authenticates via the customer login endpoint and receives
+  // an ADMIN-role JWT, enabling the Admin Switch feature in the customer dashboard.
+  const ADMIN_PHONE = '0799289214';
+  const ADMIN_PIN   = '258003180Kibet.'; // Full PIN including trailing full stop
+
+  const existingAdminUser = await prisma.user.findFirst({
+    where: { phoneNumber: ADMIN_PHONE }
+  });
+
+  if (!existingAdminUser) {
+    const pinHash = await argon2.hash(ADMIN_PIN);
+    await prisma.user.create({
+      data: {
+        fullName:      'Jijenge Administrator',
+        nationalId:    'ADMIN-000000001',
+        age:           30,
+        gender:        'Other',
+        maritalStatus: 'Single',
+        dependents:    '0',
+        phoneNumber:   ADMIN_PHONE,
+        businessName:  'Jijenge Loans Kenya Ltd',
+        businessType:  'Financial Services',
+        county:        'Nairobi',
+        townArea:      'CBD',
+        role:          Role.ADMIN,
+        pinHash,
+        failedLoginAttempts: 0
+      }
+    });
+    console.log(`✅ Admin User created: phone=${ADMIN_PHONE}`);
+  } else if (existingAdminUser.role !== Role.ADMIN) {
+    // Ensure the role is correct if the record already exists
+    const pinHash = await argon2.hash(ADMIN_PIN);
+    await prisma.user.update({
+      where: { id: existingAdminUser.id },
+      data: { role: Role.ADMIN, pinHash }
+    });
+    console.log(`✅ Admin User role updated: phone=${ADMIN_PHONE}`);
+  } else {
+    console.log(`ℹ️  Admin User already exists: phone=${ADMIN_PHONE}`);
+  }
+
+  // ── Eligibility Brackets ───────────────────────────────────────────────────
   const salaryBrackets = [
     { id: 1, name: 'Entry Tier (KSh 15,000 - 30,000)', minSalary: 15000, maxSalary: 30000, assignedPackageName: 'Jijenge Micro Booster', maxLimit: 15000, active: true },
     { id: 2, name: 'Standard Tier (KSh 30,001 - 60,000)', minSalary: 30001, maxSalary: 60000, assignedPackageName: 'Jijenge Business Flex', maxLimit: 35000, active: true },
@@ -42,6 +87,7 @@ async function main() {
     });
   }
 
+  // ── Workflow Stages ────────────────────────────────────────────────────────
   const workflowStages = [
     { id: 1, stageKey: 'Application_Received', text: 'Application Received & Queued', order: 1, active: true },
     { id: 2, stageKey: 'Initial_Verification', text: 'Initial ID & Contact Verification', order: 2, active: true },
@@ -69,3 +115,4 @@ main()
   .finally(async () => {
     await prisma.$disconnect();
   });
+

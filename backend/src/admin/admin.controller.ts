@@ -1,25 +1,29 @@
-import { Controller, Get, Post, Body, Query, UseGuards, Request } from '@nestjs/common';
+import { Controller, Get, Post, Body, Query, UseGuards, Request, ForbiddenException } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
 import { AdminService } from './admin.service';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
+import { RolesGuard } from '../auth/roles.guard';
+import { Roles } from '../auth/roles.decorator';
 import { LoanStatus } from '@prisma/client';
 
 @ApiTags('Admin')
 @ApiBearerAuth()
-@UseGuards(JwtAuthGuard)
+@UseGuards(JwtAuthGuard, RolesGuard)
+@Roles('ADMIN', 'SUPER_ADMIN')
 @Controller('admin')
 export class AdminController {
   constructor(private readonly adminService: AdminService) {}
 
   @ApiOperation({ summary: 'Get Dashboard Analytics KPIs' })
   @Get('analytics')
-  async getAnalytics() {
+  async getAnalytics(@Request() req: any) {
     return this.adminService.getAnalytics();
   }
 
   @ApiOperation({ summary: 'List & Filter All Loan Applications' })
   @Get('applications')
   async getApplications(
+    @Request() req: any,
     @Query('page') page?: number,
     @Query('limit') limit?: number,
     @Query('status') status?: string,
@@ -34,7 +38,8 @@ export class AdminController {
     @Request() req: any,
     @Body() body: { loanId: string; amount: number; notes: string }
   ) {
-    return this.adminService.allocateBalance(body.loanId, body.amount, body.notes, req.user.email);
+    const adminIdentifier = req.user.email || req.user.phone || req.user.userId;
+    return this.adminService.allocateBalance(body.loanId, body.amount, body.notes, adminIdentifier);
   }
 
   @ApiOperation({ summary: 'Update Loan Application Status' })
@@ -43,6 +48,7 @@ export class AdminController {
     @Request() req: any,
     @Body() body: { loanId: string; status: LoanStatus }
   ) {
-    return this.adminService.updateLoanStatus(body.loanId, body.status, req.user.email);
+    const adminIdentifier = req.user.email || req.user.phone || req.user.userId;
+    return this.adminService.updateLoanStatus(body.loanId, body.status, adminIdentifier);
   }
 }

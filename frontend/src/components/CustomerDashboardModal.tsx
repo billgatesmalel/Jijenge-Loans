@@ -11,6 +11,9 @@ export const CustomerDashboardModal: React.FC<CustomerDashboardProps> = ({ onClo
   const [loginLoading, setLoginLoading] = useState(false);
   const [error, setError] = useState('');
 
+  // User role — read from sessionStorage for persistence across re-renders
+  const [userRole, setUserRole] = useState<string>('CUSTOMER');
+
   // Dashboard details
   const [userData, setUserData] = useState<any>(null);
   const [latestLoan, setLatestLoan] = useState<any>(null);
@@ -24,8 +27,10 @@ export const CustomerDashboardModal: React.FC<CustomerDashboardProps> = ({ onClo
   // Check login on load
   useEffect(() => {
     const token = sessionStorage.getItem('bl_customer_token');
+    const storedRole = sessionStorage.getItem('bl_customer_role') || 'CUSTOMER';
     if (token) {
       setIsLoggedIn(true);
+      setUserRole(storedRole);
       loadDashboardData(token);
     }
   }, []);
@@ -47,6 +52,7 @@ export const CustomerDashboardModal: React.FC<CustomerDashboardProps> = ({ onClo
       } else {
         // Token expired
         sessionStorage.removeItem('bl_customer_token');
+        sessionStorage.removeItem('bl_customer_role');
         setIsLoggedIn(false);
       }
     } catch (e) {
@@ -70,7 +76,10 @@ export const CustomerDashboardModal: React.FC<CustomerDashboardProps> = ({ onClo
       const data = await res.json();
 
       if (res.ok && data.accessToken) {
+        const role = data.role || 'CUSTOMER';
         sessionStorage.setItem('bl_customer_token', data.accessToken);
+        sessionStorage.setItem('bl_customer_role', role);
+        setUserRole(role);
         setIsLoggedIn(true);
         loadDashboardData(data.accessToken);
       } else {
@@ -85,12 +94,22 @@ export const CustomerDashboardModal: React.FC<CustomerDashboardProps> = ({ onClo
 
   const handleLogout = () => {
     sessionStorage.removeItem('bl_customer_token');
+    sessionStorage.removeItem('bl_customer_role');
     setIsLoggedIn(false);
     setUserData(null);
     setLatestLoan(null);
     setAllocatedBalance(0);
     setWithdrawals([]);
     onClose();
+  };
+
+  /**
+   * Admin Switch: navigate to Admin Dashboard while preserving the session.
+   * The AdminDashboard will detect bl_customer_token + bl_customer_role=ADMIN
+   * and skip its own login form.
+   */
+  const handleSwitchToAdmin = () => {
+    window.location.hash = 'admin';
   };
 
   const handleWithdrawFunds = async () => {
@@ -117,7 +136,6 @@ export const CustomerDashboardModal: React.FC<CustomerDashboardProps> = ({ onClo
       const data = await res.json();
       if (res.ok && data.success) {
         setWithdrawSuccess(true);
-        // Start polling updates
         setTimeout(() => {
           loadDashboardData(token);
         }, 1500);
@@ -138,7 +156,6 @@ export const CustomerDashboardModal: React.FC<CustomerDashboardProps> = ({ onClo
     if (token) loadDashboardData(token);
   };
 
-  // Helper status color classes
   const getStatusBadgeClass = (status: string) => {
     if (!status) return 'badge-review';
     const s = status.toLowerCase();
@@ -152,20 +169,52 @@ export const CustomerDashboardModal: React.FC<CustomerDashboardProps> = ({ onClo
     return 'badge-failed';
   };
 
+  const isAdmin = userRole === 'ADMIN' || userRole === 'SUPER_ADMIN';
   const formattedFee = Math.round(allocatedBalance * 0.02) || 50;
 
   return (
     <div style={{ minHeight: '100vh', width: '100%', background: '#f8fafc', boxSizing: 'border-box' }}>
-      {/* Top Header */}
+      {/* ── Top Header ── */}
       <header className="cust-header" style={{ background: '#ffffff', borderBottom: '1px solid #e2e8f0', width: '100%' }}>
-        <div className="cust-nav-container" style={{ display: 'flex', justifyContent: 'between', alignItems: 'center', width: '100%', maxWidth: '1100px', margin: '0 auto', padding: '0 1rem' }}>
+        <div className="cust-nav-container" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%', maxWidth: '1100px', margin: '0 auto', padding: '0 1rem' }}>
           <a href="#home" className="cust-brand" onClick={onClose} style={{ display: 'flex', alignItems: 'center', gap: '0.65rem', textDecoration: 'none', color: '#0f172a', fontWeight: 800, fontSize: '1.2rem' }}>
             <div className="cust-brand-pill" style={{ background: '#233e4d', color: '#ffffff', padding: '0.35rem 0.65rem', borderRadius: '8px', fontSize: '0.85rem' }}>BL</div>
             <span>Jijenge Loans</span>
           </a>
 
-          <div className="cust-nav-links" style={{ display: 'flex', gap: '1rem', alignItems: 'center' }}>
+          <div className="cust-nav-links" style={{ display: 'flex', gap: '0.75rem', alignItems: 'center' }}>
             <a href="#home" className="cust-nav-link" onClick={onClose} style={{ color: '#64748b', textDecoration: 'none', fontWeight: 700, fontSize: '0.9rem' }}>Home</a>
+
+            {/* ── Admin Switch Button — visible ONLY for ADMIN-role accounts ── */}
+            {isLoggedIn && isAdmin && (
+              <button
+                type="button"
+                id="btn-switch-to-admin"
+                onClick={handleSwitchToAdmin}
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '0.4rem',
+                  background: 'linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%)',
+                  color: '#ffffff',
+                  border: 'none',
+                  padding: '0.45rem 1.05rem',
+                  borderRadius: '8px',
+                  fontSize: '0.82rem',
+                  fontWeight: 700,
+                  cursor: 'pointer',
+                  boxShadow: '0 2px 8px rgba(79,70,229,0.35)',
+                  transition: 'opacity 0.15s',
+                  letterSpacing: '0.01em',
+                }}
+                onMouseEnter={(e) => (e.currentTarget.style.opacity = '0.88')}
+                onMouseLeave={(e) => (e.currentTarget.style.opacity = '1')}
+                aria-label="Switch to Admin Panel"
+              >
+                ⚡ Switch to Admin Panel
+              </button>
+            )}
+
             {isLoggedIn && (
               <button
                 type="button"
@@ -180,7 +229,7 @@ export const CustomerDashboardModal: React.FC<CustomerDashboardProps> = ({ onClo
         </div>
       </header>
 
-      {/* Main Content Area */}
+      {/* ── Main Content Area ── */}
       <div style={{ maxWidth: '900px', margin: '2.5rem auto', padding: '0 1.5rem' }}>
         {/* LOGIN FORM (Not Logged In) */}
         {!isLoggedIn ? (
@@ -188,13 +237,14 @@ export const CustomerDashboardModal: React.FC<CustomerDashboardProps> = ({ onClo
             <div style={{ textAlign: 'center', marginBottom: '1.75rem' }}>
               <div style={{ background: '#e0f2fe', color: '#0284c7', width: '48px', height: '48px', borderRadius: '12px', display: 'flex', alignItems: 'center', fontSize: '1.5rem', margin: '0 auto 0.75rem auto', justifyContent: 'center' }}>🔐</div>
               <h2 style={{ fontSize: '1.35rem', fontWeight: 800, color: '#0f172a', margin: '0 0 0.25rem 0' }}>Customer Portal Login</h2>
-              <p style={{ fontSize: '0.85rem', color: '#64748b', margin: 0 }}>Access your allocated loan balance & withdraw to M-Pesa</p>
+              <p style={{ fontSize: '0.85rem', color: '#64748b', margin: 0 }}>Access your allocated loan balance &amp; withdraw to M-Pesa</p>
             </div>
 
             <form onSubmit={handleLoginSubmit}>
               <div className="form-group" style={{ marginBottom: '1.15rem' }}>
                 <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 700, color: '#1e293b', marginBottom: '0.4rem' }}>Registered M-Pesa Phone Number</label>
                 <input
+                  id="customer-phone"
                   type="tel"
                   placeholder="e.g. 07XXXXXXXX"
                   value={phone}
@@ -205,11 +255,11 @@ export const CustomerDashboardModal: React.FC<CustomerDashboardProps> = ({ onClo
               </div>
 
               <div className="form-group" style={{ marginBottom: '1.5rem' }}>
-                <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 700, color: '#1e293b', marginBottom: '0.4rem' }}>4-Digit Security PIN</label>
+                <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 700, color: '#1e293b', marginBottom: '0.4rem' }}>Security PIN</label>
                 <input
+                  id="customer-pin"
                   type="password"
                   placeholder="Enter PIN"
-                  maxLength={4}
                   value={pin}
                   onChange={(e) => setPin(e.target.value)}
                   style={{ width: '100%', padding: '0.8rem 1.1rem', borderRadius: '12px', border: '2px solid #cbd5e1', fontSize: '0.95rem', outline: 'none', boxSizing: 'border-box' }}
@@ -219,11 +269,12 @@ export const CustomerDashboardModal: React.FC<CustomerDashboardProps> = ({ onClo
 
               <button
                 type="submit"
+                id="btn-customer-login"
                 className="btn-submit"
                 disabled={loginLoading}
                 style={{ width: '100%', background: '#0284c7', color: '#ffffff', padding: '0.85rem 1.5rem', borderRadius: '12px', fontSize: '1rem', fontWeight: 800, border: 'none', cursor: 'pointer', boxShadow: '0 4px 14px rgba(2, 132, 199, 0.3)' }}
               >
-                {loginLoading ? 'Verifying PIN...' : 'Verify Credentials'}
+                {loginLoading ? 'Verifying...' : 'Verify Credentials'}
               </button>
             </form>
 
@@ -238,7 +289,7 @@ export const CustomerDashboardModal: React.FC<CustomerDashboardProps> = ({ onClo
           userData && (
             <div className="portal-card" style={{ background: '#ffffff', border: '1.5px solid #e2e8f0', padding: '2.5rem', borderRadius: '24px', boxShadow: '0 10px 30px rgba(0,0,0,0.03)' }}>
               {/* Header Info */}
-              <div style={{ display: 'flex', justifyContent: 'between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '1rem', borderBottom: '1.5px solid #f1f5f9', paddingBottom: '1.5rem', marginBottom: '2rem' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '1rem', borderBottom: '1.5px solid #f1f5f9', paddingBottom: '1.5rem', marginBottom: '2rem' }}>
                 <div>
                   <h2 id="welcome-name" style={{ fontSize: '1.6rem', fontWeight: 800, color: '#0f172a', margin: '0 0 0.35rem 0' }}>
                     Welcome, {userData.fullName}!
@@ -355,7 +406,7 @@ export const CustomerDashboardModal: React.FC<CustomerDashboardProps> = ({ onClo
         )}
       </div>
 
-      {/* Withdrawal Processing Dialog Modal */}
+      {/* ── Withdrawal Processing Dialog ── */}
       {withdrawLoading && !withdrawSuccess && (
         <div className="modal-backdrop" style={{ display: 'flex', zIndex: 999 }}>
           <div className="modal-dialog" style={{ maxWidth: '440px', textAlign: 'center', padding: '2.5rem 1.75rem', background: '#ffffff', borderRadius: '16px' }}>
@@ -375,7 +426,7 @@ export const CustomerDashboardModal: React.FC<CustomerDashboardProps> = ({ onClo
         </div>
       )}
 
-      {/* Withdrawal Success Dialog Modal */}
+      {/* ── Withdrawal Success Dialog ── */}
       {withdrawSuccess && (
         <div className="modal-backdrop" style={{ display: 'flex', zIndex: 999 }}>
           <div className="modal-dialog" style={{ maxWidth: '480px', textAlign: 'center', padding: '2.5rem 2rem', background: '#ffffff', borderRadius: '16px' }}>
