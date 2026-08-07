@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Body, Query, UseGuards, Request, ForbiddenException } from '@nestjs/common';
+import { Controller, Get, Post, Put, Delete, Body, Query, Param, UseGuards, Request, ForbiddenException } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
 import { AdminService } from './admin.service';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
@@ -50,5 +50,109 @@ export class AdminController {
   ) {
     const adminIdentifier = req.user.email || req.user.phone || req.user.userId;
     return this.adminService.updateLoanStatus(body.loanId, body.status, adminIdentifier);
+  }
+
+  @ApiOperation({ summary: 'Get All Registered Customers' })
+  @Get('customers')
+  async getCustomers(
+    @Query('search') search?: string,
+    @Query('page') page?: number,
+    @Query('limit') limit?: number
+  ) {
+    return this.adminService.getCustomers({ search, page, limit });
+  }
+
+  @ApiOperation({ summary: 'Get M-Pesa STK Transactions' })
+  @Get('payments')
+  async getPayments(
+    @Query('search') search?: string,
+    @Query('page') page?: number,
+    @Query('limit') limit?: number
+  ) {
+    return this.adminService.getPayments({ search, page, limit });
+  }
+
+  @ApiOperation({ summary: 'Get All Eligibility Brackets' })
+  @Get('eligibility-brackets')
+  async getEligibilityBrackets() {
+    return this.adminService.getEligibilityBrackets();
+  }
+
+  @ApiOperation({ summary: 'Create Eligibility Bracket' })
+  @Post('eligibility-brackets')
+  async createEligibilityBracket(
+    @Request() req: any,
+    @Body() body: { name: string; minSalary: number; maxSalary: number; assignedPackageName: string; maxLimit: number }
+  ) {
+    const adminIdentifier = req.user.email || req.user.phone || req.user.userId;
+    return this.adminService.createEligibilityBracket(body, adminIdentifier);
+  }
+
+  @ApiOperation({ summary: 'Update Eligibility Bracket' })
+  @Put('eligibility-brackets/:id')
+  async updateEligibilityBracket(
+    @Request() req: any,
+    @Param('id') id: string,
+    @Body() body: { name?: string; minSalary?: number; maxSalary?: number; assignedPackageName?: string; maxLimit?: number; active?: boolean }
+  ) {
+    const adminIdentifier = req.user.email || req.user.phone || req.user.userId;
+    return this.adminService.updateEligibilityBracket(Number(id), body, adminIdentifier);
+  }
+
+  @ApiOperation({ summary: 'Delete Eligibility Bracket' })
+  @Delete('eligibility-brackets/:id')
+  async deleteEligibilityBracket(
+    @Request() req: any,
+    @Param('id') id: string
+  ) {
+    const adminIdentifier = req.user.email || req.user.phone || req.user.userId;
+    return this.adminService.deleteEligibilityBracket(Number(id), adminIdentifier);
+  }
+
+  @ApiOperation({ summary: 'Get SMS Logs' })
+  @Get('sms-logs')
+  async getSmsLogs(
+    @Query('search') search?: string,
+    @Query('page') page?: number,
+    @Query('limit') limit?: number
+  ) {
+    return this.adminService.getSmsLogs({ search, page, limit });
+  }
+
+  @ApiOperation({ summary: 'Send Manual SMS' })
+  @Post('send-sms')
+  async sendSms(
+    @Request() req: any,
+    @Body() body: { phone: string; message: string }
+  ) {
+    const adminIdentifier = req.user.email || req.user.phone || req.user.userId;
+    return this.adminService.sendSms(body.phone, body.message, adminIdentifier);
+  }
+
+  @ApiOperation({ summary: 'Get SMS Templates' })
+  @Get('sms-templates')
+  async getSmsTemplates() {
+    return this.adminService.getSmsTemplates();
+  }
+
+  @ApiOperation({ summary: 'Create/Update SMS Template' })
+  @Post('sms-templates')
+  async upsertSmsTemplate(
+    @Request() req: any,
+    @Body() body: { key: string; title: string; body: string; variables?: string[] }
+  ) {
+    const adminIdentifier = req.user.email || req.user.phone || req.user.userId;
+    return this.adminService.upsertSmsTemplate(body, adminIdentifier);
+  }
+
+  @ApiOperation({ summary: 'Resolve Support Ticket' })
+  @Put('support-tickets/:id/resolve')
+  async resolveSupportTicket(
+    @Request() req: any,
+    @Param('id') id: string,
+    @Body() body: { status: string }
+  ) {
+    const adminIdentifier = req.user.email || req.user.phone || req.user.userId;
+    return this.adminService.resolveSupportTicket(id, body.status || 'RESOLVED', adminIdentifier);
   }
 }
