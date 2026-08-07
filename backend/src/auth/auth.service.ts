@@ -85,7 +85,8 @@ export class AuthService {
       data: { failedLoginAttempts: 0, lockedUntil: null }
     });
 
-    const payload = { sub: user.id, phone: user.phoneNumber, role: user.role, type: 'CUSTOMER' };
+    const userRole = (user as any).role || Role.CUSTOMER;
+    const payload = { sub: user.id, phone: user.phoneNumber, role: userRole, type: 'CUSTOMER' };
     const accessToken = this.jwtService.sign(payload, { expiresIn: '1h' });
     const refreshToken = this.jwtService.sign(payload, { expiresIn: '7d' });
 
@@ -100,7 +101,7 @@ export class AuthService {
     return {
       accessToken,
       refreshToken,
-      role: user.role,
+      role: userRole,
       user: {
         id: user.id,
         fullName: user.fullName,
