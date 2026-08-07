@@ -8,7 +8,7 @@
 4. Build Command: `npm run build`
 5. Output Directory: `apps/frontend/dist`
 6. Set Environment Variable:
-   - `VITE_API_URL`: Your Render backend deployment URL (e.g. `https://jijenge-loans-backend.onrender.com`).
+   - `VITE_API_URL`: Your Render backend deployment URL (e.g. `https://jijenge-loans.onrender.com`).
 
 ## 2. Render Deployment (Backend)
 
