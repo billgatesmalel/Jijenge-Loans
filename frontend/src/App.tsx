@@ -371,9 +371,59 @@ export const App: React.FC = () => {
           </div>
         </section>
 
+class TrackErrorBoundary extends React.Component<{ children: React.ReactNode }, { hasError: boolean }> {
+  constructor(props: { children: React.ReactNode }) {
+    super(props);
+    this.state = { hasError: false };
+  }
+
+  static getDerivedStateFromError() {
+    return { hasError: true };
+  }
+
+  componentDidCatch(error: any, errorInfo: any) {
+    console.error('Track loan error boundary caught:', error, errorInfo);
+  }
+
+  render() {
+    if (this.state.hasError) {
+      return (
+        <div style={{ textAlign: 'center', padding: '4rem 1.5rem', maxWidth: '600px', margin: '0 auto' }}>
+          <div style={{ fontSize: '2.5rem', marginBottom: '1rem' }}>⚠️</div>
+          <h3 style={{ fontSize: '1.4rem', fontWeight: 800, color: '#0f172a', marginBottom: '0.5rem' }}>
+            Something went wrong
+          </h3>
+          <p style={{ fontSize: '0.95rem', color: '#64748b', marginBottom: '1.5rem', lineHeight: 1.6 }}>
+            We couldn't load the loan tracking page. Please refresh the page and try again.
+          </p>
+          <button
+            type="button"
+            onClick={() => window.location.reload()}
+            style={{
+              background: '#FF6600',
+              color: '#ffffff',
+              border: 'none',
+              padding: '0.85rem 1.75rem',
+              borderRadius: '12px',
+              fontWeight: 800,
+              cursor: 'pointer',
+              fontFamily: 'inherit',
+            }}
+          >
+            Refresh Page
+          </button>
+        </div>
+      );
+    }
+    return this.props.children;
+  }
+}
+
         {/* Tab 5: Track Loan View */}
         <section className={`tab-pane ${activeTab === 'track' ? 'active' : ''}`} id="tab-track">
-          <TrackLoanView onTabChange={switchTab} onOpenSupport={() => setSupportOpen(true)} />
+          <TrackErrorBoundary>
+            <TrackLoanView onTabChange={switchTab} onOpenSupport={() => setSupportOpen(true)} />
+          </TrackErrorBoundary>
         </section>
       </main>
 

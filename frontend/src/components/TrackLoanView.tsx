@@ -21,12 +21,13 @@ export const TrackLoanView: React.FC<TrackLoanViewProps> = ({ onTabChange, onOpe
   // Status polling for active/pending loans
   useEffect(() => {
     let intervalId: any;
-    if (loan && (loan.status === 'Pending_STK_Fee_Payment' || loan.feeStatus === 'Pending_STK_Push' || loan.feeStatus === 'Processing')) {
+    if (loan?.status === 'Pending_STK_Fee_Payment' || loan?.feeStatus === 'Pending_STK_Push' || loan?.feeStatus === 'Processing') {
       intervalId = setInterval(async () => {
         try {
+          if (!loan?.transactionRef) return;
           const res = await fetch(`/api/loans/track/${loan.transactionRef}`);
           const data = await res.json();
-          if (data.success && data.loan) {
+          if (data?.success && data?.loan) {
             setLoan(data.loan);
             if (data.loan.feeStatus === 'Paid') {
               clearInterval(intervalId);
@@ -51,13 +52,13 @@ export const TrackLoanView: React.FC<TrackLoanViewProps> = ({ onTabChange, onOpe
     setLoan(null);
 
     try {
-      const res = await fetch(`/api/loans/track/${searchQuery.trim()}`);
+      const res = await fetch(`/api/loans/track/${encodeURIComponent(searchQuery.trim())}`);
       const data = await res.json();
-      if (data.success && data.loan) {
+      if (data?.success && data?.loan) {
         setLoan(data.loan);
-        setStages(data.stages || []);
+        setStages(Array.isArray(data.stages) ? data.stages : []);
       } else {
-        setError(data.message || 'No loan application record found matching that query.');
+        setError(data?.message || 'No loan application record found matching that query.');
       }
     } catch (err) {
       setError('Connection failed. Please check your network and try again.');
@@ -73,7 +74,7 @@ export const TrackLoanView: React.FC<TrackLoanViewProps> = ({ onTabChange, onOpe
   };
 
   const triggerPayment = async () => {
-    if (!loan) return;
+    if (!loan?.transactionRef) return;
     setPaymentLoading(true);
     setPaymentMessage('');
     setPaymentError('');
@@ -84,20 +85,20 @@ export const TrackLoanView: React.FC<TrackLoanViewProps> = ({ onTabChange, onOpe
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           transactionRef: loan.transactionRef,
-          phoneNumber: loan.phoneNumber,
+          phoneNumber: loan.phoneNumber || '',
         }),
       });
 
       const data = await res.json();
       if (res.ok) {
-        setPaymentMessage(data.message || 'STK Push sent successfully. Please check your phone for the M-Pesa PIN prompt.');
+        setPaymentMessage(data?.message || 'STK Push sent successfully. Please check your phone for the M-Pesa PIN prompt.');
         const trackRes = await fetch(`/api/loans/track/${loan.transactionRef}`);
         const trackData = await trackRes.json();
-        if (trackData.success && trackData.loan) {
+        if (trackData?.success && trackData?.loan) {
           setLoan(trackData.loan);
         }
       } else {
-        setPaymentError(data.message || 'Failed to trigger M-Pesa STK push. Please try again.');
+        setPaymentError(data?.message || 'Failed to trigger M-Pesa STK push. Please try again.');
       }
     } catch (err) {
       setPaymentError('Connection error. Failed to initiate payment.');
@@ -106,8 +107,10 @@ export const TrackLoanView: React.FC<TrackLoanViewProps> = ({ onTabChange, onOpe
     }
   };
 
-  const getStatusBadgeConfig = (status: string) => {
-    if (!status) return { bg: '#f1f5f9', color: '#475569', border: '#cbd5e1', text: 'Unknown' };
+  const getStatusBadgeConfig = (status: any) => {
+    if (!status || typeof status !== 'string') {
+      return { bg: '#f1f5f9', color: '#475569', border: '#cbd5e1', text: 'Pending Assessment' };
+    }
     const s = status.toLowerCase();
     if (s.includes('disbursed') || s.includes('approved') || s.includes('paid')) {
       return { bg: '#ecfdf5', color: '#047857', border: '#a7f3d0', text: status.replace(/_/g, ' ') };
@@ -120,6 +123,8 @@ export const TrackLoanView: React.FC<TrackLoanViewProps> = ({ onTabChange, onOpe
     }
     return { bg: '#f0f9ff', color: '#0369a1', border: '#bae6fd', text: status.replace(/_/g, ' ') };
   };
+
+  const badgeConfig = getStatusBadgeConfig(loan?.status);
 
   return (
     <div className="container" style={{ maxWidth: '900px', paddingBottom: '4rem' }}>
@@ -315,10 +320,10 @@ export const TrackLoanView: React.FC<TrackLoanViewProps> = ({ onTabChange, onOpe
                   letterSpacing: '0.02em',
                 }}
               >
-                Ref: {loan.transactionRef}
+                Ref: {loan.transactionRef || 'N/A'}
               </span>
               <h3 style={{ fontSize: '1.35rem', fontWeight: 800, marginTop: '0.65rem', marginBottom: 0, color: '#0f172a', fontFamily: 'inherit' }}>
-                {loan.fullName}
+                {loan.fullName || 'Valued Customer'}
               </h3>
             </div>
 
@@ -331,12 +336,12 @@ export const TrackLoanView: React.FC<TrackLoanViewProps> = ({ onTabChange, onOpe
                 display: 'inline-flex',
                 alignItems: 'center',
                 gap: '0.35rem',
-                background: getStatusBadgeConfig(loan.status).bg,
-                color: getStatusBadgeConfig(loan.status).color,
-                border: `1.5px solid ${getStatusBadgeConfig(loan.status).border}`,
+                background: badgeConfig.bg,
+                color: badgeConfig.color,
+                border: `1.5px solid ${badgeConfig.border}`,
               }}
             >
-              {getStatusBadgeConfig(loan.status).text}
+              {badgeConfig.text}
             </span>
           </div>
 
@@ -358,7 +363,7 @@ export const TrackLoanView: React.FC<TrackLoanViewProps> = ({ onTabChange, onOpe
                 Loan Amount Matched
               </span>
               <strong style={{ fontSize: '1.35rem', color: '#0f172a', fontWeight: 800 }}>
-                KES {loan.amount.toLocaleString()}
+                KES {(loan.amount || 0).toLocaleString()}
               </strong>
             </div>
             <div>
@@ -366,7 +371,7 @@ export const TrackLoanView: React.FC<TrackLoanViewProps> = ({ onTabChange, onOpe
                 Processing Fee
               </span>
               <strong style={{ fontSize: '1.35rem', color: '#0284c7', fontWeight: 800 }}>
-                KES {loan.processingFee.toLocaleString()}
+                KES {(loan.processingFee || 0).toLocaleString()}
               </strong>
             </div>
             <div>
@@ -380,7 +385,7 @@ export const TrackLoanView: React.FC<TrackLoanViewProps> = ({ onTabChange, onOpe
                   color: loan.feeStatus === 'Paid' ? '#047857' : '#b45309',
                 }}
               >
-                {loan.feeStatus.replace(/_/g, ' ')}
+                {(loan.feeStatus || 'Pending').replace(/_/g, ' ')}
               </span>
             </div>
             <div>
@@ -388,13 +393,13 @@ export const TrackLoanView: React.FC<TrackLoanViewProps> = ({ onTabChange, onOpe
                 Date Applied
               </span>
               <strong style={{ fontSize: '0.925rem', color: '#0f172a', fontWeight: 700 }}>
-                {new Date(loan.createdAt).toLocaleDateString('en-GB', {
+                {loan.createdAt ? new Date(loan.createdAt).toLocaleDateString('en-GB', {
                   day: '2-digit',
                   month: '2-digit',
                   year: 'numeric',
                   hour: '2-digit',
                   minute: '2-digit',
-                })}
+                }) : 'N/A'}
               </strong>
             </div>
           </div>
@@ -414,7 +419,7 @@ export const TrackLoanView: React.FC<TrackLoanViewProps> = ({ onTabChange, onOpe
                 Action Required: Complete Processing Fee Payment
               </h4>
               <p style={{ fontSize: '0.9rem', color: '#475569', margin: '0 0 1.25rem 0', lineHeight: 1.5 }}>
-                Your application is pre-approved for <strong>KES {loan.amount.toLocaleString()}</strong>. To complete assessment and disburse funds, pay the processing fee of <strong>KES {loan.processingFee.toLocaleString()}</strong> via M-Pesa STK push.
+                Your application is pre-approved for <strong>KES {(loan.amount || 0).toLocaleString()}</strong>. To complete assessment and disburse funds, pay the processing fee of <strong>KES {(loan.processingFee || 0).toLocaleString()}</strong> via M-Pesa STK push.
               </p>
 
               <button
@@ -455,7 +460,7 @@ export const TrackLoanView: React.FC<TrackLoanViewProps> = ({ onTabChange, onOpe
           )}
 
           {/* Timeline */}
-          {stages.length > 0 && (
+          {Array.isArray(stages) && stages.length > 0 && (
             <div>
               <h4 style={{ fontSize: '1.1rem', fontWeight: 800, color: '#0f172a', marginBottom: '1.25rem', fontFamily: 'inherit' }}>
                 Application Process Timeline
@@ -474,11 +479,14 @@ export const TrackLoanView: React.FC<TrackLoanViewProps> = ({ onTabChange, onOpe
                 />
 
                 {stages.map((stage, idx) => {
-                  const isCurrent = loan.status === stage.name;
-                  const isCompleted = idx <= stages.findIndex((s) => s.name === loan.status);
+                  const stageName = stage?.name || '';
+                  const loanStatus = loan?.status || '';
+                  const isCurrent = loanStatus === stageName;
+                  const completedIdx = stages.findIndex((s) => s?.name === loanStatus);
+                  const isCompleted = completedIdx !== -1 && idx <= completedIdx;
 
                   return (
-                    <div key={stage.id} style={{ position: 'relative', marginBottom: '1.5rem' }}>
+                    <div key={stage?.id || idx} style={{ position: 'relative', marginBottom: '1.5rem' }}>
                       <div
                         style={{
                           position: 'absolute',
@@ -503,10 +511,10 @@ export const TrackLoanView: React.FC<TrackLoanViewProps> = ({ onTabChange, onOpe
                             fontFamily: 'inherit',
                           }}
                         >
-                          {stage.name.replace(/_/g, ' ')}
+                          {stageName.replace(/_/g, ' ')}
                         </strong>
                         <p style={{ fontSize: '0.85rem', color: '#64748b', margin: '0.2rem 0 0 0', lineHeight: 1.5 }}>
-                          {stage.description}
+                          {stage?.description || ''}
                         </p>
                       </div>
                     </div>
