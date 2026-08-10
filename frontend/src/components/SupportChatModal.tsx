@@ -5,7 +5,6 @@ interface SupportChatModalProps {
   onClose: () => void;
 }
 
-/* Shared focus ring style injected inline for inputs/textarea/select */
 const focusStyle: React.CSSProperties = {
   outline: 'none',
 };
@@ -21,6 +20,21 @@ const inputBase: React.CSSProperties = {
   fontFamily: 'inherit',
 };
 
+/* Phone Normalization Helper for Kenyan M-Pesa Numbers */
+const normalizeKenyanPhone = (raw: string): string | null => {
+  const clean = raw.replace(/\D/g, '');
+  if (clean.length === 10 && (clean.startsWith('07') || clean.startsWith('01'))) {
+    return '254' + clean.slice(1);
+  }
+  if (clean.length === 12 && clean.startsWith('254')) {
+    return clean;
+  }
+  if (clean.length === 9 && (clean.startsWith('7') || clean.startsWith('1'))) {
+    return '254' + clean;
+  }
+  return null;
+};
+
 export const SupportChatModal: React.FC<SupportChatModalProps> = ({ isOpen, onClose }) => {
   const [ticketId, setTicketId] = useState<string | null>(null);
   const [guestName, setGuestName] = useState('');
@@ -29,12 +43,45 @@ export const SupportChatModal: React.FC<SupportChatModalProps> = ({ isOpen, onCl
   const [subject, setSubject] = useState('General Loan Inquiry');
   const [initialMsg, setInitialMsg] = useState('');
 
+  // Inline Validation Errors
+  const [errors, setErrors] = useState<{ name?: string; phone?: string; email?: string; msg?: string }>({});
+
   // Active chat
   const [messages, setMessages] = useState<any[]>([]);
   const [replyText, setReplyText] = useState('');
   const [loading, setLoading] = useState(false);
-  const chatEndRef = useRef<HTMLDivElement>(null);
 
+  const chatEndRef = useRef<HTMLDivElement>(null);
+  const modalRef = useRef<HTMLDivElement>(null);
+  const firstInputRef = useRef<HTMLInputElement>(null);
+
+  // Lock body scroll when modal is open
+  useEffect(() => {
+    if (isOpen) {
+      document.body.style.overflow = 'hidden';
+      setTimeout(() => {
+        if (firstInputRef.current) firstInputRef.current.focus();
+      }, 100);
+    } else {
+      document.body.style.overflow = 'unset';
+    }
+    return () => {
+      document.body.style.overflow = 'unset';
+    };
+  }, [isOpen]);
+
+  // Keyboard Escape listener
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape' && isOpen && !loading) {
+        onClose();
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [isOpen, loading, onClose]);
+
+  // Load ticket from localStorage
   useEffect(() => {
     const savedId = localStorage.getItem('bl_chat_conversationId');
     const savedName = localStorage.getItem('bl_chat_guestName');
@@ -82,9 +129,40 @@ export const SupportChatModal: React.FC<SupportChatModalProps> = ({ isOpen, onCl
     }
   };
 
+  const validateForm = () => {
+    const newErrors: { name?: string; phone?: string; email?: string; msg?: string } = {};
+
+    if (!guestName.trim()) {
+      newErrors.name = 'Full name is required.';
+    }
+
+    const normalized = normalizeKenyanPhone(guestPhone);
+    if (!guestPhone.trim() || !normalized) {
+      newErrors.phone = 'Valid M-Pesa number required (e.g. 0712345678 or 254712345678).';
+    }
+
+    if (guestEmail.trim()) {
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (!emailRegex.test(guestEmail.trim())) {
+        newErrors.email = 'Please enter a valid email address.';
+      }
+    }
+
+    if (!initialMsg.trim()) {
+      newErrors.msg = 'Please enter an initial message describing your request.';
+    }
+
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
+
   const handleStartConversation = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!guestName.trim() || !guestPhone.trim() || !initialMsg.trim()) return;
+    if (loading) return; // prevent duplicate submissions
+
+    if (!validateForm()) return;
+
+    const normalizedPhone = normalizeKenyanPhone(guestPhone) || guestPhone.trim();
 
     setLoading(true);
 
@@ -93,8 +171,9 @@ export const SupportChatModal: React.FC<SupportChatModalProps> = ({ isOpen, onCl
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          customerPhone: guestPhone.trim(),
+          customerPhone: normalizedPhone,
           customerName: guestName.trim(),
+          customerEmail: guestEmail.trim() || undefined,
           subject,
           message: initialMsg.trim(),
         }),
@@ -104,14 +183,14 @@ export const SupportChatModal: React.FC<SupportChatModalProps> = ({ isOpen, onCl
       if (res.ok && data.success && data.ticket) {
         localStorage.setItem('bl_chat_conversationId', data.ticket.id);
         localStorage.setItem('bl_chat_guestName', guestName.trim());
-        localStorage.setItem('bl_chat_guestPhone', guestPhone.trim());
+        localStorage.setItem('bl_chat_guestPhone', normalizedPhone);
         setTicketId(data.ticket.id);
         setMessages(data.ticket.messages || []);
       } else {
         alert(data.message || 'Failed to start conversation. Please try again.');
       }
     } catch (err) {
-      alert('Connection failed. Please verify your internet network.');
+      alert('Connection failed. Please verify your internet connection.');
     } finally {
       setLoading(false);
     }
@@ -148,9 +227,9 @@ export const SupportChatModal: React.FC<SupportChatModalProps> = ({ isOpen, onCl
     setTicketId(null);
     setMessages([]);
     setInitialMsg('');
+    setErrors({});
   };
 
-  /* Focus ring helper — applied onFocus / onBlur */
   const onFocus = (e: React.FocusEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     e.target.style.borderColor = '#0284c7';
     e.target.style.boxShadow = '0 0 0 3px rgba(2,132,199,0.15)';
@@ -163,35 +242,44 @@ export const SupportChatModal: React.FC<SupportChatModalProps> = ({ isOpen, onCl
   if (!isOpen) return null;
 
   return (
-    /* ── Backdrop: blurred dark overlay ── */
+    /* ── Backdrop Overlay ── */
     <div
       style={{
         position: 'fixed',
         inset: 0,
         background: 'rgba(15, 23, 42, 0.55)',
-        backdropFilter: 'blur(6px)',
-        WebkitBackdropFilter: 'blur(6px)',
+        backdropFilter: 'blur(5px)',
+        WebkitBackdropFilter: 'blur(5px)',
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
         zIndex: 99999,
         padding: '1rem',
+        boxSizing: 'border-box',
       }}
-      onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
+      onClick={(e) => {
+        if (e.target === e.currentTarget && !loading) onClose();
+      }}
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="support-modal-title"
     >
-      {/* ── Modal card ── */}
+      {/* ── Modal Dialog Card ── */}
       <div
+        ref={modalRef}
         style={{
           maxWidth: '480px',
           width: '100%',
+          maxHeight: 'min(90vh, 620px)',
           borderRadius: '24px',
           background: '#ffffff',
-          padding: '1.75rem',
+          padding: '1.5rem',
           display: 'flex',
           flexDirection: 'column',
-          height: '580px',
           border: '1.5px solid #e2e8f0',
           boxShadow: '0 20px 60px rgba(0,0,0,0.18)',
+          boxSizing: 'border-box',
+          overflow: 'hidden',
         }}
       >
         {/* ── Header ── */}
@@ -201,14 +289,18 @@ export const SupportChatModal: React.FC<SupportChatModalProps> = ({ isOpen, onCl
             justifyContent: 'space-between',
             alignItems: 'center',
             borderBottom: '1.5px solid #f1f5f9',
-            paddingBottom: '0.85rem',
-            marginBottom: '1.1rem',
+            paddingBottom: '0.75rem',
+            marginBottom: '1rem',
             width: '100%',
             boxSizing: 'border-box',
+            flexShrink: 0,
           }}
         >
           <div>
-            <h3 style={{ fontSize: '1.1rem', fontWeight: 800, color: '#0f172a', margin: '0 0 0.15rem 0', fontFamily: 'inherit' }}>
+            <h3
+              id="support-modal-title"
+              style={{ fontSize: '1.1rem', fontWeight: 800, color: '#0f172a', margin: '0 0 0.15rem 0', fontFamily: 'inherit' }}
+            >
               Live Customer Support
             </h3>
             <span style={{ fontSize: '0.78rem', color: '#10b981', fontWeight: 700, display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
@@ -237,10 +329,9 @@ export const SupportChatModal: React.FC<SupportChatModalProps> = ({ isOpen, onCl
                 Reset
               </button>
             )}
-            {/* ── Close button — 40px tap target ── */}
             <button
               onClick={onClose}
-              aria-label="Close support chat"
+              aria-label="Close live support"
               style={{
                 background: 'none',
                 border: 'none',
@@ -271,61 +362,92 @@ export const SupportChatModal: React.FC<SupportChatModalProps> = ({ isOpen, onCl
 
         {/* ── GUEST SIGNUP FORM ── */}
         {!ticketId ? (
-          <form onSubmit={handleStartConversation} style={{ flex: 1, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '0.85rem' }}>
-
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem' }}>
+          <form
+            onSubmit={handleStartConversation}
+            style={{
+              flex: 1,
+              overflowY: 'auto',
+              display: 'flex',
+              flexDirection: 'column',
+              gap: '0.85rem',
+              paddingRight: '0.2rem',
+            }}
+          >
+            {/* Grid for Name & Phone */}
+            <div className="support-form-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(190px, 1fr))', gap: '0.75rem' }}>
               <div>
-                <label style={{ display: 'block', fontSize: '0.75rem', fontWeight: 700, color: '#475569', marginBottom: '0.3rem' }}>
+                <label htmlFor="guest-name" style={{ display: 'block', fontSize: '0.75rem', fontWeight: 700, color: '#475569', marginBottom: '0.3rem' }}>
                   Full Name *
                 </label>
                 <input
+                  ref={firstInputRef}
+                  id="guest-name"
                   type="text"
                   placeholder="Your Name"
                   value={guestName}
-                  onChange={(e) => setGuestName(e.target.value)}
-                  style={{ ...inputBase, ...focusStyle }}
+                  onChange={(e) => { setGuestName(e.target.value); if (errors.name) setErrors(p => ({ ...p, name: undefined })); }}
+                  style={{
+                    ...inputBase,
+                    ...focusStyle,
+                    borderColor: errors.name ? '#ef4444' : '#cbd5e1',
+                  }}
                   onFocus={onFocus}
                   onBlur={onBlur}
                   required
                 />
+                {errors.name && <span style={{ fontSize: '0.7rem', color: '#ef4444', fontWeight: 600, marginTop: '0.2rem', display: 'block' }}>{errors.name}</span>}
               </div>
+
               <div>
-                <label style={{ display: 'block', fontSize: '0.75rem', fontWeight: 700, color: '#475569', marginBottom: '0.3rem' }}>
+                <label htmlFor="guest-phone" style={{ display: 'block', fontSize: '0.75rem', fontWeight: 700, color: '#475569', marginBottom: '0.3rem' }}>
                   M-Pesa Phone *
                 </label>
                 <input
+                  id="guest-phone"
                   type="tel"
                   placeholder="e.g. 07XXXXXXXX"
                   value={guestPhone}
-                  onChange={(e) => setGuestPhone(e.target.value)}
-                  style={{ ...inputBase, ...focusStyle }}
+                  onChange={(e) => { setGuestPhone(e.target.value); if (errors.phone) setErrors(p => ({ ...p, phone: undefined })); }}
+                  style={{
+                    ...inputBase,
+                    ...focusStyle,
+                    borderColor: errors.phone ? '#ef4444' : '#cbd5e1',
+                  }}
                   onFocus={onFocus}
                   onBlur={onBlur}
                   required
                 />
+                {errors.phone && <span style={{ fontSize: '0.7rem', color: '#ef4444', fontWeight: 600, marginTop: '0.2rem', display: 'block' }}>{errors.phone}</span>}
               </div>
             </div>
 
             <div>
-              <label style={{ display: 'block', fontSize: '0.75rem', fontWeight: 700, color: '#475569', marginBottom: '0.3rem' }}>
+              <label htmlFor="guest-email" style={{ display: 'block', fontSize: '0.75rem', fontWeight: 700, color: '#475569', marginBottom: '0.3rem' }}>
                 Email Address <span style={{ color: '#94a3b8', fontWeight: 500 }}>(Optional)</span>
               </label>
               <input
+                id="guest-email"
                 type="email"
                 placeholder="you@example.com"
                 value={guestEmail}
-                onChange={(e) => setGuestEmail(e.target.value)}
-                style={{ ...inputBase, ...focusStyle }}
+                onChange={(e) => { setGuestEmail(e.target.value); if (errors.email) setErrors(p => ({ ...p, email: undefined })); }}
+                style={{
+                  ...inputBase,
+                  ...focusStyle,
+                  borderColor: errors.email ? '#ef4444' : '#cbd5e1',
+                }}
                 onFocus={onFocus}
                 onBlur={onBlur}
               />
+              {errors.email && <span style={{ fontSize: '0.7rem', color: '#ef4444', fontWeight: 600, marginTop: '0.2rem', display: 'block' }}>{errors.email}</span>}
             </div>
 
             <div>
-              <label style={{ display: 'block', fontSize: '0.75rem', fontWeight: 700, color: '#475569', marginBottom: '0.3rem' }}>
+              <label htmlFor="guest-subject" style={{ display: 'block', fontSize: '0.75rem', fontWeight: 700, color: '#475569', marginBottom: '0.3rem' }}>
                 Inquiry Subject
               </label>
               <select
+                id="guest-subject"
                 value={subject}
                 onChange={(e) => setSubject(e.target.value)}
                 style={{ ...inputBase, ...focusStyle }}
@@ -340,22 +462,32 @@ export const SupportChatModal: React.FC<SupportChatModalProps> = ({ isOpen, onCl
               </select>
             </div>
 
-            <div style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
-              <label style={{ display: 'block', fontSize: '0.75rem', fontWeight: 700, color: '#475569', marginBottom: '0.3rem' }}>
+            <div style={{ display: 'flex', flexDirection: 'column', flex: 1, minHeight: '120px' }}>
+              <label htmlFor="guest-msg" style={{ display: 'block', fontSize: '0.75rem', fontWeight: 700, color: '#475569', marginBottom: '0.3rem' }}>
                 Initial message *
               </label>
               <textarea
+                id="guest-msg"
                 placeholder="How can we help you today?"
                 value={initialMsg}
-                onChange={(e) => setInitialMsg(e.target.value)}
-                style={{ ...inputBase, ...focusStyle, flex: 1, resize: 'none', minHeight: '80px' }}
+                onChange={(e) => { setInitialMsg(e.target.value); if (errors.msg) setErrors(p => ({ ...p, msg: undefined })); }}
+                style={{
+                  ...inputBase,
+                  ...focusStyle,
+                  flex: 1,
+                  resize: 'none',
+                  minHeight: '110px',
+                  maxHeight: '180px',
+                  borderColor: errors.msg ? '#ef4444' : '#cbd5e1',
+                }}
                 onFocus={onFocus as any}
                 onBlur={onBlur as any}
                 required
               />
+              {errors.msg && <span style={{ fontSize: '0.7rem', color: '#ef4444', fontWeight: 600, marginTop: '0.2rem', display: 'block' }}>{errors.msg}</span>}
             </div>
 
-            {/* ── Submit button — clean inline SVG arrow, no HTML entities ── */}
+            {/* ── Submit button ── */}
             <button
               type="submit"
               disabled={loading}
@@ -376,11 +508,17 @@ export const SupportChatModal: React.FC<SupportChatModalProps> = ({ isOpen, onCl
                 transition: 'background 0.2s ease, transform 0.15s ease',
                 fontFamily: 'inherit',
                 minHeight: '48px',
+                flexShrink: 0,
+                marginTop: '0.25rem',
               }}
-              onMouseEnter={(e) => { if (!loading) (e.currentTarget as HTMLButtonElement).style.background = '#0369a1'; }}
-              onMouseLeave={(e) => { if (!loading) (e.currentTarget as HTMLButtonElement).style.background = '#0284c7'; }}
+              onMouseEnter={(e) => {
+                if (!loading) (e.currentTarget as HTMLButtonElement).style.background = '#0369a1';
+              }}
+              onMouseLeave={(e) => {
+                if (!loading) (e.currentTarget as HTMLButtonElement).style.background = '#0284c7';
+              }}
             >
-              <span>{loading ? 'Starting conversation...' : 'Start Conversation'}</span>
+              <span>{loading ? 'Starting Conversation...' : 'Start Conversation'}</span>
               {!loading && (
                 <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M14 5l7 7m0 0l-7 7m7-7H3" />
@@ -390,7 +528,7 @@ export const SupportChatModal: React.FC<SupportChatModalProps> = ({ isOpen, onCl
           </form>
         ) : (
           /* ── CONVERSATION VIEW ── */
-          <div style={{ flex: 1, display: 'flex', flexDirection: 'column', height: '100%' }}>
+          <div style={{ flex: 1, display: 'flex', flexDirection: 'column', height: '100%', overflow: 'hidden' }}>
             {/* Messages timeline */}
             <div style={{ flex: 1, overflowY: 'auto', paddingRight: '0.5rem', display: 'flex', flexDirection: 'column', gap: '0.65rem', marginBottom: '1rem' }}>
               {messages.map((m) => {
@@ -420,7 +558,7 @@ export const SupportChatModal: React.FC<SupportChatModalProps> = ({ isOpen, onCl
             </div>
 
             {/* Reply form */}
-            <form onSubmit={handleSendMessage} style={{ display: 'flex', gap: '0.5rem' }}>
+            <form onSubmit={handleSendMessage} style={{ display: 'flex', gap: '0.5rem', flexShrink: 0 }}>
               <input
                 type="text"
                 placeholder="Type your message..."
