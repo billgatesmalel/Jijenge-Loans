@@ -18,51 +18,45 @@ interface HeroProps {
 
 const SECTORS = [
   {
-    // Kenyan open-air market stall with fresh produce
-    img: 'https://images.unsplash.com/photo-1608686207856-001b95cf60ca?auto=format&fit=crop&q=80&w=800',
-    fallback: 'https://images.unsplash.com/photo-1542838132-92c53300491e?auto=format&fit=crop&q=80&w=800',
+    img: '/images/retail_shop.png',
+    fallback: 'https://images.unsplash.com/photo-1608686207856-001b95cf60ca?auto=format&fit=crop&q=80&w=800',
     label: 'Retail & small shops',
-    alt: 'Kenyan retail shop owner at a vibrant local duka market stall',
+    alt: 'Kenyan duka shopkeeper serving customers at a vibrant local grocery kiosk',
     Icon: Store,
   },
   {
-    // African farmer in green vegetable/crop field
-    img: 'https://images.unsplash.com/photo-1627920769842-e32f83dcedb8?auto=format&fit=crop&q=80&w=800',
+    img: '/images/agriculture.png',
     fallback: 'https://images.unsplash.com/photo-1595974482597-4b8da8879bc5?auto=format&fit=crop&q=80&w=800',
     label: 'Agriculture & farming',
-    alt: 'Kenyan smallholder farmer harvesting fresh agricultural crops in the highlands',
+    alt: 'Kenyan smallholder farmer picking tea leaves in the lush highland fields',
     Icon: Leaf,
   },
   {
-    // Colorful Matatu / motorcycle transport Africa
-    img: 'https://images.unsplash.com/photo-1583508805133-8fd03d734d1c?auto=format&fit=crop&q=80&w=800',
-    fallback: 'https://images.unsplash.com/photo-1558981806-ec527fa84c39?auto=format&fit=crop&q=80&w=800',
+    img: '/images/transport.png',
+    fallback: 'https://images.unsplash.com/photo-1583508805133-8fd03d734d1c?auto=format&fit=crop&q=80&w=800',
     label: 'Transport services',
-    alt: 'Kenyan Matatu minibus transport operator and Boda Boda motorcycles on a busy street',
+    alt: 'Colorful Kenyan Matatu minibus and Boda Boda motorcycles on a busy Nairobi street',
     Icon: Truck,
   },
   {
-    // African market trader with sacks of goods / wholesale
-    img: 'https://images.unsplash.com/photo-1504945005722-33670dcaf685?auto=format&fit=crop&q=80&w=800',
-    fallback: 'https://images.unsplash.com/photo-1586528116311-ad8dd3c8310d?auto=format&fit=crop&q=80&w=800',
+    img: '/images/wholesale.png',
+    fallback: 'https://images.unsplash.com/photo-1504945005722-33670dcaf685?auto=format&fit=crop&q=80&w=800',
     label: 'Wholesale & distribution',
-    alt: 'Kenyan wholesale market trader loading and distributing goods at a busy market hub',
+    alt: 'Kenyan wholesale traders sorting and loading produce sacks at Wakulima market hub',
     Icon: Package,
   },
   {
-    // African hair braiding / salon stylist at work
-    img: 'https://images.unsplash.com/photo-1570172619644-dfd03ed5d881?auto=format&fit=crop&q=80&w=800',
-    fallback: 'https://images.unsplash.com/photo-1522337360788-8b13dee7a37e?auto=format&fit=crop&q=80&w=800',
+    img: '/images/salon.png',
+    fallback: 'https://images.unsplash.com/photo-1570172619644-dfd03ed5d881?auto=format&fit=crop&q=80&w=800',
     label: 'Salon & beauty services',
-    alt: 'Kenyan hair braider and kinyozi barber providing beauty services to local clients',
+    alt: 'Kenyan hair stylist braiding cornrows in a colourful local salon and kinyozi',
     Icon: Scissors,
   },
   {
-    // African street food cooking / local eatery
-    img: 'https://images.unsplash.com/photo-1567514933737-cd7e4e3b5d5f?auto=format&fit=crop&q=80&w=800',
-    fallback: 'https://images.unsplash.com/photo-1555396273-367ea4eb4db5?auto=format&fit=crop&q=80&w=800',
+    img: '/images/food.png',
+    fallback: 'https://images.unsplash.com/photo-1567514933737-cd7e4e3b5d5f?auto=format&fit=crop&q=80&w=800',
     label: 'Food & restaurant vendors',
-    alt: 'Kenyan kibanda food vendor cooking and serving fresh local meals at street eatery',
+    alt: 'Kenyan kibanda food vendor serving nyama choma ugali and chapati at a local eatery',
     Icon: Utensils,
   },
 ];
