@@ -1348,11 +1348,21 @@ body {
     background: #ffffff;
     border-radius: var(--radius-md);
     border: 1px solid var(--border-light);
+    border-left: 4px solid transparent;
     overflow: hidden;
+    transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.faq-item[open] {
+    background: rgba(255, 245, 237, 0.45);
+    border-color: #ffd6b3;
+    border-left: 4px solid var(--brand-orange);
+    box-shadow: 0 4px 16px rgba(255, 102, 0, 0.06);
 }
 
 .faq-question {
-    padding: 1.2rem 1.5rem;
+    padding: 1.1rem 1.25rem;
+    min-height: 48px;
     font-weight: 700;
     font-size: 1.025rem;
     cursor: pointer;

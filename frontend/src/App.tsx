@@ -7,7 +7,7 @@ import { CustomerDashboardModal } from './components/CustomerDashboardModal';
 import { AdminDashboardModal } from './components/AdminDashboardModal';
 import { SupportChatModal } from './components/SupportChatModal';
 import { TrackLoanView } from './components/TrackLoanView';
-import { Zap, ShieldCheck, Landmark, BarChart3, Lock, Users } from 'lucide-react';
+import { Zap, ShieldCheck, Landmark, BarChart3, Lock, Users, MessageCircle, ArrowRight } from 'lucide-react';
 
 export const App: React.FC = () => {
   const [currentHash, setCurrentHash] = useState(window.location.hash || '#home');
@@ -257,10 +257,27 @@ export const App: React.FC = () => {
               </details>
             </div>
 
-            <div className="tab-cta-box" style={{ marginTop: '3rem', textAlign: 'center', background: '#ffffff', padding: '2.5rem', borderRadius: '16px', border: '1px solid #e2e8f0' }}>
-              <h3 style={{ fontSize: '1.5rem', fontWeight: 800, color: '#0f172a', marginBottom: '0.5rem' }}>Have more questions or ready to get funded?</h3>
-              <p style={{ fontSize: '0.95rem', color: '#64748b', marginBottom: '1.5rem' }}>Get approved in under 15 minutes with zero collateral required.</p>
-              <button className="btn-cta-large" onClick={() => switchTab('apply')} style={{ maxWidth: '320px', margin: '0 auto' }}>Apply Now &rarr;</button>
+            <div className="tab-cta-box">
+              <h3>Have more questions or ready to get funded?</h3>
+              <p>Get approved in under 15 minutes with zero collateral required.</p>
+              <div className="tab-cta-actions">
+                <button
+                  type="button"
+                  className="btn-faq-primary"
+                  onClick={() => switchTab('apply')}
+                >
+                  <span>Apply Now</span>
+                  <ArrowRight size={16} aria-hidden="true" />
+                </button>
+                <button
+                  type="button"
+                  className="btn-faq-secondary"
+                  onClick={() => setSupportOpen(true)}
+                >
+                  <MessageCircle size={16} aria-hidden="true" />
+                  <span>Talk to Support</span>
+                </button>
+              </div>
             </div>
           </div>
         </section>
