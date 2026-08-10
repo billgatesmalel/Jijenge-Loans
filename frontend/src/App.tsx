@@ -51,13 +51,13 @@ export const App: React.FC = () => {
 
   const getActiveTab = () => {
     const hash = currentHash.replace('#', '');
-    const validTabs = ['home', 'apply', 'how-it-works', 'faqs'];
+    const validTabs = ['home', 'apply', 'how-it-works', 'faqs', 'track'];
     return validTabs.includes(hash) ? hash : 'home';
   };
 
   const activeTab = getActiveTab();
 
-  // Route views based on hash
+  // Route portal modals based on hash
   if (currentHash === '#customer') {
     return (
       <div className="portal-container login-active">
@@ -71,15 +71,6 @@ export const App: React.FC = () => {
     return (
       <div>
         <AdminDashboardModal onClose={() => switchTab('home')} />
-      </div>
-    );
-  }
-
-  if (currentHash === '#track') {
-    return (
-      <div>
-        <TrackLoanView onTabChange={switchTab} onOpenSupport={() => setSupportOpen(true)} />
-        <SupportChatModal isOpen={supportOpen} onClose={() => setSupportOpen(false)} />
       </div>
     );
   }
@@ -350,6 +341,11 @@ export const App: React.FC = () => {
               </div>
             </div>
           </div>
+        </section>
+
+        {/* Tab 5: Track Loan View */}
+        <section className={`tab-pane ${activeTab === 'track' ? 'active' : ''}`} id="tab-track">
+          <TrackLoanView onTabChange={switchTab} onOpenSupport={() => setSupportOpen(true)} />
         </section>
       </main>
 

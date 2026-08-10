@@ -1336,7 +1336,8 @@ body {
 }
 
 /* ─── FAQ Tab Layout & Accordion Styles ──────────────────────── */
-#tab-faqs {
+#tab-faqs,
+#tab-track {
     padding-bottom: 5.5rem;    /* Comfortable spacing before footer */
 }
 
