@@ -5,6 +5,22 @@ interface SupportChatModalProps {
   onClose: () => void;
 }
 
+/* Shared focus ring style injected inline for inputs/textarea/select */
+const focusStyle: React.CSSProperties = {
+  outline: 'none',
+};
+
+const inputBase: React.CSSProperties = {
+  width: '100%',
+  padding: '0.6rem 0.9rem',
+  borderRadius: '10px',
+  border: '1.5px solid #cbd5e1',
+  fontSize: '0.875rem',
+  boxSizing: 'border-box',
+  transition: 'border-color 0.2s ease, box-shadow 0.2s ease',
+  fontFamily: 'inherit',
+};
+
 export const SupportChatModal: React.FC<SupportChatModalProps> = ({ isOpen, onClose }) => {
   const [ticketId, setTicketId] = useState<string | null>(null);
   const [guestName, setGuestName] = useState('');
@@ -134,111 +150,246 @@ export const SupportChatModal: React.FC<SupportChatModalProps> = ({ isOpen, onCl
     setInitialMsg('');
   };
 
+  /* Focus ring helper — applied onFocus / onBlur */
+  const onFocus = (e: React.FocusEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
+    e.target.style.borderColor = '#0284c7';
+    e.target.style.boxShadow = '0 0 0 3px rgba(2,132,199,0.15)';
+  };
+  const onBlur = (e: React.FocusEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
+    e.target.style.borderColor = '#cbd5e1';
+    e.target.style.boxShadow = 'none';
+  };
+
   if (!isOpen) return null;
 
   return (
-    <div style={{ position: 'fixed', inset: 0, background: 'rgba(10,25,40,0.65)', backdropFilter: 'blur(4px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 99999, padding: '1rem' }}>
-      <div style={{ maxWidth: '480px', width: '100%', borderRadius: '24px', background: '#ffffff', padding: '2rem', display: 'flex', flexDirection: 'column', height: '560px', border: '1.5px solid #cbd5e1', boxShadow: '0 10px 40px rgba(0,0,0,0.12)' }}>
-        {/* Header */}
-        <div style={{ display: 'flex', justifyContent: 'between', alignItems: 'center', borderBottom: '1.5px solid #f1f5f9', paddingBottom: '0.75rem', marginBottom: '1rem', width: '100%', boxSizing: 'border-box' }}>
+    /* ── Backdrop: blurred dark overlay ── */
+    <div
+      style={{
+        position: 'fixed',
+        inset: 0,
+        background: 'rgba(15, 23, 42, 0.55)',
+        backdropFilter: 'blur(6px)',
+        WebkitBackdropFilter: 'blur(6px)',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        zIndex: 99999,
+        padding: '1rem',
+      }}
+      onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
+    >
+      {/* ── Modal card ── */}
+      <div
+        style={{
+          maxWidth: '480px',
+          width: '100%',
+          borderRadius: '24px',
+          background: '#ffffff',
+          padding: '1.75rem',
+          display: 'flex',
+          flexDirection: 'column',
+          height: '580px',
+          border: '1.5px solid #e2e8f0',
+          boxShadow: '0 20px 60px rgba(0,0,0,0.18)',
+        }}
+      >
+        {/* ── Header ── */}
+        <div
+          style={{
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: 'center',
+            borderBottom: '1.5px solid #f1f5f9',
+            paddingBottom: '0.85rem',
+            marginBottom: '1.1rem',
+            width: '100%',
+            boxSizing: 'border-box',
+          }}
+        >
           <div>
-            <h3 style={{ fontSize: '1.15rem', fontWeight: 800, color: '#0f172a', margin: '0 0 0.15rem 0' }}>Live Customer Support</h3>
-            <span style={{ fontSize: '0.78rem', color: '#10b981', fontWeight: 700 }}>Online • 24/7 Agent Available</span>
+            <h3 style={{ fontSize: '1.1rem', fontWeight: 800, color: '#0f172a', margin: '0 0 0.15rem 0', fontFamily: 'inherit' }}>
+              Live Customer Support
+            </h3>
+            <span style={{ fontSize: '0.78rem', color: '#10b981', fontWeight: 700, display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
+              <span style={{ width: 7, height: 7, borderRadius: '50%', background: '#10b981', display: 'inline-block', flexShrink: 0 }} />
+              Online · 24/7 Agent Available
+            </span>
           </div>
-          <div style={{ display: 'flex', gap: '0.5rem' }}>
+
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
             {ticketId && (
               <button
                 onClick={handleResetChat}
-                style={{ background: '#f1f5f9', color: '#64748b', border: 'none', padding: '0.35rem 0.65rem', borderRadius: '6px', fontSize: '0.725rem', fontWeight: 700, cursor: 'pointer' }}
+                style={{
+                  background: '#f1f5f9',
+                  color: '#64748b',
+                  border: 'none',
+                  padding: '0.35rem 0.65rem',
+                  borderRadius: '6px',
+                  fontSize: '0.72rem',
+                  fontWeight: 700,
+                  cursor: 'pointer',
+                  fontFamily: 'inherit',
+                }}
                 title="Reset Chat & Create New Ticket"
               >
                 Reset
               </button>
             )}
+            {/* ── Close button — 40px tap target ── */}
             <button
               onClick={onClose}
-              style={{ background: 'none', border: 'none', fontSize: '1.25rem', cursor: 'pointer', color: '#94a3b8' }}
+              aria-label="Close support chat"
+              style={{
+                background: 'none',
+                border: 'none',
+                cursor: 'pointer',
+                color: '#94a3b8',
+                width: 36,
+                height: 36,
+                borderRadius: '50%',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                fontSize: '1.1rem',
+                transition: 'background 0.15s ease, color 0.15s ease',
+              }}
+              onMouseEnter={(e) => {
+                (e.currentTarget as HTMLButtonElement).style.background = '#f1f5f9';
+                (e.currentTarget as HTMLButtonElement).style.color = '#0f172a';
+              }}
+              onMouseLeave={(e) => {
+                (e.currentTarget as HTMLButtonElement).style.background = 'none';
+                (e.currentTarget as HTMLButtonElement).style.color = '#94a3b8';
+              }}
             >
               ✕
             </button>
           </div>
         </div>
 
-        {/* GUEST SIGNUP FORM */}
+        {/* ── GUEST SIGNUP FORM ── */}
         {!ticketId ? (
           <form onSubmit={handleStartConversation} style={{ flex: 1, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '0.85rem' }}>
+
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem' }}>
               <div>
-                <label style={{ display: 'block', fontSize: '0.75rem', fontWeight: 700, color: '#475569', marginBottom: '0.25rem' }}>Full Name *</label>
+                <label style={{ display: 'block', fontSize: '0.75rem', fontWeight: 700, color: '#475569', marginBottom: '0.3rem' }}>
+                  Full Name *
+                </label>
                 <input
                   type="text"
                   placeholder="Your Name"
                   value={guestName}
                   onChange={(e) => setGuestName(e.target.value)}
-                  style={{ width: '100%', padding: '0.55rem 0.85rem', borderRadius: '8px', border: '1.5px solid #cbd5e1', fontSize: '0.85rem', boxSizing: 'border-box' }}
+                  style={{ ...inputBase, ...focusStyle }}
+                  onFocus={onFocus}
+                  onBlur={onBlur}
                   required
                 />
               </div>
               <div>
-                <label style={{ display: 'block', fontSize: '0.75rem', fontWeight: 700, color: '#475569', marginBottom: '0.25rem' }}>M-Pesa Phone *</label>
+                <label style={{ display: 'block', fontSize: '0.75rem', fontWeight: 700, color: '#475569', marginBottom: '0.3rem' }}>
+                  M-Pesa Phone *
+                </label>
                 <input
                   type="tel"
                   placeholder="e.g. 07XXXXXXXX"
                   value={guestPhone}
                   onChange={(e) => setGuestPhone(e.target.value)}
-                  style={{ width: '100%', padding: '0.55rem 0.85rem', borderRadius: '8px', border: '1.5px solid #cbd5e1', fontSize: '0.85rem', boxSizing: 'border-box' }}
+                  style={{ ...inputBase, ...focusStyle }}
+                  onFocus={onFocus}
+                  onBlur={onBlur}
                   required
                 />
               </div>
             </div>
 
             <div>
-              <label style={{ display: 'block', fontSize: '0.75rem', fontWeight: 700, color: '#475569', marginBottom: '0.25rem' }}>Email Address (Optional)</label>
+              <label style={{ display: 'block', fontSize: '0.75rem', fontWeight: 700, color: '#475569', marginBottom: '0.3rem' }}>
+                Email Address <span style={{ color: '#94a3b8', fontWeight: 500 }}>(Optional)</span>
+              </label>
               <input
                 type="email"
                 placeholder="you@example.com"
                 value={guestEmail}
                 onChange={(e) => setGuestEmail(e.target.value)}
-                style={{ width: '100%', padding: '0.55rem 0.85rem', borderRadius: '8px', border: '1.5px solid #cbd5e1', fontSize: '0.85rem', boxSizing: 'border-box' }}
+                style={{ ...inputBase, ...focusStyle }}
+                onFocus={onFocus}
+                onBlur={onBlur}
               />
             </div>
 
             <div>
-              <label style={{ display: 'block', fontSize: '0.75rem', fontWeight: 700, color: '#475569', marginBottom: '0.25rem' }}>Inquiry Subject</label>
+              <label style={{ display: 'block', fontSize: '0.75rem', fontWeight: 700, color: '#475569', marginBottom: '0.3rem' }}>
+                Inquiry Subject
+              </label>
               <select
                 value={subject}
                 onChange={(e) => setSubject(e.target.value)}
-                style={{ width: '100%', padding: '0.55rem 0.85rem', borderRadius: '8px', border: '1.5px solid #cbd5e1', fontSize: '0.85rem', boxSizing: 'border-box' }}
+                style={{ ...inputBase, ...focusStyle }}
+                onFocus={onFocus as any}
+                onBlur={onBlur as any}
               >
                 <option value="General Loan Inquiry">General Loan Inquiry</option>
                 <option value="STK Processing Payment Error">STK Processing Payment Error</option>
                 <option value="Loan Repayment Questions">Loan Repayment Questions</option>
-                <option value="Disbursal Status & Delays">Disbursal Status & Delays</option>
+                <option value="Disbursal Status & Delays">Disbursal Status &amp; Delays</option>
                 <option value="Other Service Support">Other Service Support</option>
               </select>
             </div>
 
             <div style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
-              <label style={{ display: 'block', fontSize: '0.75rem', fontWeight: 700, color: '#475569', marginBottom: '0.25rem' }}>Initial message *</label>
+              <label style={{ display: 'block', fontSize: '0.75rem', fontWeight: 700, color: '#475569', marginBottom: '0.3rem' }}>
+                Initial message *
+              </label>
               <textarea
                 placeholder="How can we help you today?"
                 value={initialMsg}
                 onChange={(e) => setInitialMsg(e.target.value)}
-                style={{ width: '100%', flex: 1, padding: '0.65rem 0.85rem', borderRadius: '8px', border: '1.5px solid #cbd5e1', fontSize: '0.85rem', resize: 'none', boxSizing: 'border-box', minHeight: '80px' }}
+                style={{ ...inputBase, ...focusStyle, flex: 1, resize: 'none', minHeight: '80px' }}
+                onFocus={onFocus as any}
+                onBlur={onBlur as any}
                 required
               />
             </div>
 
+            {/* ── Submit button — clean inline SVG arrow, no HTML entities ── */}
             <button
               type="submit"
               disabled={loading}
-              style={{ width: '100%', padding: '0.75rem', background: '#0284c7', color: '#ffffff', border: 'none', borderRadius: '10px', fontSize: '0.9rem', fontWeight: 800, cursor: 'pointer' }}
+              style={{
+                width: '100%',
+                padding: '0.8rem 1rem',
+                background: loading ? '#7dd3fc' : '#0284c7',
+                color: '#ffffff',
+                border: 'none',
+                borderRadius: '12px',
+                fontSize: '0.925rem',
+                fontWeight: 800,
+                cursor: loading ? 'not-allowed' : 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: '0.5rem',
+                transition: 'background 0.2s ease, transform 0.15s ease',
+                fontFamily: 'inherit',
+                minHeight: '48px',
+              }}
+              onMouseEnter={(e) => { if (!loading) (e.currentTarget as HTMLButtonElement).style.background = '#0369a1'; }}
+              onMouseLeave={(e) => { if (!loading) (e.currentTarget as HTMLButtonElement).style.background = '#0284c7'; }}
             >
-              {loading ? 'Starting conversation...' : 'Start Conversation &rarr;'}
+              <span>{loading ? 'Starting conversation...' : 'Start Conversation'}</span>
+              {!loading && (
+                <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M14 5l7 7m0 0l-7 7m7-7H3" />
+                </svg>
+              )}
             </button>
           </form>
         ) : (
-          /* CONVERSATION VIEW */
+          /* ── CONVERSATION VIEW ── */
           <div style={{ flex: 1, display: 'flex', flexDirection: 'column', height: '100%' }}>
             {/* Messages timeline */}
             <div style={{ flex: 1, overflowY: 'auto', paddingRight: '0.5rem', display: 'flex', flexDirection: 'column', gap: '0.65rem', marginBottom: '1rem' }}>
@@ -252,10 +403,10 @@ export const SupportChatModal: React.FC<SupportChatModalProps> = ({ isOpen, onCl
                       background: isMe ? '#0284c7' : '#f1f5f9',
                       color: isMe ? '#ffffff' : '#0f172a',
                       padding: '0.55rem 0.9rem',
-                      borderRadius: '12px',
+                      borderRadius: isMe ? '12px 12px 4px 12px' : '12px 12px 12px 4px',
                       maxWidth: '75%',
                       fontSize: '0.85rem',
-                      boxShadow: '0 1px 3px rgba(0,0,0,0.02)',
+                      boxShadow: '0 1px 3px rgba(0,0,0,0.06)',
                     }}
                   >
                     <div>{m.text}</div>
@@ -268,20 +419,42 @@ export const SupportChatModal: React.FC<SupportChatModalProps> = ({ isOpen, onCl
               <div ref={chatEndRef} />
             </div>
 
-            {/* Submit reply form */}
+            {/* Reply form */}
             <form onSubmit={handleSendMessage} style={{ display: 'flex', gap: '0.5rem' }}>
               <input
                 type="text"
-                placeholder="Type your support reply..."
+                placeholder="Type your message..."
                 value={replyText}
                 onChange={(e) => setReplyText(e.target.value)}
-                style={{ flex: 1, padding: '0.65rem 0.95rem', borderRadius: '10px', border: '1.5px solid #cbd5e1', fontSize: '0.85rem', outline: 'none' }}
+                style={{ flex: 1, padding: '0.65rem 0.95rem', borderRadius: '10px', border: '1.5px solid #cbd5e1', fontSize: '0.875rem', outline: 'none', fontFamily: 'inherit', transition: 'border-color 0.2s ease, box-shadow 0.2s ease' }}
+                onFocus={onFocus}
+                onBlur={onBlur}
               />
               <button
                 type="submit"
-                style={{ background: '#0284c7', color: '#ffffff', border: 'none', padding: '0.65rem 1rem', borderRadius: '10px', fontWeight: 800, cursor: 'pointer' }}
+                style={{
+                  background: '#0284c7',
+                  color: '#ffffff',
+                  border: 'none',
+                  padding: '0.65rem 1.1rem',
+                  borderRadius: '10px',
+                  fontWeight: 800,
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '0.3rem',
+                  fontSize: '0.875rem',
+                  fontFamily: 'inherit',
+                  transition: 'background 0.2s ease',
+                  minHeight: '44px',
+                }}
+                onMouseEnter={(e) => { (e.currentTarget as HTMLButtonElement).style.background = '#0369a1'; }}
+                onMouseLeave={(e) => { (e.currentTarget as HTMLButtonElement).style.background = '#0284c7'; }}
               >
                 Send
+                <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M22 2L11 13M22 2l-7 20-4-9-9-4 20-7z" />
+                </svg>
               </button>
             </form>
           </div>
