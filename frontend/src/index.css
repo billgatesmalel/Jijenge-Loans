@@ -639,21 +639,51 @@ body {
     width: 100%;
 }
 
+/* Mobile: horizontal snap carousel */
 .sectors-grid {
-    display: grid;
-    grid-template-columns: repeat(1, 1fr);
-    gap: 1.25rem;
+    display: flex;
+    flex-direction: row;
+    gap: 0.75rem;
+    overflow-x: auto;
+    scroll-snap-type: x mandatory;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;        /* Firefox */
+    -ms-overflow-style: none;     /* IE/Edge */
+    padding-bottom: 0.25rem;      /* prevent clipping shadows */
 }
 
+.sectors-grid::-webkit-scrollbar {
+    display: none;                /* Chrome/Safari */
+}
+
+.sectors-grid .sector-card-item {
+    /* Each card snaps full-width on mobile */
+    flex: 0 0 82vw;
+    max-width: 320px;
+    scroll-snap-align: center;
+}
+
+/* Tablet: 2-col grid */
 @media (min-width: 640px) {
     .sectors-grid {
+        display: grid;
         grid-template-columns: repeat(2, 1fr);
+        gap: 1rem;
+        overflow-x: visible;
+        scroll-snap-type: none;
+        padding-bottom: 0;
+    }
+    .sectors-grid .sector-card-item {
+        flex: unset;
+        max-width: none;
     }
 }
 
+/* Desktop: 3-col grid */
 @media (min-width: 1024px) {
     .sectors-grid {
         grid-template-columns: repeat(3, 1fr);
+        gap: 1.25rem;
     }
 }
 
@@ -746,26 +776,43 @@ body {
     transform: translateX(3px);
 }
 
-/* Pagination Dots: flex justify-center items-center gap-2 w-full mt-5 */
+/* Pagination Dots — interactive pill-style, visible on mobile only */
 .sectors-dots {
     display: flex;
     align-items: center;
     justify-content: center;
-    gap: 0.5rem; /* gap-2 */
+    gap: 0.5rem;
     width: 100%;
-    margin-top: 1.25rem; /* mt-5 */
+    margin-top: 1rem;
 }
 
 .sec-dot {
     width: 8px;
     height: 8px;
-    border-radius: 50%;
-    background: #e2e8f0;
-    transition: background 0.2s ease;
+    border-radius: 9999px;
+    background: #cbd5e1;
+    border: none;
+    cursor: pointer;
+    padding: 0;
+    transition: width 0.3s ease, background 0.25s ease;
+    outline: none;
+}
+
+.sec-dot:focus-visible {
+    outline: 2px solid var(--brand-orange);
+    outline-offset: 2px;
 }
 
 .sec-dot.active {
+    width: 22px;
     background: var(--brand-orange);
+}
+
+/* Hide dots on tablet/desktop where grid is shown */
+@media (min-width: 640px) {
+    .sectors-dots {
+        display: none;
+    }
 }
 
 @media (max-width: 991px) {

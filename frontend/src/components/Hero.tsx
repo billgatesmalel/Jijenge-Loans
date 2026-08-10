@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useRef, useCallback } from 'react';
 import {
   ArrowRight,
   ShieldCheck,
@@ -61,7 +61,34 @@ const SECTORS = [
   },
 ];
 
+/* 3 pagination dots: each dot represents 2 cards */
+const DOT_COUNT = 3;
+
 export const Hero: React.FC<HeroProps> = ({ onTabChange }) => {
+  const [activeIndex, setActiveIndex] = useState(0);
+  const scrollRef = useRef<HTMLDivElement>(null);
+
+  const handleScroll = useCallback(() => {
+    if (!scrollRef.current) return;
+    const { scrollLeft, scrollWidth, clientWidth } = scrollRef.current;
+    const maxScroll = scrollWidth - clientWidth;
+    if (maxScroll <= 0) return;
+    const dotIndex = Math.min(
+      DOT_COUNT - 1,
+      Math.round((scrollLeft / maxScroll) * (DOT_COUNT - 1))
+    );
+    setActiveIndex(dotIndex);
+  }, []);
+
+  const scrollToIndex = (dotIdx: number) => {
+    if (!scrollRef.current) return;
+    const { scrollWidth, clientWidth } = scrollRef.current;
+    const maxScroll = scrollWidth - clientWidth;
+    const targetScroll = (dotIdx / (DOT_COUNT - 1)) * maxScroll;
+    scrollRef.current.scrollTo({ left: targetScroll, behavior: 'smooth' });
+    setActiveIndex(dotIdx);
+  };
+
   return (
     <div className="hero-section">
       <div className="container hero-layout">
@@ -116,7 +143,7 @@ export const Hero: React.FC<HeroProps> = ({ onTabChange }) => {
             </button>
           </div>
 
-          {/* Trust bar container */}
+          {/* Trust bar */}
           <div className="hero-trust-bar-container" role="list" aria-label="Key benefits">
             <div className="check-item" role="listitem">
               <ShieldCheck size={20} strokeWidth={2.2} className="check-icon-svg" aria-hidden="true" />
@@ -133,9 +160,16 @@ export const Hero: React.FC<HeroProps> = ({ onTabChange }) => {
           </div>
         </div>
 
-        {/* ── Right: Responsive Sector Card Grid ── */}
+        {/* ── Right: Sector Cards — Swipe on mobile / 3-col grid on desktop ── */}
         <div className="hero-right-wrap">
-          <div className="sectors-grid" aria-label="SME Business Sectors Funded">
+
+          {/* Scroll container (flex snap on mobile, grid on md+) */}
+          <div
+            ref={scrollRef}
+            onScroll={handleScroll}
+            className="sectors-grid"
+            aria-label="SME Business Sectors Funded"
+          >
             {SECTORS.map(({ img, fallback, label, alt, Icon }) => (
               <div className="sector-card-item" key={label}>
                 <div className="sector-card-img-wrap">
@@ -163,10 +197,16 @@ export const Hero: React.FC<HeroProps> = ({ onTabChange }) => {
             ))}
           </div>
 
-          <div className="sectors-dots" aria-hidden="true">
-            <span className="sec-dot active"></span>
-            <span className="sec-dot"></span>
-            <span className="sec-dot"></span>
+          {/* Interactive pagination dots — hidden on desktop */}
+          <div className="sectors-dots">
+            {Array.from({ length: DOT_COUNT }).map((_, idx) => (
+              <button
+                key={idx}
+                onClick={() => scrollToIndex(idx)}
+                className={`sec-dot${activeIndex === idx ? ' active' : ''}`}
+                aria-label={`Go to slide group ${idx + 1}`}
+              />
+            ))}
           </div>
         </div>
 
