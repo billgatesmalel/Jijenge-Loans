@@ -229,28 +229,56 @@ export const App: React.FC = () => {
 
             <div className="faq-accordion">
               <details className="faq-item">
-                <summary className="faq-question">What are the requirements to apply?</summary>
+                <summary className="faq-question">
+                  <span>What are the requirements to apply?</span>
+                  <div className="faq-icon-wrap">
+                    <svg className="faq-icon-svg" fill="none" stroke="currentColor" viewBox="0 0 24 24" width="20" height="20" aria-hidden="true">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M12 4v16m8-8H4" />
+                    </svg>
+                  </div>
+                </summary>
                 <div className="faq-answer">
                   <p>To qualify for a Jijenge Loan, you must be a Kenyan citizen over 18 years old, possess a valid National ID, and have an active M-Pesa account used for mobile money transactions.</p>
                 </div>
               </details>
 
               <details className="faq-item">
-                <summary className="faq-question">How fast will I receive funds in M-Pesa?</summary>
+                <summary className="faq-question">
+                  <span>How fast will I receive funds in M-Pesa?</span>
+                  <div className="faq-icon-wrap">
+                    <svg className="faq-icon-svg" fill="none" stroke="currentColor" viewBox="0 0 24 24" width="20" height="20" aria-hidden="true">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M12 4v16m8-8H4" />
+                    </svg>
+                  </div>
+                </summary>
                 <div className="faq-answer">
                   <p>Once your application is submitted and approved, funds are automatically disbursed to your M-Pesa line within seconds, 24 hours a day, 7 days a week.</p>
                 </div>
               </details>
 
               <details className="faq-item">
-                <summary className="faq-question">Is any collateral or guarantor needed?</summary>
+                <summary className="faq-question">
+                  <span>Is any collateral or guarantor needed?</span>
+                  <div className="faq-icon-wrap">
+                    <svg className="faq-icon-svg" fill="none" stroke="currentColor" viewBox="0 0 24 24" width="20" height="20" aria-hidden="true">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M12 4v16m8-8H4" />
+                    </svg>
+                  </div>
+                </summary>
                 <div className="faq-answer">
                   <p>No! All Jijenge Loans are 100% collateral-free and require zero physical guarantors. Approval is based on your digital credit score.</p>
                 </div>
               </details>
 
               <details className="faq-item">
-                <summary className="faq-question">How do I repay my loan?</summary>
+                <summary className="faq-question">
+                  <span>How do I repay my loan?</span>
+                  <div className="faq-icon-wrap">
+                    <svg className="faq-icon-svg" fill="none" stroke="currentColor" viewBox="0 0 24 24" width="20" height="20" aria-hidden="true">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M12 4v16m8-8H4" />
+                    </svg>
+                  </div>
+                </summary>
                 <div className="faq-answer">
                   <p>You can repay directly via our M-Pesa Paybill number or using the automated M-Pesa STK push prompt sent before your due date.</p>
                 </div>
@@ -265,6 +293,24 @@ export const App: React.FC = () => {
                   type="button"
                   className="btn-faq-primary"
                   onClick={() => switchTab('apply')}
+                  style={{
+                    background: '#FF6600',
+                    color: '#ffffff',
+                    border: 'none',
+                    padding: '0.85rem 1.75rem',
+                    borderRadius: '12px',
+                    fontSize: '0.95rem',
+                    fontWeight: 700,
+                    cursor: 'pointer',
+                    boxShadow: '0 6px 20px rgba(255, 102, 0, 0.28)',
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    gap: '0.5rem',
+                    minHeight: '48px',
+                    fontFamily: 'inherit',
+                    transition: 'all 0.2s ease',
+                  }}
                 >
                   <span>Apply Now</span>
                   <ArrowRight size={16} aria-hidden="true" />
@@ -273,6 +319,23 @@ export const App: React.FC = () => {
                   type="button"
                   className="btn-faq-secondary"
                   onClick={() => setSupportOpen(true)}
+                  style={{
+                    background: '#f1f5f9',
+                    color: '#1e293b',
+                    border: '1px solid #cbd5e1',
+                    padding: '0.85rem 1.75rem',
+                    borderRadius: '12px',
+                    fontSize: '0.95rem',
+                    fontWeight: 700,
+                    cursor: 'pointer',
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    gap: '0.5rem',
+                    minHeight: '48px',
+                    fontFamily: 'inherit',
+                    transition: 'all 0.2s ease',
+                  }}
                 >
                   <MessageCircle size={16} aria-hidden="true" />
                   <span>Talk to Support</span>
