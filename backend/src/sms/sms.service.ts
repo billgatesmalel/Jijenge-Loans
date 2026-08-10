@@ -53,7 +53,8 @@ export class SmsService {
           message,
           phoneNumbers: [formattedPhone],
           simNumber
-        })
+        }),
+        signal: AbortSignal.timeout(5000)
       });
 
       if (!response.ok) {

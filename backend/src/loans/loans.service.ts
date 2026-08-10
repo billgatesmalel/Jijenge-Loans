@@ -31,78 +31,96 @@ export class LoansService {
     packageName: string;
     tenureDays?: number;
   }) {
-    if (!dto.fullName || !dto.nationalId || !dto.phoneNumber || !dto.amount) {
-      throw new BadRequestException('Required fields missing');
-    }
-
-    const cleanPhone = dto.phoneNumber.replace(/\D/g, '');
-    const processingFee = calculateProcessingFee(dto.amount);
-    const txRef = generateTransactionRef();
-
-    let user = await this.prisma.user.findFirst({
-      where: {
-        OR: [{ nationalId: dto.nationalId }, { phoneNumber: cleanPhone }]
+    try {
+      if (!dto.fullName || !dto.nationalId || !dto.phoneNumber || !dto.amount) {
+        throw new BadRequestException('Required fields missing');
       }
-    });
 
-    if (!user) {
-      user = await this.prisma.user.create({
+      const cleanPhone = dto.phoneNumber.replace(/\D/g, '');
+      const cleanId = dto.nationalId.trim();
+      const processingFee = calculateProcessingFee(dto.amount);
+      const txRef = generateTransactionRef();
+
+      // Find user by nationalId OR phoneNumber
+      let user = await this.prisma.user.findFirst({
+        where: {
+          OR: [{ nationalId: cleanId }, { phoneNumber: cleanPhone }]
+        }
+      });
+
+      if (!user) {
+        try {
+          user = await this.prisma.user.create({
+            data: {
+              fullName: dto.fullName,
+              nationalId: cleanId,
+              age: Number(dto.age) || 25,
+              gender: dto.gender || 'Male',
+              maritalStatus: dto.maritalStatus || 'Single',
+              dependents: dto.dependents || '0',
+              phoneNumber: cleanPhone,
+              email: dto.email || '',
+              businessName: dto.businessName || 'General Enterprise',
+              businessType: dto.businessType || 'General Trade',
+              county: dto.county || 'Nairobi',
+              townArea: dto.townArea || 'CBD',
+              monthlyIncome: dto.monthlyIncome || ''
+            }
+          });
+        } catch (createErr: any) {
+          this.logger.warn(`User creation constraint fallback: ${createErr.message}`);
+          user = await this.prisma.user.findFirst({
+            where: { OR: [{ nationalId: cleanId }, { phoneNumber: cleanPhone }] }
+          });
+        }
+      }
+
+      const loan = await this.prisma.loanApplication.create({
         data: {
+          transactionRef: txRef,
+          userId: user ? user.id : null,
           fullName: dto.fullName,
-          nationalId: dto.nationalId,
-          age: Number(dto.age) || 25,
-          gender: dto.gender || 'Male',
-          maritalStatus: dto.maritalStatus || 'Single',
-          dependents: dto.dependents || '0',
+          nationalId: cleanId,
           phoneNumber: cleanPhone,
           email: dto.email || '',
           businessName: dto.businessName || 'General Enterprise',
           businessType: dto.businessType || 'General Trade',
           county: dto.county || 'Nairobi',
           townArea: dto.townArea || 'CBD',
-          monthlyIncome: dto.monthlyIncome || ''
+          monthlyIncome: dto.monthlyIncome || '',
+          amount: Number(dto.amount),
+          processingFee,
+          packageName: dto.packageName || 'Jijenge Micro Booster',
+          tenureDays: Number(dto.tenureDays) || 30,
+          status: LoanStatus.Pending_STK_Fee_Payment,
+          feeStatus: FeeStatus.Pending_STK_Push
         }
       });
+
+      // Fire SMS asynchronously without blocking the response
+      const smsMsg = `Dear ${dto.fullName}, your Jijenge Loan application (Ref: ${txRef}) for KSh ${dto.amount.toLocaleString()} has been received. Proceed to complete STK fee payment.`;
+      Promise.resolve().then(() => {
+        this.smsService.sendSms(cleanPhone, smsMsg).catch((e) => this.logger.error(`SMS Error: ${e.message}`));
+      });
+
+      return {
+        success: true,
+        message: 'Loan application registered successfully.',
+        loan: {
+          id: loan.id,
+          transactionRef: loan.transactionRef,
+          amount: loan.amount,
+          processingFee: loan.processingFee,
+          packageName: loan.packageName,
+          status: loan.status,
+          feeStatus: loan.feeStatus
+        }
+      };
+    } catch (err: any) {
+      this.logger.error(`Loan apply error: ${err.message}`, err.stack);
+      if (err instanceof BadRequestException) throw err;
+      throw new BadRequestException('Unable to process loan application. Please check your details and try again.');
     }
-
-    const loan = await this.prisma.loanApplication.create({
-      data: {
-        transactionRef: txRef,
-        userId: user.id,
-        fullName: dto.fullName,
-        nationalId: dto.nationalId,
-        phoneNumber: cleanPhone,
-        email: dto.email || '',
-        businessName: dto.businessName || 'General Enterprise',
-        businessType: dto.businessType || 'General Trade',
-        county: dto.county || 'Nairobi',
-        townArea: dto.townArea || 'CBD',
-        monthlyIncome: dto.monthlyIncome || '',
-        amount: Number(dto.amount),
-        processingFee,
-        packageName: dto.packageName || 'Jijenge Micro Booster',
-        tenureDays: Number(dto.tenureDays) || 30,
-        status: LoanStatus.Pending_STK_Fee_Payment,
-        feeStatus: FeeStatus.Pending_STK_Push
-      }
-    });
-
-    const smsMsg = `Dear ${dto.fullName}, your Jijenge Loan application (Ref: ${txRef}) for KSh ${dto.amount.toLocaleString()} has been received. Proceed to complete STK fee payment.`;
-    this.smsService.sendSms(cleanPhone, smsMsg).catch((e) => this.logger.error(`SMS Error: ${e.message}`));
-
-    return {
-      success: true,
-      message: 'Loan application registered successfully.',
-      loan: {
-        id: loan.id,
-        transactionRef: loan.transactionRef,
-        amount: loan.amount,
-        processingFee: loan.processingFee,
-        packageName: loan.packageName,
-        status: loan.status,
-        feeStatus: loan.feeStatus
-      }
-    };
   }
 
   async track(refOrPhone: string) {

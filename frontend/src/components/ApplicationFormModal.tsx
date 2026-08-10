@@ -39,9 +39,10 @@ export const ApplicationFormModal: React.FC<ApplicationFormModalProps> = ({ onTa
   const [townArea, setTownArea] = useState('');
   const [monthlyIncome, setMonthlyIncome] = useState('');
 
-  // Inline Validation Errors
+  // Inline Validation & Error States
   const [formErrors, setFormErrors] = useState<Record<string, string>>({});
   const [submitting, setSubmitting] = useState(false);
+  const [submitErrorMessage, setSubmitErrorMessage] = useState('');
 
   // Flow states
   const [showAssessmentLoader, setShowAssessmentLoader] = useState(false);
@@ -130,10 +131,11 @@ export const ApplicationFormModal: React.FC<ApplicationFormModalProps> = ({ onTa
   const handleFormSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (submitting) return; // Prevent double clicks
+    if (submitting) return; // Prevent duplicate clicks
+
+    setSubmitErrorMessage('');
 
     if (!validateForm()) {
-      // Scroll to top of form card smoothly to see first error
       window.scrollTo({ top: 220, behavior: 'smooth' });
       return;
     }
@@ -145,13 +147,19 @@ export const ApplicationFormModal: React.FC<ApplicationFormModalProps> = ({ onTa
     setProgressFill(0);
     setAssessmentStep(1);
 
-    const stepInterval = setInterval(() => {
+    let stepInterval: any = null;
+    let progressInterval: any = null;
+
+    stepInterval = setInterval(() => {
       setAssessmentStep((prev) => (prev < 5 ? prev + 1 : prev));
     }, 600);
 
-    const progressInterval = setInterval(() => {
+    progressInterval = setInterval(() => {
       setProgressFill((prev) => (prev < 100 ? prev + 10 : 100));
     }, 300);
+
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 15000); // 15-second safety timeout
 
     try {
       const payload = {
@@ -174,38 +182,52 @@ export const ApplicationFormModal: React.FC<ApplicationFormModalProps> = ({ onTa
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload),
+        signal: controller.signal,
       });
-      const data = await res.json();
 
-      if (data.success && data.loan) {
-        setLoanOffer(data.loan);
+      clearTimeout(timeoutId);
+
+      let data: any = null;
+      const contentType = res.headers.get('content-type') || '';
+      if (contentType.includes('application/json')) {
+        data = await res.json();
       } else {
-        alert(data.message || 'Verification failed. Please review your details.');
+        const errText = await res.text();
+        console.error('Non-JSON response from backend:', res.status, errText);
+        throw new Error('Backend returned an invalid format. Please try again.');
+      }
+
+      if (res.ok && data?.success && data?.loan) {
+        setLoanOffer(data.loan);
+
+        // Keep assessment animation running smoothly for 2.5 seconds total
+        await new Promise((resolve) => setTimeout(resolve, 2500));
+
+        if (stepInterval) clearInterval(stepInterval);
+        if (progressInterval) clearInterval(progressInterval);
         setShowAssessmentLoader(false);
         setSubmitting(false);
-        clearInterval(stepInterval);
-        clearInterval(progressInterval);
-        return;
+        setCheckoutOpen(true);
+        setCheckoutStage(1);
+      } else {
+        const msg = data?.message || 'Application verification failed. Please check your details and try again.';
+        setSubmitErrorMessage(msg);
       }
-    } catch (err) {
-      console.error('Submission error:', err);
-      alert('Connection error. Failed to submit application.');
+    } catch (err: any) {
+      console.error('Loan submission exception:', err);
+      if (err.name === 'AbortError') {
+        setSubmitErrorMessage('Request timed out. Please check your internet connection and try again.');
+      } else {
+        setSubmitErrorMessage(err.message || 'We encountered a connection problem. Please try submitting again.');
+      }
+    } finally {
+      clearTimeout(timeoutId);
+      if (stepInterval) clearInterval(stepInterval);
+      if (progressInterval) clearInterval(progressInterval);
+      // Guarantee loading state cleanup under all circumstances
       setShowAssessmentLoader(false);
       setSubmitting(false);
-      clearInterval(stepInterval);
-      clearInterval(progressInterval);
-      return;
     }
-
-    // Complete assessment loader after 3 seconds
-    setTimeout(() => {
-      clearInterval(stepInterval);
-      clearInterval(progressInterval);
-      setShowAssessmentLoader(false);
-      setSubmitting(false);
-      setCheckoutOpen(true);
-      setCheckoutStage(1);
-    }, 3000);
   };
 
   // Payment triggers STK Push
@@ -296,6 +318,27 @@ export const ApplicationFormModal: React.FC<ApplicationFormModalProps> = ({ onTa
             <span>Assessment</span>
           </div>
         </div>
+
+        {submitErrorMessage && (
+          <div
+            style={{
+              marginBottom: '1.5rem',
+              background: '#fef2f2',
+              border: '1.5px solid #fecaca',
+              padding: '1rem 1.25rem',
+              borderRadius: '12px',
+              color: '#991b1b',
+              fontSize: '0.9rem',
+              fontWeight: 600,
+              display: 'flex',
+              alignItems: 'center',
+              gap: '0.65rem',
+            }}
+          >
+            <span style={{ fontSize: '1.2rem' }}>⚠️</span>
+            <span>{submitErrorMessage}</span>
+          </div>
+        )}
 
         <form onSubmit={handleFormSubmit} noValidate>
           {/* Section 1: Personal Details */}
