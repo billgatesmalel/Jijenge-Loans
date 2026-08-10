@@ -49,15 +49,14 @@ export const Navbar: React.FC<NavbarProps> = ({ currentTab, onTabChange, onOpenS
           aria-label="Jijenge Loans — Home"
         >
           <img
-            src="/favicon.svg"
-            alt=""
+            src="/logo.png"
+            alt="Jijenge Loans"
             className="nav-logo-img"
-            width="28"
-            height="28"
+            width="36"
+            height="36"
           />
           <div className="brand-text-wrapper">
             <span className="brand-title">Jijenge Loans</span>
-            <span className="brand-tagline">Fast Business Funding</span>
           </div>
         </a>
 

@@ -112,7 +112,7 @@ export const TrackLoanView: React.FC<TrackLoanViewProps> = ({ onTabChange, onOpe
       <header className="track-header">
         <div className="track-nav-container">
           <a href="#home" className="track-brand" onClick={() => onTabChange('home')}>
-            <div className="track-brand-pill">BL</div>
+            <img src="/logo.png" alt="Jijenge Loans" style={{ height: '32px', width: '32px', objectFit: 'contain' }} />
             <span>Jijenge Loans</span>
           </a>
           <div className="track-nav-links">

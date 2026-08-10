@@ -1,11 +1,25 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" fill="none">
-  <!-- Navy outer ring -->
-  <circle cx="32" cy="32" r="30" fill="#0f2d4a" />
-  <!-- Green inner circle -->
-  <circle cx="32" cy="32" r="23" fill="#1db954" />
-  <!-- White border ring -->
-  <circle cx="32" cy="32" r="26" fill="none" stroke="#ffffff" stroke-width="2" />
-  <!-- Growth chart / arrow icon in white -->
-  <polyline points="19,40 26,33 32,37 42,24" stroke="#ffffff" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
-  <polygon points="42,24 36,24 42,30" fill="#ffffff"/>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" fill="none">
+  <!-- Subtle circular backdrop -->
+  <circle cx="50" cy="50" r="48" fill="#F4FBF7" />
+  
+  <!-- Outer Teal & Emerald Circular Flow -->
+  <path d="M 24,54 C 20,40 28,24 44,18 C 58,13 72,20 78,32" stroke="#0E6178" stroke-width="5.5" stroke-linecap="round" fill="none" />
+  
+  <!-- Upward Growth Arrow -->
+  <path d="M 32,74 C 44,84 62,80 72,68 C 80,56 76,38 66,28 L 80,18" stroke="#107C41" stroke-width="5.5" stroke-linecap="round" stroke-linejoin="round" fill="none" />
+  <polygon points="80,18 67,20 76,30" fill="#107C41" />
+
+  <!-- Center Leaves -->
+  <!-- Middle Leaf -->
+  <path d="M 50,56 C 42,42 45,26 50,20 C 55,26 58,42 50,56 Z" fill="#2E8B57" />
+  <!-- Left Leaf -->
+  <path d="M 46,48 C 32,44 26,32 28,26 C 36,26 44,36 46,48 Z" fill="#38A169" />
+  <!-- Right Leaf -->
+  <path d="M 54,48 C 68,44 74,32 72,26 C 64,26 56,36 54,48 Z" fill="#38A169" />
+  
+  <!-- Stylized Figure / Supporting Base -->
+  <circle cx="28" cy="46" r="4" fill="#0E6178" />
+  <circle cx="72" cy="46" r="4" fill="#107C41" />
+  <path d="M 24,54 C 22,64 34,74 46,68 C 50,65 48,56 42,54" stroke="#0E6178" stroke-width="4.5" stroke-linecap="round" fill="none" />
+  <path d="M 76,54 C 78,64 66,74 54,68 C 50,65 52,56 58,54" stroke="#107C41" stroke-width="4.5" stroke-linecap="round" fill="none" />
 </svg>

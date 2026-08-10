@@ -16,16 +16,15 @@ export const Footer: React.FC<FooterProps> = ({ onTabChange }) => {
         <div className="footer-col footer-col--brand">
           <div className="footer-brand-wrap">
             <img
-              src="/favicon.svg"
-              alt=""
+              src="/logo.png"
+              alt="Jijenge Loans"
               className="footer-logo-icon"
-              width="32"
-              height="32"
+              width="36"
+              height="36"
               loading="lazy"
             />
             <div className="footer-brand-text">
               <span className="footer-brand-title">Jijenge Loans</span>
-              <span className="footer-brand-tagline">Fast Business Funding</span>
             </div>
           </div>
           <p className="footer-desc">

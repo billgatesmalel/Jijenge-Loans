@@ -712,13 +712,11 @@ export const AdminDashboardModal: React.FC<AdminDashboardProps> = ({ onClose }) 
           width: '100%', maxWidth: '420px', boxShadow: '0 25px 60px rgba(0,0,0,0.45)'
         }}>
           <div style={{ textAlign: 'center', marginBottom: '2rem' }}>
-            <div style={{
-              width: '56px', height: '56px', background: ORANGE, borderRadius: '14px',
-              display: 'flex', alignItems: 'center', justifyContent: 'center',
-              margin: '0 auto 1rem', boxShadow: '0 8px 24px rgba(249,115,22,0.4)'
-            }}>
-              <Shield size={28} color="#fff" />
-            </div>
+            <img
+              src="/logo.png"
+              alt="Jijenge Logo"
+              style={{ width: '64px', height: '64px', objectFit: 'contain', margin: '0 auto 1rem', display: 'block' }}
+            />
             <h1 style={{ fontSize: '1.5rem', fontWeight: 800, color: '#0f172a', margin: '0 0 0.3rem' }}>
               Jijenge Admin
             </h1>
@@ -804,9 +802,7 @@ export const AdminDashboardModal: React.FC<AdminDashboardProps> = ({ onClose }) 
           {!sidebarCollapsed ? (
             <>
               <div style={{ display: 'flex', alignItems: 'center', gap: '0.65rem' }}>
-                <div style={{ width: '32px', height: '32px', background: ORANGE, borderRadius: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                  <Shield size={17} color="#fff" />
-                </div>
+                <img src="/logo.png" alt="Jijenge Admin" style={{ width: '32px', height: '32px', objectFit: 'contain', flexShrink: 0 }} />
                 <div>
                   <div style={{ color: '#0f172a', fontWeight: 800, fontSize: '0.9rem', lineHeight: 1 }}>Jijenge Admin</div>
                   <div style={{ color: '#64748b', fontSize: '0.65rem', lineHeight: 1.3 }}>Control Panel</div>
@@ -818,9 +814,7 @@ export const AdminDashboardModal: React.FC<AdminDashboardProps> = ({ onClose }) 
             </>
           ) : (
             <button onClick={() => setSidebarCollapsed(false)} style={{ background: 'none', border: 'none', cursor: 'pointer', display: 'flex' }}>
-              <div style={{ width: '32px', height: '32px', background: ORANGE, borderRadius: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                <Shield size={17} color="#fff" />
-              </div>
+              <img src="/logo.png" alt="Jijenge Admin" style={{ width: '32px', height: '32px', objectFit: 'contain' }} />
             </button>
           )}
         </div>

@@ -110,26 +110,26 @@ export const Hero: React.FC<HeroProps> = ({ onTabChange }) => {
             </button>
           </div>
 
-          {/* Trust checkmarks */}
-          <div className="hero-checkmarks" role="list" aria-label="Key benefits">
+          {/* Trust bar container */}
+          <div className="hero-trust-bar-container" role="list" aria-label="Key benefits">
             <div className="check-item" role="listitem">
-              <ShieldCheck size={16} strokeWidth={2.5} className="check-icon-svg" aria-hidden="true" />
+              <ShieldCheck size={20} strokeWidth={2.2} className="check-icon-svg" aria-hidden="true" />
               <span>No physical guarantors</span>
             </div>
             <div className="check-item" role="listitem">
-              <Zap size={16} strokeWidth={2.5} className="check-icon-svg" aria-hidden="true" />
+              <Zap size={20} strokeWidth={2.2} className="check-icon-svg" aria-hidden="true" />
               <span>Instant M-Pesa payout</span>
             </div>
             <div className="check-item" role="listitem">
-              <Lock size={16} strokeWidth={2.5} className="check-icon-svg" aria-hidden="true" />
+              <Lock size={20} strokeWidth={2.2} className="check-icon-svg" aria-hidden="true" />
               <span>ODPC data protected</span>
             </div>
           </div>
         </div>
 
-        {/* ── Right: 3×2 Sector Card Grid with Pagination Dots ── */}
+        {/* ── Right: Responsive Sector Card Grid ── */}
         <div className="hero-right-wrap">
-          <div className="sectors-grid" aria-hidden="true">
+          <div className="sectors-grid" aria-label="SME Business Sectors Funded">
             {SECTORS.map(({ img, fallback, label, Icon }) => (
               <div className="sector-card-item" key={label}>
                 <div className="sector-card-img-wrap">
@@ -139,14 +139,15 @@ export const Hero: React.FC<HeroProps> = ({ onTabChange }) => {
                     loading="lazy"
                     onError={(e) => { e.currentTarget.src = fallback; }}
                   />
+                  <div className="sector-card-gradient-overlay" />
+                  <div className="sector-card-floating-badge">
+                    <Icon size={16} strokeWidth={2.2} aria-hidden="true" />
+                  </div>
                 </div>
                 <div className="sector-card-footer">
-                  <div className="sector-card-icon-ring">
-                    <Icon size={14} strokeWidth={2} aria-hidden="true" />
-                  </div>
                   <span className="sector-card-label">{label}</span>
                   <ArrowRight
-                    size={13}
+                    size={14}
                     strokeWidth={2.5}
                     className="sector-card-arr"
                     aria-hidden="true"
@@ -156,7 +157,6 @@ export const Hero: React.FC<HeroProps> = ({ onTabChange }) => {
             ))}
           </div>
 
-          {/* Static decoration indicator dots underneath the grid */}
           <div className="sectors-dots" aria-hidden="true">
             <span className="sec-dot active"></span>
             <span className="sec-dot"></span>

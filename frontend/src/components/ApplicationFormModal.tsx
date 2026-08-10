@@ -362,7 +362,7 @@ export const ApplicationFormModal: React.FC<ApplicationFormModalProps> = ({ onTa
           {/* Checkout Header */}
           <header style={{ background: '#0f172a', padding: '1rem 1.75rem', color: '#ffffff', display: 'flex', justifyContent: 'between', alignItems: 'center', width: '100%', boxSizing: 'border-box' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-              <div style={{ background: '#0284c7', color: '#ffffff', width: '36px', height: '36px', borderRadius: '10px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 800, fontSize: '0.9rem' }}>BL</div>
+              <img src="/logo.png" alt="Jijenge Loans" style={{ width: '36px', height: '36px', objectFit: 'contain' }} />
               <span style={{ fontWeight: 800, fontSize: '1.15rem', color: '#ffffff', letterSpacing: '-0.3px' }}>Jijenge Loans</span>
             </div>
             <button

@@ -178,7 +178,7 @@ export const CustomerDashboardModal: React.FC<CustomerDashboardProps> = ({ onClo
       <header className="cust-header" style={{ background: '#ffffff', borderBottom: '1px solid #e2e8f0', width: '100%' }}>
         <div className="cust-nav-container" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%', maxWidth: '1100px', margin: '0 auto', padding: '0 1rem' }}>
           <a href="#home" className="cust-brand" onClick={onClose} style={{ display: 'flex', alignItems: 'center', gap: '0.65rem', textDecoration: 'none', color: '#0f172a', fontWeight: 800, fontSize: '1.2rem' }}>
-            <div className="cust-brand-pill" style={{ background: '#233e4d', color: '#ffffff', padding: '0.35rem 0.65rem', borderRadius: '8px', fontSize: '0.85rem' }}>BL</div>
+            <img src="/logo.png" alt="Jijenge Loans" style={{ height: '32px', width: '32px', objectFit: 'contain' }} />
             <span>Jijenge Loans</span>
           </a>
 
