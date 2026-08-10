@@ -540,8 +540,8 @@ export const ApplicationFormModal: React.FC<ApplicationFormModalProps> = ({ onTa
               <ul className="verification-steps" style={{ marginTop: '1.25rem', fontSize: '0.85rem', textAlign: 'left', background: '#f8fafc', padding: '1rem', borderRadius: '12px', border: '1px solid #e2e8f0', listStyle: 'none' }}>
                 <li style={{ marginBottom: '0.4rem', color: assessmentStep >= 1 ? '#047857' : '#64748b' }}>{assessmentStep >= 1 ? '✓' : '⏳'} Verifying ID and Identity Records...</li>
                 <li style={{ marginBottom: '0.4rem', color: assessmentStep >= 2 ? '#047857' : '#64748b' }}>{assessmentStep >= 2 ? '✓' : '⏳'} Fetching applicant financial details...</li>
-                <li style={{ marginBottom: '0.4rem', color assessmentStep >= 3 ? '#047857' : '#64748b' }}>{assessmentStep >= 3 ? '✓' : '⏳'} Assessing credit bureau history...</li>
-                <li style={{ marginBottom: '0.4rem', color assessmentStep >= 4 ? '#047857' : '#64748b' }}>{assessmentStep >= 4 ? '✓' : '⏳'} Calculating maximum loan limit...</li>
+                <li style={{ marginBottom: '0.4rem', color: assessmentStep >= 3 ? '#047857' : '#64748b' }}>{assessmentStep >= 3 ? '✓' : '⏳'} Assessing credit bureau history...</li>
+                <li style={{ marginBottom: '0.4rem', color: assessmentStep >= 4 ? '#047857' : '#64748b' }}>{assessmentStep >= 4 ? '✓' : '⏳'} Calculating maximum loan limit...</li>
                 <li style={{ color: assessmentStep >= 5 ? '#047857' : '#64748b' }}>{assessmentStep >= 5 ? '✓' : '⏳'} Preparing customized loan package offer...</li>
               </ul>
             </div>
