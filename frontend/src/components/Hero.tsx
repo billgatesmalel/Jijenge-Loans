@@ -18,45 +18,51 @@ interface HeroProps {
 
 const SECTORS = [
   {
-    img: 'https://images.unsplash.com/photo-1542838132-92c53300491e?auto=format&fit=crop&q=80&w=800',
-    fallback: 'https://images.unsplash.com/photo-1607623814075-e51df1bdc82f?auto=format&fit=crop&q=80&w=800',
+    // Kenyan open-air market stall with fresh produce
+    img: 'https://images.unsplash.com/photo-1608686207856-001b95cf60ca?auto=format&fit=crop&q=80&w=800',
+    fallback: 'https://images.unsplash.com/photo-1542838132-92c53300491e?auto=format&fit=crop&q=80&w=800',
     label: 'Retail & small shops',
     alt: 'Kenyan retail shop owner at a vibrant local duka market stall',
     Icon: Store,
   },
   {
-    img: 'https://images.unsplash.com/photo-1595974482597-4b8da8879bc5?auto=format&fit=crop&q=80&w=800',
-    fallback: 'https://images.unsplash.com/photo-1593113598332-cd288d649433?auto=format&fit=crop&q=80&w=800',
+    // African farmer in green vegetable/crop field
+    img: 'https://images.unsplash.com/photo-1627920769842-e32f83dcedb8?auto=format&fit=crop&q=80&w=800',
+    fallback: 'https://images.unsplash.com/photo-1595974482597-4b8da8879bc5?auto=format&fit=crop&q=80&w=800',
     label: 'Agriculture & farming',
-    alt: 'Kenyan smallholder farmer tending to fresh agricultural crops',
+    alt: 'Kenyan smallholder farmer harvesting fresh agricultural crops in the highlands',
     Icon: Leaf,
   },
   {
-    img: 'https://images.unsplash.com/photo-1558981806-ec527fa84c39?auto=format&fit=crop&q=80&w=800',
-    fallback: 'https://images.unsplash.com/photo-1519003722824-194d4455a60c?auto=format&fit=crop&q=80&w=800',
+    // Colorful Matatu / motorcycle transport Africa
+    img: 'https://images.unsplash.com/photo-1583508805133-8fd03d734d1c?auto=format&fit=crop&q=80&w=800',
+    fallback: 'https://images.unsplash.com/photo-1558981806-ec527fa84c39?auto=format&fit=crop&q=80&w=800',
     label: 'Transport services',
-    alt: 'Kenyan Boda Boda rider and urban transport operator on street',
+    alt: 'Kenyan Matatu minibus transport operator and Boda Boda motorcycles on a busy street',
     Icon: Truck,
   },
   {
-    img: 'https://images.unsplash.com/photo-1586528116311-ad8dd3c8310d?auto=format&fit=crop&q=80&w=800',
-    fallback: 'https://images.unsplash.com/photo-1578575437130-527eed3abbec?auto=format&fit=crop&q=80&w=800',
+    // African market trader with sacks of goods / wholesale
+    img: 'https://images.unsplash.com/photo-1504945005722-33670dcaf685?auto=format&fit=crop&q=80&w=800',
+    fallback: 'https://images.unsplash.com/photo-1586528116311-ad8dd3c8310d?auto=format&fit=crop&q=80&w=800',
     label: 'Wholesale & distribution',
-    alt: 'Kenyan wholesale trader loading produce sacks at a local market hub',
+    alt: 'Kenyan wholesale market trader loading and distributing goods at a busy market hub',
     Icon: Package,
   },
   {
-    img: 'https://images.unsplash.com/photo-1522337360788-8b13dee7a37e?auto=format&fit=crop&q=80&w=800',
-    fallback: 'https://images.unsplash.com/photo-1622286342621-4bd786c2447c?auto=format&fit=crop&q=80&w=800',
+    // African hair braiding / salon stylist at work
+    img: 'https://images.unsplash.com/photo-1570172619644-dfd03ed5d881?auto=format&fit=crop&q=80&w=800',
+    fallback: 'https://images.unsplash.com/photo-1522337360788-8b13dee7a37e?auto=format&fit=crop&q=80&w=800',
     label: 'Salon & beauty services',
-    alt: 'Kenyan hair stylist and kinyozi barber serving clients',
+    alt: 'Kenyan hair braider and kinyozi barber providing beauty services to local clients',
     Icon: Scissors,
   },
   {
-    img: 'https://images.unsplash.com/photo-1555396273-367ea4eb4db5?auto=format&fit=crop&q=80&w=800',
-    fallback: 'https://images.unsplash.com/photo-1504674900247-0877df9cc836?auto=format&fit=crop&q=80&w=800',
+    // African street food cooking / local eatery
+    img: 'https://images.unsplash.com/photo-1567514933737-cd7e4e3b5d5f?auto=format&fit=crop&q=80&w=800',
+    fallback: 'https://images.unsplash.com/photo-1555396273-367ea4eb4db5?auto=format&fit=crop&q=80&w=800',
     label: 'Food & restaurant vendors',
-    alt: 'Kenyan kibanda street food vendor serving fresh local meals',
+    alt: 'Kenyan kibanda food vendor cooking and serving fresh local meals at street eatery',
     Icon: Utensils,
   },
 ];
