@@ -10,7 +10,18 @@ import { TrackLoanView } from './components/TrackLoanView';
 import { Zap, ShieldCheck, Landmark, BarChart3, Lock, Users, MessageCircle, ArrowRight } from 'lucide-react';
 
 export const App: React.FC = () => {
-  const [currentHash, setCurrentHash] = useState(window.location.hash || '#home');
+  const getInitialHash = () => {
+    if (window.location.hash) {
+      return window.location.hash;
+    }
+    const saved = sessionStorage.getItem('jijenge_active_tab');
+    if (saved) {
+      return saved.startsWith('#') ? saved : `#${saved}`;
+    }
+    return '#home';
+  };
+
+  const [currentHash, setCurrentHash] = useState(getInitialHash);
   const [supportOpen, setSupportOpen] = useState(false);
   const [openFaqIndex, setOpenFaqIndex] = useState<number | null>(0);
 
@@ -34,11 +45,24 @@ export const App: React.FC = () => {
   ];
 
   useEffect(() => {
+    // If window.location.hash is missing on mount, sync with saved tab in sessionStorage
+    const initial = getInitialHash();
+    if (!window.location.hash && initial !== '#home') {
+      window.location.hash = initial.replace('#', '');
+    }
+
     const handleHashChange = () => {
-      setCurrentHash(window.location.hash || '#home');
+      const newHash = window.location.hash || '#home';
+      setCurrentHash(newHash);
+      const cleanTab = newHash.replace('#', '');
+      if (cleanTab) {
+        sessionStorage.setItem('jijenge_active_tab', cleanTab);
+      }
     };
+
     window.addEventListener('hashchange', handleHashChange);
     window.addEventListener('popstate', handleHashChange);
+
     return () => {
       window.removeEventListener('hashchange', handleHashChange);
       window.removeEventListener('popstate', handleHashChange);
@@ -46,7 +70,11 @@ export const App: React.FC = () => {
   }, []);
 
   const switchTab = (tabId: string) => {
-    window.location.hash = tabId;
+    const cleanTab = tabId.replace('#', '');
+    sessionStorage.setItem('jijenge_active_tab', cleanTab);
+    window.location.hash = cleanTab;
+    setCurrentHash(`#${cleanTab}`);
+    window.scrollTo({ top: 0, behavior: 'instant' });
   };
 
   const getActiveTab = () => {
