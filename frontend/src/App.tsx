@@ -7,6 +7,7 @@ import { CustomerDashboardModal } from './components/CustomerDashboardModal';
 import { AdminDashboardModal } from './components/AdminDashboardModal';
 import { SupportChatModal } from './components/SupportChatModal';
 import { TrackLoanView } from './components/TrackLoanView';
+import { Zap, ShieldCheck, Landmark, BarChart3, Lock as LockIcon, Users, MessageCircle, ArrowRight } from 'lucide-react';
 class TrackErrorBoundary extends React.Component<{ children: React.ReactNode }, { hasError: boolean }> {
   constructor(props: { children: React.ReactNode }) {
     super(props);
@@ -172,7 +173,7 @@ export const App: React.FC = () => {
                 </div>
                 <div className="compliance-divider" aria-hidden="true" />
                 <div className="compliance-item">
-                  <Lock size={18} strokeWidth={2.2} aria-hidden="true" />
+                  <LockIcon size={18} strokeWidth={2.2} aria-hidden="true" />
                   <span>256-bit SSL Secure</span>
                 </div>
                 <div className="compliance-divider" aria-hidden="true" />
