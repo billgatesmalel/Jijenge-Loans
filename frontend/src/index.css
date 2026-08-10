@@ -1337,8 +1337,125 @@ body {
 
 /* ─── FAQ Tab Layout & Accordion Styles ──────────────────────── */
 #tab-faqs,
-#tab-track {
+#tab-track,
+#tab-apply {
     padding-bottom: 5.5rem;    /* Comfortable spacing before footer */
+}
+
+/* ─── Apply Loan Tab Layout & Form Styles ───────────────────── */
+.application-form-wrapper {
+    max-width: 900px;
+    margin: 0 auto;
+    background: #ffffff;
+    border-radius: 24px;
+    border: 1px solid var(--border-light);
+    padding: 2.5rem 2rem;
+    box-shadow: 0 4px 20px rgba(15, 23, 42, 0.04);
+}
+
+@media (max-width: 640px) {
+    .application-form-wrapper {
+        padding: 1.75rem 1.25rem;
+        border-radius: 18px;
+    }
+}
+
+.form-section {
+    background: #ffffff;
+    border-radius: 16px;
+    border: 1px solid #e2e8f0;
+    padding: 1.75rem;
+    margin-bottom: 1.75rem;
+}
+
+@media (max-width: 640px) {
+    .form-section {
+        padding: 1.25rem 1rem;
+        margin-bottom: 1.25rem;
+    }
+}
+
+.form-section-title {
+    font-size: 1.15rem;
+    font-weight: 800;
+    color: var(--brand-dark);
+    display: flex;
+    align-items: center;
+    gap: 0.65rem;
+    margin-bottom: 1.35rem;
+    padding-bottom: 0.75rem;
+    border-bottom: 1.5px solid #f1f5f9;
+}
+
+.section-icon-badge {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    background: #FFF5ED;
+    color: var(--brand-orange);
+    font-size: 0.95rem;
+    flex-shrink: 0;
+}
+
+.form-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 1.25rem;
+}
+
+@media (max-width: 640px) {
+    .form-grid {
+        grid-template-columns: 1fr !important;
+    }
+    .form-grid .form-group {
+        grid-column: span 1 !important;
+    }
+}
+
+.form-group label {
+    display: block;
+    font-size: 0.85rem;
+    font-weight: 700;
+    color: #334155;
+    margin-bottom: 0.4rem;
+}
+
+.form-group input,
+.form-group select {
+    width: 100%;
+    padding: 0.75rem 1rem;
+    min-height: 48px;
+    border-radius: 12px;
+    border: 1.5px solid #cbd5e1;
+    font-size: 0.925rem;
+    outline: none;
+    font-family: inherit;
+    box-sizing: border-box;
+    transition: border-color 0.2s ease, box-shadow 0.2s ease;
+    background: #ffffff;
+    color: #0f172a;
+}
+
+.form-group input:focus,
+.form-group select:focus {
+    border-color: var(--brand-orange);
+    box-shadow: 0 0 0 3px rgba(255, 102, 0, 0.15);
+}
+
+.form-group input.input-error,
+.form-group select.input-error {
+    border-color: #ef4444 !important;
+}
+
+.form-field-error {
+    font-size: 0.75rem;
+    color: #ef4444;
+    font-weight: 600;
+    margin-top: 0.35rem;
+    display: block;
 }
 
 .faq-accordion {
