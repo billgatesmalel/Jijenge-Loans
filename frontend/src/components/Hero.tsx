@@ -18,39 +18,45 @@ interface HeroProps {
 
 const SECTORS = [
   {
-    img: '/images/retail_shop.jpg',
-    fallback: 'https://images.unsplash.com/photo-1542838132-92c53300491e?auto=format&fit=crop&q=80&w=600',
+    img: 'https://images.unsplash.com/photo-1542838132-92c53300491e?auto=format&fit=crop&q=80&w=800',
+    fallback: '/images/retail_shop.jpg',
     label: 'Retail & small shops',
+    alt: 'Kenyan retail shop owner at a vibrant local duka market stall',
     Icon: Store,
   },
   {
-    img: '/images/agriculture.jpg',
-    fallback: 'https://images.unsplash.com/photo-1593113598332-cd288d649433?auto=format&fit=crop&q=80&w=600',
+    img: 'https://images.unsplash.com/photo-1593113598332-cd288d649433?auto=format&fit=crop&q=80&w=800',
+    fallback: '/images/agriculture.jpg',
     label: 'Agriculture & farming',
+    alt: 'Kenyan smallholder farmer tending to fresh agricultural crops',
     Icon: Leaf,
   },
   {
-    img: '/images/transport.jpg',
-    fallback: 'https://images.unsplash.com/photo-1494412574643-ff11b0a5c1c3?auto=format&fit=crop&q=80&w=600',
+    img: 'https://images.unsplash.com/photo-1578637387939-43c525550085?auto=format&fit=crop&q=80&w=800',
+    fallback: '/images/transport.jpg',
     label: 'Transport services',
+    alt: 'Kenyan Matatu and Boda Boda operator in a bustling town setting',
     Icon: Truck,
   },
   {
-    img: '/images/wholesale.jpg',
-    fallback: 'https://images.unsplash.com/photo-1601597111158-2fceff292cdc?auto=format&fit=crop&q=80&w=600',
+    img: 'https://images.unsplash.com/photo-1601597111158-2fceff292cdc?auto=format&fit=crop&q=80&w=800',
+    fallback: '/images/wholesale.jpg',
     label: 'Wholesale & distribution',
+    alt: 'Kenyan wholesale trader loading produce sacks at a local market hub',
     Icon: Package,
   },
   {
-    img: '/images/salon.jpg',
-    fallback: 'https://images.unsplash.com/photo-1560066984-138dadb4c035?auto=format&fit=crop&q=80&w=600',
+    img: 'https://images.unsplash.com/photo-1560066984-138dadb4c035?auto=format&fit=crop&q=80&w=800',
+    fallback: '/images/salon.jpg',
     label: 'Salon & beauty services',
+    alt: 'Kenyan hair stylist and kinyozi barber serving clients',
     Icon: Scissors,
   },
   {
-    img: '/images/food.jpg',
-    fallback: 'https://images.unsplash.com/photo-1565299624946-b28f40a0ae38?auto=format&fit=crop&q=80&w=600',
+    img: 'https://images.unsplash.com/photo-1565299624946-b28f40a0ae38?auto=format&fit=crop&q=80&w=800',
+    fallback: '/images/food.jpg',
     label: 'Food & restaurant vendors',
+    alt: 'Kenyan kibanda street food vendor serving fresh local meals',
     Icon: Utensils,
   },
 ];
@@ -130,12 +136,12 @@ export const Hero: React.FC<HeroProps> = ({ onTabChange }) => {
         {/* ── Right: Responsive Sector Card Grid ── */}
         <div className="hero-right-wrap">
           <div className="sectors-grid" aria-label="SME Business Sectors Funded">
-            {SECTORS.map(({ img, fallback, label, Icon }) => (
+            {SECTORS.map(({ img, fallback, label, alt, Icon }) => (
               <div className="sector-card-item" key={label}>
                 <div className="sector-card-img-wrap">
                   <img
                     src={img}
-                    alt={label}
+                    alt={alt}
                     loading="lazy"
                     onError={(e) => { e.currentTarget.src = fallback; }}
                   />
