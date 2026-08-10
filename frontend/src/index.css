@@ -1388,14 +1388,14 @@ body {
 .faq-question::-webkit-details-marker { display: none; }
 
 /* Remove any legacy pseudo-elements */
-.faq-question::after {
-    content: '+';
-    font-size: 1.3rem;
-    font-weight: 700;
-    color: var(--brand-dark);
-}
+.faq-question::after, .faq-item[open] .faq-question::after { content: none !important; display: none !important; }
 
-.faq-item[open] .faq-question::after { content: 'âˆ’'; }
+
+
+
+
+
+
 
 .faq-answer {
     padding: 0 1.5rem 1.25rem 1.5rem;
