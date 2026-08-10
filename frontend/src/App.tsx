@@ -12,6 +12,26 @@ import { Zap, ShieldCheck, Landmark, BarChart3, Lock, Users, MessageCircle, Arro
 export const App: React.FC = () => {
   const [currentHash, setCurrentHash] = useState(window.location.hash || '#home');
   const [supportOpen, setSupportOpen] = useState(false);
+  const [openFaqIndex, setOpenFaqIndex] = useState<number | null>(0);
+
+  const faqs = [
+    {
+      q: 'What are the requirements to apply?',
+      a: 'To qualify for a Jijenge Loan, you must be a Kenyan citizen over 18 years old, possess a valid National ID, and have an active M-Pesa account used for mobile money transactions.',
+    },
+    {
+      q: 'How fast will I receive funds in M-Pesa?',
+      a: 'Once your application is submitted and approved, funds are automatically disbursed to your M-Pesa line within seconds, 24 hours a day, 7 days a week.',
+    },
+    {
+      q: 'Is any collateral or guarantor needed?',
+      a: 'No! All Jijenge Loans are 100% collateral-free and require zero physical guarantors. Approval is based on your digital credit score.',
+    },
+    {
+      q: 'How do I repay my loan?',
+      a: 'You can repay directly via our M-Pesa Paybill number or using the automated M-Pesa STK push prompt sent before your due date.',
+    },
+  ];
 
   useEffect(() => {
     const handleHashChange = () => {
@@ -221,68 +241,55 @@ export const App: React.FC = () => {
         {/* Tab 4: FAQs View */}
         <section className={`tab-pane ${activeTab === 'faqs' ? 'active' : ''}`} id="tab-faqs">
           <div className="container">
-            <div className="section-title-wrap">
+            <div className="section-title-wrap text-center">
               <span className="sub-tag">Got Questions?</span>
-              <h2>Frequently Asked Questions</h2>
-              <p>Everything you need to know about Jijenge Loans</p>
+              <h2 className="section-heading">Frequently Asked Questions</h2>
+              <p className="section-subheading">Everything you need to know about Jijenge Loans</p>
             </div>
 
             <div className="faq-accordion">
-              <details className="faq-item">
-                <summary className="faq-question">
-                  <span>What are the requirements to apply?</span>
-                  <div className="faq-icon-wrap">
-                    <svg className="faq-icon-svg" fill="none" stroke="currentColor" viewBox="0 0 24 24" width="20" height="20" aria-hidden="true">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M12 4v16m8-8H4" />
-                    </svg>
+              {faqs.map((faq, idx) => {
+                const isOpen = openFaqIndex === idx;
+                return (
+                  <div
+                    key={idx}
+                    className={`faq-item${isOpen ? ' faq-item--open' : ''}`}
+                  >
+                    <button
+                      type="button"
+                      className="faq-question-btn"
+                      onClick={() => setOpenFaqIndex(isOpen ? null : idx)}
+                      aria-expanded={isOpen}
+                    >
+                      <span className="faq-question-text">{faq.q}</span>
+                      <div className={`faq-icon-wrap${isOpen ? ' faq-icon-wrap--open' : ''}`}>
+                        <svg
+                          className="faq-icon-svg"
+                          fill="none"
+                          stroke="currentColor"
+                          viewBox="0 0 24 24"
+                          width="18"
+                          height="18"
+                          aria-hidden="true"
+                        >
+                          {isOpen ? (
+                            /* Minus icon (−) */
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M20 12H4" />
+                          ) : (
+                            /* Plus icon (+) */
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M12 4v16m8-8H4" />
+                          )}
+                        </svg>
+                      </div>
+                    </button>
+                    {isOpen && (
+                      <div className="faq-answer-content">
+                        <p>{faq.a}</p>
+                      </div>
+                    )}
                   </div>
-                </summary>
-                <div className="faq-answer">
-                  <p>To qualify for a Jijenge Loan, you must be a Kenyan citizen over 18 years old, possess a valid National ID, and have an active M-Pesa account used for mobile money transactions.</p>
-                </div>
-              </details>
-
-              <details className="faq-item">
-                <summary className="faq-question">
-                  <span>How fast will I receive funds in M-Pesa?</span>
-                  <div className="faq-icon-wrap">
-                    <svg className="faq-icon-svg" fill="none" stroke="currentColor" viewBox="0 0 24 24" width="20" height="20" aria-hidden="true">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M12 4v16m8-8H4" />
-                    </svg>
-                  </div>
-                </summary>
-                <div className="faq-answer">
-                  <p>Once your application is submitted and approved, funds are automatically disbursed to your M-Pesa line within seconds, 24 hours a day, 7 days a week.</p>
-                </div>
-              </details>
-
-              <details className="faq-item">
-                <summary className="faq-question">
-                  <span>Is any collateral or guarantor needed?</span>
-                  <div className="faq-icon-wrap">
-                    <svg className="faq-icon-svg" fill="none" stroke="currentColor" viewBox="0 0 24 24" width="20" height="20" aria-hidden="true">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M12 4v16m8-8H4" />
-                    </svg>
-                  </div>
-                </summary>
-                <div className="faq-answer">
-                  <p>No! All Jijenge Loans are 100% collateral-free and require zero physical guarantors. Approval is based on your digital credit score.</p>
-                </div>
-              </details>
-
-              <details className="faq-item">
-                <summary className="faq-question">
-                  <span>How do I repay my loan?</span>
-                  <div className="faq-icon-wrap">
-                    <svg className="faq-icon-svg" fill="none" stroke="currentColor" viewBox="0 0 24 24" width="20" height="20" aria-hidden="true">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M12 4v16m8-8H4" />
-                    </svg>
-                  </div>
-                </summary>
-                <div className="faq-answer">
-                  <p>You can repay directly via our M-Pesa Paybill number or using the automated M-Pesa STK push prompt sent before your due date.</p>
-                </div>
-              </details>
+                );
+              })}
             </div>
 
             <div className="tab-cta-box">
