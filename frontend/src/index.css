@@ -1750,18 +1750,37 @@ body {
 }
 
 .how-it-works-cta {
-    max-width: 720px;
-    margin: 2.25rem auto 0;
-    padding: 2rem 1.75rem;
+    max-width: 520px;
+    margin: 2rem auto 0;
+    padding: 1.5rem 1.75rem;
     display: flex;
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    gap: 1.15rem;
+    gap: 1rem;
 }
 
 .how-it-works-cta h3 {
+    font-size: 1.25rem;
+    font-weight: 800;
+    color: var(--brand-navy);
     margin-bottom: 0;
+    letter-spacing: -0.02em;
+    text-align: center;
+}
+
+.how-it-works-cta .btn-cta-large {
+    width: auto;
+    max-width: 100%;
+    min-height: 46px;
+    padding: 0.75rem 1.75rem;
+    font-size: 0.925rem;
+    font-weight: 800;
+    border-radius: 12px;
+}
+
+#tab-how-it-works {
+    padding-bottom: 1.25rem;
 }
 
 .tab-cta-box h3 {
@@ -1923,7 +1942,7 @@ body {
     background: var(--brand-navy);
     border-top: 1px solid rgba(255,255,255,0.08);
     color: #94a3b8;
-    margin-top: 3.5rem;
+    margin-top: 2rem;
 }
 
 .footer-grid {
