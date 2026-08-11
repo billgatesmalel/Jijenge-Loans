@@ -164,7 +164,7 @@ export const App: React.FC = () => {
           <Hero onTabChange={switchTab} />
 
           {/* Compliance trust strip */}
-          <div className="container" style={{ marginTop: '2.5rem' }}>
+          <div className="container">
             <div className="compliance-strip">
               <div className="compliance-strip-inner">
                 <div className="compliance-item">
