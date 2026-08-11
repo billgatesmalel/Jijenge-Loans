@@ -267,20 +267,20 @@ export const App: React.FC = () => {
         {/* Tab 3: How It Works View */}
         <section className={`tab-pane ${activeTab === 'how-it-works' ? 'active' : ''}`} id="tab-how-it-works">
           <div className="container">
-            <div className="section-title-wrap">
+            <div className="section-title-wrap text-center">
               <span className="sub-tag">Simple Process</span>
-              <h2>Apply in 3 Easy Steps</h2>
-              <p>No physical forms, no branch visits, 100% digital application</p>
+              <h2 className="section-heading">Apply in 3 Easy Steps</h2>
+              <p className="section-subheading">No physical forms, no branch visits, 100% digital application</p>
             </div>
 
             <div className="process-stepper">
               <div className="process-step active">
                 <div className="step-num">1</div>
                 <h3>1. Apply Online</h3>
-                <p>Fill in your personal & business details in under 2 minutes.</p>
+                <p>Fill in your personal &amp; business details in under 2 minutes.</p>
               </div>
 
-              <div className="process-line"></div>
+              <div className="process-line" aria-hidden="true"></div>
 
               <div className="process-step active">
                 <div className="step-num">2</div>
@@ -288,7 +288,7 @@ export const App: React.FC = () => {
                 <p>Our credit scoring engine assesses your financial profile and matches an offer instantly.</p>
               </div>
 
-              <div className="process-line"></div>
+              <div className="process-line" aria-hidden="true"></div>
 
               <div className="process-step active">
                 <div className="step-num">3</div>
@@ -297,9 +297,11 @@ export const App: React.FC = () => {
               </div>
             </div>
 
-            <div className="tab-cta-box" style={{ marginTop: '3rem' }}>
+            <div className="tab-cta-box how-it-works-cta">
               <h3>Ready to get funded?</h3>
-              <button className="btn-cta-large" onClick={() => switchTab('apply')}>Fill Application Details Now &rarr;</button>
+              <button type="button" className="btn-cta-large" onClick={() => switchTab('apply')}>
+                Fill Application Details Now &rarr;
+              </button>
             </div>
           </div>
         </section>
