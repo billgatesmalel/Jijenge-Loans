@@ -231,11 +231,11 @@ export const SupportChatModal: React.FC<SupportChatModalProps> = ({ isOpen, onCl
   };
 
   const onFocus = (e: React.FocusEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
-    e.target.style.borderColor = '#0284c7';
-    e.target.style.boxShadow = '0 0 0 3px rgba(2,132,199,0.15)';
+    e.target.style.borderColor = '#FF6600';
+    e.target.style.boxShadow = '0 0 0 3.5px rgba(255, 102, 0, 0.15)';
   };
   const onBlur = (e: React.FocusEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
-    e.target.style.borderColor = '#cbd5e1';
+    e.target.style.borderColor = '#e2e8f0';
     e.target.style.boxShadow = 'none';
   };
 
@@ -248,8 +248,8 @@ export const SupportChatModal: React.FC<SupportChatModalProps> = ({ isOpen, onCl
         position: 'fixed',
         inset: 0,
         background: 'rgba(15, 23, 42, 0.55)',
-        backdropFilter: 'blur(5px)',
-        WebkitBackdropFilter: 'blur(5px)',
+        backdropFilter: 'blur(6px)',
+        WebkitBackdropFilter: 'blur(6px)',
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
@@ -267,17 +267,18 @@ export const SupportChatModal: React.FC<SupportChatModalProps> = ({ isOpen, onCl
       {/* ── Modal Dialog Card ── */}
       <div
         ref={modalRef}
+        className="support-modal-card"
         style={{
-          maxWidth: '480px',
+          maxWidth: '520px',
           width: '100%',
-          maxHeight: 'min(90vh, 620px)',
-          borderRadius: '24px',
+          maxHeight: 'min(92vh, 580px)',
+          borderRadius: '20px',
           background: '#ffffff',
-          padding: '1.5rem',
+          padding: '1.35rem 1.5rem',
           display: 'flex',
           flexDirection: 'column',
-          border: '1.5px solid #e2e8f0',
-          boxShadow: '0 20px 60px rgba(0,0,0,0.18)',
+          border: '1px solid #e2e8f0',
+          boxShadow: '0 20px 50px rgba(15, 23, 42, 0.2)',
           boxSizing: 'border-box',
           overflow: 'hidden',
         }}
@@ -288,8 +289,8 @@ export const SupportChatModal: React.FC<SupportChatModalProps> = ({ isOpen, onCl
             display: 'flex',
             justifyContent: 'space-between',
             alignItems: 'center',
-            borderBottom: '1.5px solid #f1f5f9',
-            paddingBottom: '0.75rem',
+            borderBottom: '1px solid #e2e8f0',
+            paddingBottom: '0.85rem',
             marginBottom: '1rem',
             width: '100%',
             boxSizing: 'border-box',
@@ -299,12 +300,12 @@ export const SupportChatModal: React.FC<SupportChatModalProps> = ({ isOpen, onCl
           <div>
             <h3
               id="support-modal-title"
-              style={{ fontSize: '1.1rem', fontWeight: 800, color: '#0f172a', margin: '0 0 0.15rem 0', fontFamily: 'inherit' }}
+              style={{ fontSize: '1.15rem', fontWeight: 900, color: '#0f172a', margin: '0 0 0.15rem 0', fontFamily: 'inherit', letterSpacing: '-0.025em' }}
             >
               Live Customer Support
             </h3>
-            <span style={{ fontSize: '0.78rem', color: '#10b981', fontWeight: 700, display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
-              <span style={{ width: 7, height: 7, borderRadius: '50%', background: '#10b981', display: 'inline-block', flexShrink: 0 }} />
+            <span style={{ fontSize: '0.8rem', color: '#10b981', fontWeight: 700, display: 'inline-flex', alignItems: 'center', gap: '0.4rem', marginTop: '0.15rem' }}>
+              <span style={{ width: 8, height: 8, borderRadius: '50%', background: '#10b981', display: 'inline-block', flexShrink: 0 }} />
               Online · 24/7 Agent Available
             </span>
           </div>
@@ -312,14 +313,15 @@ export const SupportChatModal: React.FC<SupportChatModalProps> = ({ isOpen, onCl
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
             {ticketId && (
               <button
+                type="button"
                 onClick={handleResetChat}
                 style={{
                   background: '#f1f5f9',
                   color: '#64748b',
-                  border: 'none',
+                  border: '1px solid #cbd5e1',
                   padding: '0.35rem 0.65rem',
-                  borderRadius: '6px',
-                  fontSize: '0.72rem',
+                  borderRadius: '8px',
+                  fontSize: '0.75rem',
                   fontWeight: 700,
                   cursor: 'pointer',
                   fontFamily: 'inherit',
@@ -330,20 +332,21 @@ export const SupportChatModal: React.FC<SupportChatModalProps> = ({ isOpen, onCl
               </button>
             )}
             <button
+              type="button"
               onClick={onClose}
-              aria-label="Close live support"
+              aria-label="Close live customer support modal"
               style={{
                 background: 'none',
                 border: 'none',
                 cursor: 'pointer',
-                color: '#94a3b8',
+                color: '#64748b',
                 width: 36,
                 height: 36,
                 borderRadius: '50%',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
-                fontSize: '1.1rem',
+                fontSize: '1.15rem',
                 transition: 'background 0.15s ease, color 0.15s ease',
               }}
               onMouseEnter={(e) => {
@@ -352,7 +355,7 @@ export const SupportChatModal: React.FC<SupportChatModalProps> = ({ isOpen, onCl
               }}
               onMouseLeave={(e) => {
                 (e.currentTarget as HTMLButtonElement).style.background = 'none';
-                (e.currentTarget as HTMLButtonElement).style.color = '#94a3b8';
+                (e.currentTarget as HTMLButtonElement).style.color = '#64748b';
               }}
             >
               ✕
@@ -374,9 +377,9 @@ export const SupportChatModal: React.FC<SupportChatModalProps> = ({ isOpen, onCl
             }}
           >
             {/* Grid for Name & Phone */}
-            <div className="support-form-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(190px, 1fr))', gap: '0.75rem' }}>
+            <div className="support-form-grid">
               <div>
-                <label htmlFor="guest-name" style={{ display: 'block', fontSize: '0.75rem', fontWeight: 700, color: '#475569', marginBottom: '0.3rem' }}>
+                <label htmlFor="guest-name" style={{ display: 'block', fontSize: '0.78rem', fontWeight: 700, color: '#0f172a', marginBottom: '0.35rem' }}>
                   Full Name *
                 </label>
                 <input
@@ -389,7 +392,7 @@ export const SupportChatModal: React.FC<SupportChatModalProps> = ({ isOpen, onCl
                   style={{
                     ...inputBase,
                     ...focusStyle,
-                    borderColor: errors.name ? '#ef4444' : '#cbd5e1',
+                    borderColor: errors.name ? '#ef4444' : '#e2e8f0',
                   }}
                   onFocus={onFocus}
                   onBlur={onBlur}
@@ -399,7 +402,7 @@ export const SupportChatModal: React.FC<SupportChatModalProps> = ({ isOpen, onCl
               </div>
 
               <div>
-                <label htmlFor="guest-phone" style={{ display: 'block', fontSize: '0.75rem', fontWeight: 700, color: '#475569', marginBottom: '0.3rem' }}>
+                <label htmlFor="guest-phone" style={{ display: 'block', fontSize: '0.78rem', fontWeight: 700, color: '#0f172a', marginBottom: '0.35rem' }}>
                   M-Pesa Phone *
                 </label>
                 <input
@@ -411,7 +414,7 @@ export const SupportChatModal: React.FC<SupportChatModalProps> = ({ isOpen, onCl
                   style={{
                     ...inputBase,
                     ...focusStyle,
-                    borderColor: errors.phone ? '#ef4444' : '#cbd5e1',
+                    borderColor: errors.phone ? '#ef4444' : '#e2e8f0',
                   }}
                   onFocus={onFocus}
                   onBlur={onBlur}
@@ -422,8 +425,8 @@ export const SupportChatModal: React.FC<SupportChatModalProps> = ({ isOpen, onCl
             </div>
 
             <div>
-              <label htmlFor="guest-email" style={{ display: 'block', fontSize: '0.75rem', fontWeight: 700, color: '#475569', marginBottom: '0.3rem' }}>
-                Email Address <span style={{ color: '#94a3b8', fontWeight: 500 }}>(Optional)</span>
+              <label htmlFor="guest-email" style={{ display: 'block', fontSize: '0.78rem', fontWeight: 700, color: '#0f172a', marginBottom: '0.35rem' }}>
+                Email Address <span style={{ color: '#64748b', fontWeight: 500 }}>(Optional)</span>
               </label>
               <input
                 id="guest-email"
@@ -434,7 +437,7 @@ export const SupportChatModal: React.FC<SupportChatModalProps> = ({ isOpen, onCl
                 style={{
                   ...inputBase,
                   ...focusStyle,
-                  borderColor: errors.email ? '#ef4444' : '#cbd5e1',
+                  borderColor: errors.email ? '#ef4444' : '#e2e8f0',
                 }}
                 onFocus={onFocus}
                 onBlur={onBlur}
@@ -443,7 +446,7 @@ export const SupportChatModal: React.FC<SupportChatModalProps> = ({ isOpen, onCl
             </div>
 
             <div>
-              <label htmlFor="guest-subject" style={{ display: 'block', fontSize: '0.75rem', fontWeight: 700, color: '#475569', marginBottom: '0.3rem' }}>
+              <label htmlFor="guest-subject" style={{ display: 'block', fontSize: '0.78rem', fontWeight: 700, color: '#0f172a', marginBottom: '0.35rem' }}>
                 Inquiry Subject
               </label>
               <select
@@ -462,8 +465,8 @@ export const SupportChatModal: React.FC<SupportChatModalProps> = ({ isOpen, onCl
               </select>
             </div>
 
-            <div style={{ display: 'flex', flexDirection: 'column', flex: 1, minHeight: '120px' }}>
-              <label htmlFor="guest-msg" style={{ display: 'block', fontSize: '0.75rem', fontWeight: 700, color: '#475569', marginBottom: '0.3rem' }}>
+            <div style={{ display: 'flex', flexDirection: 'column', flex: 1, minHeight: '110px' }}>
+              <label htmlFor="guest-msg" style={{ display: 'block', fontSize: '0.78rem', fontWeight: 700, color: '#0f172a', marginBottom: '0.35rem' }}>
                 Initial message *
               </label>
               <textarea
@@ -475,10 +478,10 @@ export const SupportChatModal: React.FC<SupportChatModalProps> = ({ isOpen, onCl
                   ...inputBase,
                   ...focusStyle,
                   flex: 1,
-                  resize: 'none',
-                  minHeight: '110px',
-                  maxHeight: '180px',
-                  borderColor: errors.msg ? '#ef4444' : '#cbd5e1',
+                  resize: 'vertical',
+                  minHeight: '95px',
+                  maxHeight: '140px',
+                  borderColor: errors.msg ? '#ef4444' : '#e2e8f0',
                 }}
                 onFocus={onFocus as any}
                 onBlur={onBlur as any}
@@ -487,35 +490,42 @@ export const SupportChatModal: React.FC<SupportChatModalProps> = ({ isOpen, onCl
               {errors.msg && <span style={{ fontSize: '0.7rem', color: '#ef4444', fontWeight: 600, marginTop: '0.2rem', display: 'block' }}>{errors.msg}</span>}
             </div>
 
-            {/* ── Submit button ── */}
+            {/* ── Submit button: Primary Jijenge Orange CTA ── */}
             <button
               type="submit"
               disabled={loading}
               style={{
                 width: '100%',
                 padding: '0.8rem 1rem',
-                background: loading ? '#7dd3fc' : '#0284c7',
+                background: loading ? '#E55C00' : '#FF6600',
                 color: '#ffffff',
                 border: 'none',
                 borderRadius: '12px',
-                fontSize: '0.925rem',
+                fontSize: '0.95rem',
                 fontWeight: 800,
                 cursor: loading ? 'not-allowed' : 'pointer',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
                 gap: '0.5rem',
-                transition: 'background 0.2s ease, transform 0.15s ease',
+                boxShadow: '0 6px 20px rgba(255, 102, 0, 0.28)',
+                transition: 'background 0.2s ease, transform 0.15s ease, box-shadow 0.2s ease',
                 fontFamily: 'inherit',
                 minHeight: '48px',
                 flexShrink: 0,
                 marginTop: '0.25rem',
               }}
               onMouseEnter={(e) => {
-                if (!loading) (e.currentTarget as HTMLButtonElement).style.background = '#0369a1';
+                if (!loading) {
+                  (e.currentTarget as HTMLButtonElement).style.background = '#E55C00';
+                  (e.currentTarget as HTMLButtonElement).style.boxShadow = '0 8px 24px rgba(255, 102, 0, 0.35)';
+                }
               }}
               onMouseLeave={(e) => {
-                if (!loading) (e.currentTarget as HTMLButtonElement).style.background = '#0284c7';
+                if (!loading) {
+                  (e.currentTarget as HTMLButtonElement).style.background = '#FF6600';
+                  (e.currentTarget as HTMLButtonElement).style.boxShadow = '0 6px 20px rgba(255, 102, 0, 0.28)';
+                }
               }}
             >
               <span>{loading ? 'Starting Conversation...' : 'Start Conversation'}</span>
@@ -538,17 +548,17 @@ export const SupportChatModal: React.FC<SupportChatModalProps> = ({ isOpen, onCl
                     key={m.id}
                     style={{
                       alignSelf: isMe ? 'flex-end' : 'flex-start',
-                      background: isMe ? '#0284c7' : '#f1f5f9',
+                      background: isMe ? '#0f172a' : '#f1f5f9',
                       color: isMe ? '#ffffff' : '#0f172a',
-                      padding: '0.55rem 0.9rem',
+                      padding: '0.6rem 0.95rem',
                       borderRadius: isMe ? '12px 12px 4px 12px' : '12px 12px 12px 4px',
-                      maxWidth: '75%',
-                      fontSize: '0.85rem',
-                      boxShadow: '0 1px 3px rgba(0,0,0,0.06)',
+                      maxWidth: '78%',
+                      fontSize: '0.875rem',
+                      boxShadow: '0 1px 3px rgba(15,23,42,0.06)',
                     }}
                   >
                     <div>{m.text}</div>
-                    <span style={{ fontSize: '0.65rem', opacity: 0.7, float: 'right', marginTop: '0.15rem' }}>
+                    <span style={{ fontSize: '0.65rem', opacity: 0.7, float: 'right', marginTop: '0.2rem' }}>
                       {new Date(m.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                     </span>
                   </div>
@@ -564,14 +574,14 @@ export const SupportChatModal: React.FC<SupportChatModalProps> = ({ isOpen, onCl
                 placeholder="Type your message..."
                 value={replyText}
                 onChange={(e) => setReplyText(e.target.value)}
-                style={{ flex: 1, padding: '0.65rem 0.95rem', borderRadius: '10px', border: '1.5px solid #cbd5e1', fontSize: '0.875rem', outline: 'none', fontFamily: 'inherit', transition: 'border-color 0.2s ease, box-shadow 0.2s ease' }}
+                style={{ flex: 1, padding: '0.65rem 0.95rem', borderRadius: '10px', border: '1.5px solid #e2e8f0', fontSize: '0.875rem', outline: 'none', fontFamily: 'inherit', transition: 'border-color 0.2s ease, box-shadow 0.2s ease' }}
                 onFocus={onFocus}
                 onBlur={onBlur}
               />
               <button
                 type="submit"
                 style={{
-                  background: '#0284c7',
+                  background: '#FF6600',
                   color: '#ffffff',
                   border: 'none',
                   padding: '0.65rem 1.1rem',
@@ -586,8 +596,8 @@ export const SupportChatModal: React.FC<SupportChatModalProps> = ({ isOpen, onCl
                   transition: 'background 0.2s ease',
                   minHeight: '44px',
                 }}
-                onMouseEnter={(e) => { (e.currentTarget as HTMLButtonElement).style.background = '#0369a1'; }}
-                onMouseLeave={(e) => { (e.currentTarget as HTMLButtonElement).style.background = '#0284c7'; }}
+                onMouseEnter={(e) => { (e.currentTarget as HTMLButtonElement).style.background = '#E55C00'; }}
+                onMouseLeave={(e) => { (e.currentTarget as HTMLButtonElement).style.background = '#FF6600'; }}
               >
                 Send
                 <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
