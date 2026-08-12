@@ -1,14 +1,18 @@
-import { Injectable, UnauthorizedException } from '@nestjs/common';
+import { Injectable, UnauthorizedException, BadRequestException, Logger } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { PrismaService } from '../prisma/prisma.service';
 import * as argon2 from 'argon2';
 import { Role } from '@prisma/client';
+import { SmsService } from '../sms/sms.service';
 
 @Injectable()
 export class AuthService {
+  private readonly logger = new Logger(AuthService.name);
+
   constructor(
     private readonly prisma: PrismaService,
-    private readonly jwtService: JwtService
+    private readonly jwtService: JwtService,
+    private readonly smsService: SmsService
   ) {}
 
   async adminLogin(email: string, pass: string) {
@@ -54,7 +58,7 @@ export class AuthService {
     });
 
     if (!user) {
-      throw new UnauthorizedException('Customer record not found. Please submit a loan application first.');
+      throw new UnauthorizedException('Authentication failed. Please verify your phone and PIN.');
     }
 
     if (user.lockedUntil && user.lockedUntil > new Date()) {
@@ -76,7 +80,7 @@ export class AuthService {
           where: { id: user.id },
           data: { failedLoginAttempts: attempts, lockedUntil: lockUntil }
         });
-        throw new UnauthorizedException('Invalid PIN code');
+        throw new UnauthorizedException('Authentication failed. Please verify your phone and PIN.');
       }
     }
 
@@ -109,6 +113,71 @@ export class AuthService {
         nationalId: user.nationalId
       }
     };
+  }
+
+  async resendCustomerPin(phone: string) {
+    if (!phone) {
+      throw new BadRequestException('Phone number is required.');
+    }
+    const cleanPhone = phone.replace(/\D/g, '');
+    const user = await this.prisma.user.findFirst({
+      where: {
+        OR: [
+          { phoneNumber: cleanPhone },
+          { phoneNumber: '0' + cleanPhone.replace(/^254/, '') },
+          { phoneNumber: cleanPhone.replace(/^0/, '254') }
+        ]
+      }
+    });
+
+    if (!user) {
+      // Return a generic success to avoid enumeration
+      return { success: true };
+    }
+
+    // Cooldown verification (60 seconds)
+    const clean = user.phoneNumber.replace(/\D/g, '');
+    const formattedRecipient = clean.startsWith('0')
+      ? '+254' + clean.slice(1)
+      : (clean.startsWith('254') ? '+' + clean : '+' + clean);
+
+    const lastSms = await this.prisma.smsLog.findFirst({
+      where: {
+        recipientPhone: formattedRecipient,
+        message: { contains: 'security PIN' }
+      },
+      orderBy: { createdAt: 'desc' }
+    });
+
+    if (lastSms && (Date.now() - lastSms.createdAt.getTime()) < 60000) {
+      throw new BadRequestException('Please wait 60 seconds before requesting another PIN resend.');
+    }
+
+    // Generate PIN
+    const pin = Math.floor(1000 + Math.random() * 9000).toString();
+    const pinHash = await argon2.hash(pin);
+
+    // Send SMS first
+    const message = `Your Jijenge Loans security PIN has been reset to: ${pin}. Use this PIN to log in.`;
+    const smsResult = await this.smsService.sendSms(user.phoneNumber, message);
+
+    if (!smsResult.success) {
+      // Log failure internally but hide details from customer
+      this.logger.error(`❌ [PIN RESET SMS FAILED] Recipient: ${user.phoneNumber} | Error: ${smsResult.error || 'Unknown error'}`);
+      throw new BadRequestException("We couldn't send the PIN right now. Please try again later.");
+    }
+
+    // Update database now that SMS has successfully delivered
+    await this.prisma.user.update({
+      where: { id: user.id },
+      data: {
+        pinHash,
+        failedLoginAttempts: 0,
+        lockedUntil: null
+      }
+    });
+
+    return { success: true };
   }
 
   async refreshToken(token: string) {

@@ -1,14 +1,16 @@
 import React, { useState, useEffect } from 'react';
 import {
   Eye, EyeOff, Home, Info, HelpCircle, MessageCircle,
-  ClipboardList, ArrowRight, Menu, X, Lock,
+  ClipboardList, ArrowRight, Menu, X, Lock, AlertCircle
 } from 'lucide-react';
+import { Footer } from './Footer';
 
 interface CustomerDashboardProps {
   onClose: () => void;
+  onOpenSupport?: () => void;
 }
 
-export const CustomerDashboardModal: React.FC<CustomerDashboardProps> = ({ onClose }) => {
+export const CustomerDashboardModal: React.FC<CustomerDashboardProps> = ({ onClose, onOpenSupport }) => {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [phone, setPhone] = useState('');
   const [pin, setPin] = useState('');
@@ -27,6 +29,16 @@ export const CustomerDashboardModal: React.FC<CustomerDashboardProps> = ({ onClo
   const [withdrawLoading, setWithdrawLoading] = useState(false);
   const [withdrawSuccess, setWithdrawSuccess] = useState(false);
 
+  // Custom Cooldown & Validation states
+  const [phoneError, setPhoneError] = useState('');
+  const [resendCooldown, setResendCooldown] = useState(0);
+  const [scrolled, setScrolled] = useState(false);
+
+  const validatePhoneNumber = (num: string): boolean => {
+    const regex = /^(?:\+254|254|0)?([71]\d{8})$/;
+    return regex.test(num.trim());
+  };
+
   useEffect(() => {
     const token = sessionStorage.getItem('bl_customer_token');
     const storedRole = sessionStorage.getItem('bl_customer_role') || 'CUSTOMER';
@@ -36,6 +48,39 @@ export const CustomerDashboardModal: React.FC<CustomerDashboardProps> = ({ onClo
       loadDashboardData(token);
     }
   }, []);
+
+  useEffect(() => {
+    const onScroll = () => setScrolled(window.scrollY > 8);
+    window.addEventListener('scroll', onScroll, { passive: true });
+    return () => window.removeEventListener('scroll', onScroll);
+  }, []);
+
+  useEffect(() => {
+    const stored = localStorage.getItem('bl_resend_timestamp');
+    if (stored) {
+      const elapsed = Math.floor((Date.now() - parseInt(stored, 10)) / 1000);
+      const remaining = 60 - elapsed;
+      if (remaining > 0) {
+        setResendCooldown(remaining);
+      } else {
+        localStorage.removeItem('bl_resend_timestamp');
+      }
+    }
+  }, []);
+
+  useEffect(() => {
+    if (resendCooldown <= 0) return;
+    const timer = setInterval(() => {
+      setResendCooldown((prev) => {
+        if (prev <= 1) {
+          localStorage.removeItem('bl_resend_timestamp');
+          return 0;
+        }
+        return prev - 1;
+      });
+    }, 1000);
+    return () => clearInterval(timer);
+  }, [resendCooldown]);
 
   const loadDashboardData = async (token: string) => {
     try {
@@ -60,9 +105,25 @@ export const CustomerDashboardModal: React.FC<CustomerDashboardProps> = ({ onClo
 
   const handleLoginSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!phone.trim() || !pin.trim()) return;
-    setLoginLoading(true);
+    if (loginLoading) return;
     setError('');
+    setPhoneError('');
+    setResendSent(false);
+
+    if (!phone.trim()) {
+      setPhoneError('Registered M-Pesa phone number is required.');
+      return;
+    }
+    if (!validatePhoneNumber(phone)) {
+      setPhoneError('Please enter a valid M-Pesa phone number (e.g. 07XXXXXXXX)');
+      return;
+    }
+    if (!pin.trim()) {
+      setError('Security PIN is required.');
+      return;
+    }
+
+    setLoginLoading(true);
     try {
       const res = await fetch('/api/auth/customer/login', {
         method: 'POST',
@@ -88,12 +149,21 @@ export const CustomerDashboardModal: React.FC<CustomerDashboardProps> = ({ onClo
   };
 
   const handleResendPin = async () => {
+    setError('');
+    setPhoneError('');
+    setResendSent(false);
+
     if (!phone.trim()) {
-      setError('Please enter your M-Pesa phone number first.');
+      setPhoneError('Please enter your M-Pesa phone number first.');
       return;
     }
+    if (!validatePhoneNumber(phone)) {
+      setPhoneError('Please enter a valid M-Pesa phone number (e.g. 07XXXXXXXX)');
+      return;
+    }
+    if (resendCooldown > 0) return;
+
     setResendLoading(true);
-    setError('');
     try {
       const res = await fetch('/api/auth/customer/resend-pin', {
         method: 'POST',
@@ -103,9 +173,10 @@ export const CustomerDashboardModal: React.FC<CustomerDashboardProps> = ({ onClo
       const data = await res.json();
       if (res.ok && data.success) {
         setResendSent(true);
-        setTimeout(() => setResendSent(false), 6000);
+        localStorage.setItem('bl_resend_timestamp', Date.now().toString());
+        setResendCooldown(60);
       } else {
-        setError(data.message || 'Could not resend PIN. Please contact support.');
+        setError(data.message || "We couldn't send the PIN right now. Please try again later.");
       }
     } catch {
       setError('Network error. Please try again.');
@@ -178,7 +249,7 @@ export const CustomerDashboardModal: React.FC<CustomerDashboardProps> = ({ onClo
     e.target.style.boxShadow = '0 0 0 3px rgba(255,102,0,0.12)';
   };
   const onBlur = (e: React.FocusEvent<HTMLInputElement>) => {
-    e.target.style.borderColor = '#cbd5e1';
+    e.target.style.borderColor = '#e2e8f0'; // var(--border-light)
     e.target.style.boxShadow = 'none';
   };
 
@@ -190,115 +261,100 @@ export const CustomerDashboardModal: React.FC<CustomerDashboardProps> = ({ onClo
   ];
 
   return (
-    <div style={{ minHeight: '100vh', width: '100%', background: '#f8fafc', boxSizing: 'border-box' }}>
+    <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column', background: '#f8fafc', boxSizing: 'border-box' }}>
+      <style>{`
+        .login-card {
+          width: 100%;
+          max-width: 440px;
+          background: #ffffff;
+          border: 1px solid var(--border-light);
+          padding: 2.5rem 2rem;
+          border-radius: var(--radius-xl);
+          box-shadow: var(--shadow-sm);
+          box-sizing: border-box;
+        }
+        @media (max-width: 480px) {
+          .login-card {
+            padding: 1.75rem 1.25rem !important;
+            border-radius: var(--radius-lg) !important;
+          }
+        }
+      `}</style>
 
-      {/* ══════════════════════════════════════════════
-          HEADER — full nav on desktop, hamburger on mobile
-      ══════════════════════════════════════════════ */}
-      <header style={{
-        background: '#ffffff',
-        borderBottom: '1px solid #e2e8f0',
-        width: '100%',
-        position: 'sticky',
-        top: 0,
-        zIndex: 100,
-        boxShadow: '0 1px 4px rgba(0,0,0,0.04)',
-      }}>
-        <div style={{
-          display: 'flex',
-          justifyContent: 'space-between',
-          alignItems: 'center',
-          width: '100%',
-          maxWidth: '1240px',
-          margin: '0 auto',
-          padding: '0 1.25rem',
-          height: '64px',
-          boxSizing: 'border-box',
-        }}>
+      {/* HEADER — standardized with Jijenge Loans navbar */}
+      <header className={`navbar${scrolled ? ' navbar--scrolled' : ''}`} role="banner">
+        <div className="nav-container">
           {/* Brand */}
           <a
             href="#home"
-            onClick={onClose}
-            style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', textDecoration: 'none', flexShrink: 0 }}
+            className="nav-brand"
+            onClick={(e) => { e.preventDefault(); onClose(); }}
+            aria-label="Jijenge Loans — Home"
           >
-            <img src="/logo.png" alt="Jijenge Loans" style={{ height: 36, width: 36, objectFit: 'contain', borderRadius: 8 }} />
-            <span style={{ fontSize: '1.1rem', fontWeight: 900, color: '#0f172a', letterSpacing: '-0.03em', fontFamily: 'inherit' }}>
-              Jijenge Loans
-            </span>
+            <img
+              src="/logo.png"
+              alt="Jijenge Loans"
+              className="nav-logo-img"
+              width="36"
+              height="36"
+            />
+            <div className="brand-text-wrapper">
+              <span className="brand-title">Jijenge Loans</span>
+            </div>
           </a>
 
-          {/* ── Desktop centre nav ── */}
-          <nav style={{ display: 'flex', alignItems: 'center', gap: '0.25rem' }} className="cust-desktop-nav" aria-label="Main navigation">
-            {navLinks.map(({ label, hash }) => (
-              <a
-                key={hash}
-                href={`#${hash}`}
-                onClick={onClose}
-                style={{
-                  color: '#64748b',
-                  textDecoration: 'none',
-                  fontWeight: 600,
-                  fontSize: '0.9rem',
-                  padding: '0.5rem 0.75rem',
-                  borderRadius: 8,
-                  transition: 'color 0.15s ease, background 0.15s ease',
-                  fontFamily: 'inherit',
-                  whiteSpace: 'nowrap',
-                }}
-                onMouseEnter={(e) => { (e.currentTarget as HTMLAnchorElement).style.color = '#FF6600'; (e.currentTarget as HTMLAnchorElement).style.background = '#FFF5ED'; }}
-                onMouseLeave={(e) => { (e.currentTarget as HTMLAnchorElement).style.color = '#64748b'; (e.currentTarget as HTMLAnchorElement).style.background = 'transparent'; }}
-              >
-                {label}
-              </a>
-            ))}
+          {/* Desktop nav links */}
+          <nav className="nav-links" aria-label="Main navigation">
+            <a
+              href="#home"
+              className="nav-link"
+              onClick={(e) => { e.preventDefault(); onClose(); }}
+            >
+              Home
+            </a>
+            <a
+              href="#how-it-works"
+              className="nav-link"
+              onClick={(e) => { e.preventDefault(); onClose(); }}
+            >
+              How It Works
+            </a>
+            <a
+              href="#faqs"
+              className="nav-link"
+              onClick={(e) => { e.preventDefault(); onClose(); }}
+            >
+              FAQs
+            </a>
             <button
               type="button"
-              onClick={() => { onClose(); /* support is handled by App */ }}
-              style={{
-                background: 'none', border: 'none', cursor: 'pointer',
-                color: '#64748b', fontWeight: 600, fontSize: '0.9rem',
-                padding: '0.5rem 0.75rem', borderRadius: 8,
-                transition: 'color 0.15s ease, background 0.15s ease',
-                display: 'flex', alignItems: 'center', gap: '0.35rem',
-                fontFamily: 'inherit', whiteSpace: 'nowrap',
-              }}
-              onMouseEnter={(e) => { (e.currentTarget as HTMLButtonElement).style.color = '#FF6600'; (e.currentTarget as HTMLButtonElement).style.background = '#FFF5ED'; }}
-              onMouseLeave={(e) => { (e.currentTarget as HTMLButtonElement).style.color = '#64748b'; (e.currentTarget as HTMLButtonElement).style.background = 'transparent'; }}
+              className="nav-link"
+              onClick={() => { if (onOpenSupport) onOpenSupport(); else onClose(); }}
             >
-              <MessageCircle size={14} aria-hidden />
               Support
             </button>
             <a
               href="#track"
-              style={{
-                color: '#64748b', textDecoration: 'none', fontWeight: 600, fontSize: '0.9rem',
-                padding: '0.5rem 0.75rem', borderRadius: 8,
-                transition: 'color 0.15s ease, background 0.15s ease',
-                display: 'flex', alignItems: 'center', gap: '0.35rem',
-                fontFamily: 'inherit', whiteSpace: 'nowrap',
-              }}
-              onMouseEnter={(e) => { (e.currentTarget as HTMLAnchorElement).style.color = '#FF6600'; (e.currentTarget as HTMLAnchorElement).style.background = '#FFF5ED'; }}
-              onMouseLeave={(e) => { (e.currentTarget as HTMLAnchorElement).style.color = '#64748b'; (e.currentTarget as HTMLAnchorElement).style.background = 'transparent'; }}
+              className="nav-link"
+              onClick={(e) => { e.preventDefault(); onClose(); }}
             >
-              <ClipboardList size={14} aria-hidden />
+              <ClipboardList size={14} strokeWidth={1.8} aria-hidden="true" />
               Track Loan
             </a>
           </nav>
 
-          {/* ── Desktop right actions ── */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem' }} className="cust-desktop-actions">
+          {/* Desktop right actions */}
+          <div className="nav-actions" role="group" aria-label="Account actions">
             {isLoggedIn && isAdmin && (
               <button
                 type="button"
                 onClick={handleSwitchToAdmin}
+                className="btn-nav-outline"
                 style={{
-                  display: 'flex', alignItems: 'center', gap: '0.4rem',
                   background: 'linear-gradient(135deg,#4f46e5,#7c3aed)',
-                  color: '#fff', border: 'none',
-                  padding: '0.45rem 1rem', borderRadius: 8,
-                  fontSize: '0.82rem', fontWeight: 700, cursor: 'pointer',
+                  color: '#fff',
+                  border: 'none',
                   boxShadow: '0 2px 8px rgba(79,70,229,0.3)',
-                  fontFamily: 'inherit',
                 }}
               >
                 ⚡ Admin Panel
@@ -308,152 +364,162 @@ export const CustomerDashboardModal: React.FC<CustomerDashboardProps> = ({ onClo
               <button
                 type="button"
                 onClick={handleLogout}
-                style={{
-                  background: '#f1f5f9', color: '#0f172a',
-                  border: '1px solid #cbd5e1', padding: '0.5rem 1rem',
-                  borderRadius: 10, fontSize: '0.875rem', fontWeight: 700,
-                  cursor: 'pointer', fontFamily: 'inherit',
-                }}
+                className="btn-nav-outline"
               >
                 Sign Out
               </button>
             ) : (
-              <a
-                href="#apply"
-                onClick={onClose}
-                style={{
-                  display: 'inline-flex', alignItems: 'center', gap: '0.35rem',
-                  background: '#FF6600', color: '#fff',
-                  padding: '0.55rem 1.15rem', borderRadius: 12,
-                  fontSize: '0.875rem', fontWeight: 700,
-                  textDecoration: 'none', boxShadow: '0 4px 14px rgba(255,102,0,0.28)',
-                  transition: 'background 0.2s ease, transform 0.15s ease',
-                  fontFamily: 'inherit', whiteSpace: 'nowrap',
-                }}
-                onMouseEnter={(e) => { (e.currentTarget as HTMLAnchorElement).style.background = '#E55C00'; (e.currentTarget as HTMLAnchorElement).style.transform = 'translateY(-1px)'; }}
-                onMouseLeave={(e) => { (e.currentTarget as HTMLAnchorElement).style.background = '#FF6600'; (e.currentTarget as HTMLAnchorElement).style.transform = 'translateY(0)'; }}
-              >
-                Apply Now <ArrowRight size={14} aria-hidden />
-              </a>
+              <>
+                <a href="#customer" className="btn-nav-outline nav-link--active">
+                  Customer Login
+                </a>
+                <button
+                  type="button"
+                  className="btn-apply-cta"
+                  onClick={onClose}
+                >
+                  Apply Now
+                  <ArrowRight size={14} strokeWidth={2.2} aria-hidden="true" />
+                </button>
+              </>
             )}
           </div>
 
-          {/* ── Mobile hamburger ── */}
+          {/* Mobile hamburger */}
           <button
             type="button"
-            className="cust-hamburger"
-            onClick={() => setMobileNavOpen(v => !v)}
-            aria-label={mobileNavOpen ? 'Close menu' : 'Open menu'}
-            style={{
-              background: 'none', border: 'none', cursor: 'pointer',
-              color: '#0f172a', padding: '0.4rem',
-              minWidth: 44, minHeight: 44,
-              borderRadius: 8, display: 'none',
-              alignItems: 'center', justifyContent: 'center',
-            }}
+            className="nav-hamburger"
+            onClick={() => setMobileNavOpen(prev => !prev)}
+            aria-label={mobileNavOpen ? 'Close navigation menu' : 'Open navigation menu'}
+            aria-expanded={mobileNavOpen}
+            aria-controls="mobile-nav-drawer"
           >
-            {mobileNavOpen ? <X size={22} /> : <Menu size={22} />}
+            {mobileNavOpen ? <X size={22} strokeWidth={2} /> : <Menu size={22} strokeWidth={2} />}
           </button>
         </div>
-
-        {/* ── Mobile drawer ── */}
-        {mobileNavOpen && (
-          <div style={{
-            background: '#ffffff',
-            borderTop: '1px solid #f1f5f9',
-            padding: '1rem 1.25rem 1.5rem',
-            display: 'flex', flexDirection: 'column', gap: '0.25rem',
-            boxShadow: '0 8px 24px rgba(0,0,0,0.08)',
-          }}>
-            {navLinks.map(({ label, hash, icon }) => (
-              <a
-                key={hash}
-                href={`#${hash}`}
-                onClick={() => { onClose(); setMobileNavOpen(false); }}
-                style={{
-                  display: 'flex', alignItems: 'center', gap: '0.65rem',
-                  color: '#475569', textDecoration: 'none', fontWeight: 600,
-                  fontSize: '0.95rem', padding: '0.75rem 0.85rem',
-                  borderRadius: 8, minHeight: 48,
-                  transition: 'background 0.15s ease, color 0.15s ease',
-                  fontFamily: 'inherit',
-                }}
-              >
-                {icon} {label}
-              </a>
-            ))}
-            <a
-              href="#track"
-              onClick={() => setMobileNavOpen(false)}
-              style={{
-                display: 'flex', alignItems: 'center', gap: '0.65rem',
-                color: '#475569', textDecoration: 'none', fontWeight: 600,
-                fontSize: '0.95rem', padding: '0.75rem 0.85rem',
-                borderRadius: 8, minHeight: 48, fontFamily: 'inherit',
-              }}
-            >
-              <ClipboardList size={15} /> Track Loan
-            </a>
-            <hr style={{ border: 'none', borderTop: '1px solid #f1f5f9', margin: '0.4rem 0' }} />
-            <a
-              href="#apply"
-              onClick={onClose}
-              style={{
-                display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.4rem',
-                background: '#FF6600', color: '#fff',
-                padding: '0.8rem 1rem', borderRadius: 12,
-                fontSize: '0.95rem', fontWeight: 700,
-                textDecoration: 'none', marginTop: '0.25rem', fontFamily: 'inherit',
-              }}
-            >
-              Apply Now <ArrowRight size={16} />
-            </a>
-          </div>
-        )}
       </header>
 
-      {/* ══════════════════════════════════════════════
-          INLINE CSS for responsive nav visibility
-      ══════════════════════════════════════════════ */}
-      <style>{`
-        @media (max-width: 900px) {
-          .cust-desktop-nav { display: none !important; }
-          .cust-desktop-actions { display: none !important; }
-          .cust-hamburger { display: flex !important; }
-        }
-        @media (min-width: 901px) {
-          .cust-hamburger { display: none !important; }
-        }
-      `}</style>
+      {/* Mobile Drawer */}
+      <div
+        id="mobile-nav-drawer"
+        className={`mobile-drawer${mobileNavOpen ? ' mobile-drawer--open' : ''}`}
+        role="navigation"
+        aria-label="Mobile navigation"
+      >
+        <div className="mobile-drawer-inner">
+          <a
+            href="#home"
+            className="mobile-nav-link"
+            onClick={() => { onClose(); setMobileNavOpen(false); }}
+          >
+            Home
+          </a>
+          <a
+            href="#how-it-works"
+            className="mobile-nav-link"
+            onClick={() => { onClose(); setMobileNavOpen(false); }}
+          >
+            How It Works
+          </a>
+          <a
+            href="#faqs"
+            className="mobile-nav-link"
+            onClick={() => { onClose(); setMobileNavOpen(false); }}
+          >
+            FAQs
+          </a>
+          <button
+            type="button"
+            className="mobile-nav-link"
+            onClick={() => { if (onOpenSupport) onOpenSupport(); else onClose(); setMobileNavOpen(false); }}
+          >
+            <MessageCircle size={15} strokeWidth={1.8} aria-hidden="true" />
+            Support Chat
+          </button>
 
-      {/* ══════════════════════════════════════════════
-          MAIN CONTENT
-      ══════════════════════════════════════════════ */}
-      <div style={{ maxWidth: 900, margin: '2.5rem auto', padding: '0 1.25rem' }}>
+          <hr className="mobile-nav-divider" />
 
-        {/* ── LOGIN FORM ── */}
+          <a
+            href="#track"
+            className="mobile-nav-link"
+            onClick={() => { onClose(); setMobileNavOpen(false); }}
+          >
+            <ClipboardList size={15} strokeWidth={1.8} aria-hidden="true" />
+            Track Loan
+          </a>
+
+          {isLoggedIn ? (
+            <button
+              type="button"
+              className="mobile-nav-link"
+              onClick={() => { handleLogout(); setMobileNavOpen(false); }}
+            >
+              Sign Out
+            </button>
+          ) : (
+            <>
+              <a
+                href="#customer"
+                className="mobile-nav-link mobile-nav-link--active"
+                onClick={() => setMobileNavOpen(false)}
+              >
+                Customer Login
+              </a>
+              <button
+                type="button"
+                className="btn-apply-cta mobile-apply-btn"
+                onClick={() => { onClose(); setMobileNavOpen(false); }}
+              >
+                Apply Now
+                <ArrowRight size={16} strokeWidth={2.5} aria-hidden="true" />
+              </button>
+            </>
+          )}
+        </div>
+      </div>
+
+      {/* MAIN CONTENT AREA */}
+      <main
+        style={!isLoggedIn ? {
+          flex: 1,
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          padding: '2.5rem 1.25rem',
+          boxSizing: 'border-box',
+          width: '100%',
+        } : {
+          flex: 1,
+          width: '100%',
+          maxWidth: 900,
+          margin: '0 auto',
+          padding: '2.5rem 1.25rem',
+          boxSizing: 'border-box',
+        }}
+      >
         {!isLoggedIn ? (
-          <div style={{
-            maxWidth: 440, margin: '0 auto',
-            background: '#ffffff', border: '1.5px solid #e2e8f0',
-            padding: '2.5rem 2rem', borderRadius: 24,
-            boxShadow: '0 12px 40px rgba(0,0,0,0.05)',
-          }}>
+          <div className="login-card">
             {/* Icon + heading */}
             <div style={{ textAlign: 'center', marginBottom: '1.75rem' }}>
               <div style={{
-                background: '#FFF5ED', color: '#FF6600',
-                width: 52, height: 52, borderRadius: 14,
-                display: 'flex', alignItems: 'center', justifyContent: 'center',
-                fontSize: '1.6rem', margin: '0 auto 0.85rem',
+                background: 'var(--brand-orange-light)',
+                color: 'var(--brand-orange)',
+                width: 52,
+                height: 52,
+                borderRadius: 14,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                fontSize: '1.6rem',
+                margin: '0 auto 0.85rem',
                 border: '1.5px solid #FFD6B3',
               }}>
                 🔐
               </div>
-              <h2 style={{ fontSize: '1.35rem', fontWeight: 800, color: '#0f172a', margin: '0 0 0.25rem', fontFamily: 'inherit' }}>
+              <h2 style={{ fontSize: '1.35rem', fontWeight: 800, color: 'var(--text-headline)', margin: '0 0 0.25rem', fontFamily: 'var(--font-family)' }}>
                 Customer Portal Login
               </h2>
-              <p style={{ fontSize: '0.875rem', color: '#64748b', margin: 0, lineHeight: 1.5 }}>
+              <p style={{ fontSize: '0.875rem', color: 'var(--text-muted)', margin: 0, lineHeight: 1.5, fontFamily: 'var(--font-family)' }}>
                 Access your allocated loan balance &amp; withdraw to M-Pesa
               </p>
             </div>
@@ -461,7 +527,7 @@ export const CustomerDashboardModal: React.FC<CustomerDashboardProps> = ({ onClo
             <form onSubmit={handleLoginSubmit}>
               {/* Phone */}
               <div style={{ marginBottom: '1.15rem' }}>
-                <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 700, color: '#1e293b', marginBottom: '0.4rem', fontFamily: 'inherit' }}>
+                <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 700, color: '#1e293b', marginBottom: '0.4rem', fontFamily: 'var(--font-family)' }}>
                   Registered M-Pesa Phone Number
                 </label>
                 <input
@@ -469,24 +535,46 @@ export const CustomerDashboardModal: React.FC<CustomerDashboardProps> = ({ onClo
                   type="tel"
                   placeholder="e.g. 07XXXXXXXX"
                   value={phone}
-                  onChange={(e) => setPhone(e.target.value)}
+                  onChange={(e) => {
+                    setPhone(e.target.value);
+                    setPhoneError('');
+                    setError('');
+                    setResendSent(false);
+                  }}
                   onFocus={onFocus}
-                  onBlur={onBlur}
+                  onBlur={(e) => {
+                    onBlur(e);
+                    if (phone.trim() && !validatePhoneNumber(phone)) {
+                      setPhoneError('Please enter a valid M-Pesa phone number (e.g. 07XXXXXXXX)');
+                    } else {
+                      setPhoneError('');
+                    }
+                  }}
                   style={{
-                    width: '100%', padding: '0.85rem 1.1rem',
-                    borderRadius: 12, border: '2px solid #cbd5e1',
-                    fontSize: '0.95rem', outline: 'none',
-                    boxSizing: 'border-box', fontFamily: 'inherit',
-                    transition: 'border-color 0.2s ease, box-shadow 0.2s ease',
+                    width: '100%',
+                    height: 'var(--input-height)',
+                    padding: '0.85rem 1.1rem',
+                    borderRadius: 'var(--radius-md)',
+                    border: '1.5px solid var(--border-light)',
+                    fontSize: '0.95rem',
+                    outline: 'none',
+                    boxSizing: 'border-box',
+                    fontFamily: 'var(--font-family)',
+                    transition: 'var(--transition)',
                   }}
                   required
                 />
+                {phoneError && (
+                  <div style={{ color: '#ef4444', fontSize: '0.78rem', marginTop: '0.35rem', fontWeight: 600, fontFamily: 'var(--font-family)' }}>
+                    {phoneError}
+                  </div>
+                )}
               </div>
 
               {/* PIN with show/hide toggle */}
               <div style={{ marginBottom: '0.5rem' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.4rem' }}>
-                  <label style={{ fontSize: '0.85rem', fontWeight: 700, color: '#1e293b', fontFamily: 'inherit' }}>
+                  <label style={{ fontSize: '0.85rem', fontWeight: 700, color: '#1e293b', fontFamily: 'var(--font-family)' }}>
                     Security PIN
                   </label>
                 </div>
@@ -496,15 +584,24 @@ export const CustomerDashboardModal: React.FC<CustomerDashboardProps> = ({ onClo
                     type={showPin ? 'text' : 'password'}
                     placeholder="Enter your PIN"
                     value={pin}
-                    onChange={(e) => setPin(e.target.value)}
+                    onChange={(e) => {
+                      setPin(e.target.value);
+                      setError('');
+                      setResendSent(false);
+                    }}
                     onFocus={onFocus}
                     onBlur={onBlur}
                     style={{
-                      width: '100%', padding: '0.85rem 3rem 0.85rem 1.1rem',
-                      borderRadius: 12, border: '2px solid #cbd5e1',
-                      fontSize: '0.95rem', outline: 'none',
-                      boxSizing: 'border-box', fontFamily: 'inherit',
-                      transition: 'border-color 0.2s ease, box-shadow 0.2s ease',
+                      width: '100%',
+                      height: 'var(--input-height)',
+                      padding: '0.85rem 3rem 0.85rem 1.1rem',
+                      borderRadius: 'var(--radius-md)',
+                      border: '1.5px solid var(--border-light)',
+                      fontSize: '0.95rem',
+                      outline: 'none',
+                      boxSizing: 'border-box',
+                      fontFamily: 'var(--font-family)',
+                      transition: 'var(--transition)',
                     }}
                     required
                   />
@@ -514,11 +611,17 @@ export const CustomerDashboardModal: React.FC<CustomerDashboardProps> = ({ onClo
                     onClick={() => setShowPin(v => !v)}
                     aria-label={showPin ? 'Hide PIN' : 'Show PIN'}
                     style={{
-                      position: 'absolute', right: '0.9rem',
-                      top: '50%', transform: 'translateY(-50%)',
-                      background: 'none', border: 'none', cursor: 'pointer',
-                      color: '#94a3b8', padding: '0.2rem',
-                      display: 'flex', alignItems: 'center',
+                      position: 'absolute',
+                      right: '0.9rem',
+                      top: '50%',
+                      transform: 'translateY(-50%)',
+                      background: 'none',
+                      border: 'none',
+                      cursor: 'pointer',
+                      color: '#94a3b8',
+                      padding: '0.2rem',
+                      display: 'flex',
+                      alignItems: 'center',
                       transition: 'color 0.15s ease',
                     }}
                     onMouseEnter={(e) => { (e.currentTarget as HTMLButtonElement).style.color = '#475569'; }}
@@ -531,9 +634,9 @@ export const CustomerDashboardModal: React.FC<CustomerDashboardProps> = ({ onClo
 
               {/* Resend PIN */}
               <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: '1.5rem' }}>
-                {resendSent ? (
-                  <span style={{ fontSize: '0.78rem', color: '#10b981', fontWeight: 600 }}>
-                    ✓ PIN sent via SMS!
+                {resendCooldown > 0 ? (
+                  <span style={{ fontSize: '0.78rem', color: 'var(--text-muted)', fontWeight: 600, fontFamily: 'var(--font-family)' }}>
+                    Resend PIN in {resendCooldown}s
                   </span>
                 ) : (
                   <button
@@ -541,10 +644,14 @@ export const CustomerDashboardModal: React.FC<CustomerDashboardProps> = ({ onClo
                     onClick={handleResendPin}
                     disabled={resendLoading}
                     style={{
-                      background: 'none', border: 'none', cursor: resendLoading ? 'not-allowed' : 'pointer',
-                      color: resendLoading ? '#94a3b8' : '#FF6600',
-                      fontSize: '0.78rem', fontWeight: 700,
-                      padding: 0, fontFamily: 'inherit',
+                      background: 'none',
+                      border: 'none',
+                      cursor: resendLoading ? 'not-allowed' : 'pointer',
+                      color: resendLoading ? '#94a3b8' : 'var(--brand-orange)',
+                      fontSize: '0.78rem',
+                      fontWeight: 700,
+                      padding: 0,
+                      fontFamily: 'var(--font-family)',
                       textDecoration: 'none',
                       transition: 'color 0.15s ease',
                     }}
@@ -561,23 +668,17 @@ export const CustomerDashboardModal: React.FC<CustomerDashboardProps> = ({ onClo
                 type="submit"
                 id="btn-customer-login"
                 disabled={loginLoading}
+                className="btn-primary"
                 style={{
                   width: '100%',
-                  background: loginLoading ? '#FFA366' : '#FF6600',
-                  color: '#ffffff',
-                  padding: '0.9rem 1.5rem',
-                  borderRadius: 12,
-                  fontSize: '1rem', fontWeight: 800, border: 'none',
+                  background: loginLoading ? '#FFA366' : 'var(--brand-orange)',
+                  border: loginLoading ? '1.5px solid #FFA366' : '1.5px solid var(--brand-orange)',
                   cursor: loginLoading ? 'not-allowed' : 'pointer',
-                  boxShadow: '0 6px 20px rgba(255,102,0,0.28)',
-                  display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem',
-                  minHeight: 52, fontFamily: 'inherit',
-                  transition: 'background 0.2s ease, transform 0.15s ease',
+                  boxShadow: loginLoading ? 'none' : 'var(--shadow-orange)',
+                  transform: 'none',
                 }}
-                onMouseEnter={(e) => { if (!loginLoading) { (e.currentTarget as HTMLButtonElement).style.background = '#E55C00'; (e.currentTarget as HTMLButtonElement).style.transform = 'translateY(-1px)'; } }}
-                onMouseLeave={(e) => { (e.currentTarget as HTMLButtonElement).style.background = loginLoading ? '#FFA366' : '#FF6600'; (e.currentTarget as HTMLButtonElement).style.transform = 'translateY(0)'; }}
               >
-                {loginLoading ? 'Verifying...' : (
+                {loginLoading ? 'Verifying credentials...' : (
                   <>
                     <span>Verify Credentials</span>
                     <ArrowRight size={16} aria-hidden />
@@ -586,29 +687,65 @@ export const CustomerDashboardModal: React.FC<CustomerDashboardProps> = ({ onClo
               </button>
             </form>
 
-            {/* Error */}
+            {/* Error Message */}
             {error && (
               <div style={{
-                marginTop: '1.1rem', background: '#fef2f2',
-                border: '1.5px solid #fecaca', padding: '0.85rem 1.1rem',
-                borderRadius: 12, color: '#991b1b', fontSize: '0.875rem', fontWeight: 600,
+                marginTop: '1.1rem',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '0.5rem',
+                color: '#ef4444',
+                background: '#fef2f2',
+                border: '1.5px solid #fee2e2',
+                padding: '0.85rem 1.1rem',
+                borderRadius: 12,
+                fontSize: '0.875rem',
+                fontWeight: 600,
+                fontFamily: 'var(--font-family)',
               }}>
-                {error}
+                <AlertCircle size={16} style={{ flexShrink: 0 }} />
+                <span>{error}</span>
               </div>
             )}
 
-            {/* ── Security footer ── */}
+            {/* Success Message for SMS */}
+            {resendSent && (
+              <div style={{
+                marginTop: '1.1rem',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '0.5rem',
+                color: '#047857',
+                background: '#ecfdf5',
+                border: '1.5px solid #a7f3d0',
+                padding: '0.85rem 1.1rem',
+                borderRadius: 12,
+                fontSize: '0.875rem',
+                fontWeight: 600,
+                fontFamily: 'var(--font-family)',
+              }}>
+                <AlertCircle size={16} style={{ flexShrink: 0, color: '#10b981' }} />
+                <span>PIN sent successfully. Check your phone for your new PIN.</span>
+              </div>
+            )}
+
+            {/* Security footer */}
             <div style={{
-              marginTop: '1.5rem', paddingTop: '1rem',
+              marginTop: '1.5rem',
+              paddingTop: '1rem',
               borderTop: '1px solid #f1f5f9',
-              display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem',
-              fontSize: '0.75rem', color: '#94a3b8',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: '0.5rem',
+              fontSize: '0.75rem',
+              color: '#94a3b8',
+              fontFamily: 'var(--font-family)',
             }}>
               <Lock size={14} style={{ color: '#10b981', flexShrink: 0 }} aria-hidden />
               <span>256-Bit SSL Encrypted Connection · ODPC Data Protected</span>
             </div>
           </div>
-
         ) : (
           /* ── PORTAL DASHBOARD (logged in) ── */
           userData && (
@@ -711,7 +848,9 @@ export const CustomerDashboardModal: React.FC<CustomerDashboardProps> = ({ onClo
             </div>
           )
         )}
-      </div>
+      </main>
+
+      {!isLoggedIn && <Footer onTabChange={onClose} />}
 
       {/* ── Processing overlay ── */}
       {withdrawLoading && !withdrawSuccess && (

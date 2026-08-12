@@ -21,6 +21,13 @@ export class AuthController {
     return this.authService.customerLogin(body.phone, body.pin);
   }
 
+  @ApiOperation({ summary: 'Resend Customer Security PIN' })
+  @HttpCode(HttpStatus.OK)
+  @Post('customer/resend-pin')
+  async resendPin(@Body() body: { phone: string }) {
+    return this.authService.resendCustomerPin(body.phone);
+  }
+
   @ApiOperation({ summary: 'Refresh JWT Access Token' })
   @HttpCode(HttpStatus.OK)
   @Post('refresh')

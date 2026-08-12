@@ -136,7 +136,7 @@ export const App: React.FC = () => {
   if (currentHash === '#customer') {
     return (
       <div className="portal-container login-active">
-        <CustomerDashboardModal onClose={() => switchTab('home')} />
+        <CustomerDashboardModal onClose={() => switchTab('home')} onOpenSupport={() => setSupportOpen(true)} />
         <SupportChatModal isOpen={supportOpen} onClose={() => setSupportOpen(false)} />
       </div>
     );
