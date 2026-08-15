@@ -7,8 +7,17 @@
     "jijenge-loans-backend": {
       "root": "backend",
       "entrypoint": "src/main.ts",
-      "routePrefix": "/",
       "buildCommand": "npm install --include=dev && npm run prisma:generate && npm run build"
     }
-  }
+  },
+  "rewrites": [
+    {
+      "source": "/api/(.*)",
+      "destination": { "service": "jijenge-loans-backend" }
+    },
+    {
+      "source": "/(.*)",
+      "destination": { "service": "frontend" }
+    }
+  ]
 }
