@@ -3,6 +3,13 @@
     "frontend": {
       "root": "frontend",
       "framework": "vite"
+    },
+    "jijenge-loans-backend": {
+      "type": "web",
+      "root": "backend",
+      "entrypoint": "src/main.ts",
+      "routePrefix": "/",
+      "buildCommand": "npm install --include=dev && npm run prisma:generate && npm run build"
     }
   }
 }
