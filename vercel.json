@@ -5,7 +5,6 @@
       "framework": "vite"
     },
     "jijenge-loans-backend": {
-      "type": "web",
       "root": "backend",
       "entrypoint": "src/main.ts",
       "routePrefix": "/",
