@@ -127,7 +127,7 @@ export const TrackLoanView: React.FC<TrackLoanViewProps> = ({ onTabChange, onOpe
   const badgeConfig = getStatusBadgeConfig(loan?.status);
 
   return (
-    <div className="container" style={{ maxWidth: '900px', paddingBottom: '4rem' }}>
+    <div className="container max-w-[900px] pb-16">
       {/* Title Header */}
       <div className="section-title-wrap text-center">
         <span className="sub-tag">Real-Time Status</span>
@@ -138,30 +138,10 @@ export const TrackLoanView: React.FC<TrackLoanViewProps> = ({ onTabChange, onOpe
       </div>
 
       {/* Search Card */}
-      <div
-        style={{
-          background: '#ffffff',
-          borderRadius: '20px',
-          border: '1px solid #e2e8f0',
-          padding: '2.25rem 1.75rem',
-          boxShadow: '0 4px 20px rgba(15, 23, 42, 0.04)',
-          margin: '0 auto 2.5rem',
-          maxWidth: '820px',
-        }}
-      >
+      <div className="bg-white rounded-3xl border border-slate-200 p-6 sm:p-9 shadow-sm mx-auto mb-10 max-w-[820px]">
         <form onSubmit={handleSearch}>
-          <div style={{ marginBottom: '1.25rem' }}>
-            <label
-              htmlFor="track-query"
-              style={{
-                display: 'block',
-                fontSize: '0.875rem',
-                fontWeight: 700,
-                color: '#0f172a',
-                marginBottom: '0.5rem',
-                fontFamily: 'inherit',
-              }}
-            >
+          <div className="mb-5">
+            <label htmlFor="track-query" className="jijenge-label">
               Enter National ID, M-Pesa Phone Number, or Application Reference (Ref)
             </label>
             <input
@@ -170,59 +150,16 @@ export const TrackLoanView: React.FC<TrackLoanViewProps> = ({ onTabChange, onOpe
               placeholder="e.g. BL-XXXX-XXXX or 2547XXXXXXXX"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              style={{
-                width: '100%',
-                padding: '0.85rem 1.1rem',
-                minHeight: '48px',
-                borderRadius: '12px',
-                border: '1.5px solid #cbd5e1',
-                fontSize: '0.95rem',
-                outline: 'none',
-                fontFamily: 'inherit',
-                boxSizing: 'border-box',
-                transition: 'border-color 0.2s ease, box-shadow 0.2s ease',
-              }}
-              onFocus={(e) => {
-                e.target.style.borderColor = '#FF6600';
-                e.target.style.boxShadow = '0 0 0 3px rgba(255,102,0,0.15)';
-              }}
-              onBlur={(e) => {
-                e.target.style.borderColor = '#cbd5e1';
-                e.target.style.boxShadow = 'none';
-              }}
+              className="jijenge-input"
               required
             />
           </div>
 
-          <div style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap' }}>
+          <div className="flex gap-3 flex-wrap">
             <button
               type="submit"
               disabled={loading}
-              style={{
-                background: loading ? '#FFA366' : '#FF6600',
-                color: '#ffffff',
-                border: 'none',
-                padding: '0.85rem 1.85rem',
-                borderRadius: '12px',
-                fontSize: '0.95rem',
-                fontWeight: 800,
-                cursor: loading ? 'not-allowed' : 'pointer',
-                boxShadow: '0 6px 20px rgba(255,102,0,0.28)',
-                display: 'inline-flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                gap: '0.5rem',
-                minHeight: '48px',
-                fontFamily: 'inherit',
-                transition: 'background 0.2s ease, transform 0.15s ease',
-                flex: '1 1 200px',
-              }}
-              onMouseEnter={(e) => {
-                if (!loading) (e.currentTarget as HTMLButtonElement).style.background = '#E55C00';
-              }}
-              onMouseLeave={(e) => {
-                if (!loading) (e.currentTarget as HTMLButtonElement).style.background = '#FF6600';
-              }}
+              className="btn-primary flex-1 sm:flex-none"
             >
               <Search size={16} aria-hidden="true" />
               <span>{loading ? 'Searching...' : 'Check Status'}</span>
@@ -232,25 +169,7 @@ export const TrackLoanView: React.FC<TrackLoanViewProps> = ({ onTabChange, onOpe
               <button
                 type="button"
                 onClick={handleClear}
-                style={{
-                  background: '#f1f5f9',
-                  color: '#1e293b',
-                  border: '1px solid #cbd5e1',
-                  padding: '0.85rem 1.5rem',
-                  borderRadius: '12px',
-                  fontSize: '0.95rem',
-                  fontWeight: 700,
-                  cursor: 'pointer',
-                  display: 'inline-flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  gap: '0.5rem',
-                  minHeight: '48px',
-                  fontFamily: 'inherit',
-                  transition: 'background 0.2s ease',
-                }}
-                onMouseEnter={(e) => { (e.currentTarget as HTMLButtonElement).style.background = '#e2e8f0'; }}
-                onMouseLeave={(e) => { (e.currentTarget as HTMLButtonElement).style.background = '#f1f5f9'; }}
+                className="btn-secondary"
               >
                 <X size={16} aria-hidden="true" />
                 <span>Clear</span>
@@ -260,22 +179,8 @@ export const TrackLoanView: React.FC<TrackLoanViewProps> = ({ onTabChange, onOpe
         </form>
 
         {error && (
-          <div
-            style={{
-              marginTop: '1.25rem',
-              background: '#fef2f2',
-              border: '1.5px solid #fecaca',
-              padding: '0.85rem 1.1rem',
-              borderRadius: '12px',
-              color: '#991b1b',
-              fontSize: '0.875rem',
-              fontWeight: 600,
-              display: 'flex',
-              alignItems: 'center',
-              gap: '0.5rem',
-            }}
-          >
-            <AlertCircle size={16} style={{ flexShrink: 0 }} />
+          <div className="jijenge-alert jijenge-alert-error mt-5">
+            <AlertCircle size={16} className="flex-shrink-0" />
             <span>{error}</span>
           </div>
         )}
@@ -283,116 +188,60 @@ export const TrackLoanView: React.FC<TrackLoanViewProps> = ({ onTabChange, onOpe
 
       {/* Search Result Card */}
       {loan && (
-        <div
-          style={{
-            background: '#ffffff',
-            borderRadius: '20px',
-            border: '1.5px solid #e2e8f0',
-            padding: '2.25rem 1.75rem',
-            boxShadow: '0 10px 30px rgba(0,0,0,0.04)',
-            maxWidth: '820px',
-            margin: '0 auto',
-          }}
-        >
+        <div className="bg-white rounded-3xl border border-slate-200 p-6 sm:p-9 shadow-md max-w-[820px] mx-auto">
           {/* Header row */}
-          <div
-            style={{
-              display: 'flex',
-              justifyContent: 'space-between',
-              alignItems: 'flex-start',
-              flexWrap: 'wrap',
-              gap: '1rem',
-              borderBottom: '1.5px solid #f1f5f9',
-              paddingBottom: '1.25rem',
-              marginBottom: '1.5rem',
-            }}
-          >
+          <div className="flex justify-between items-start flex-wrap gap-4 border-b border-slate-100 pb-5 mb-6">
             <div>
-              <span
-                style={{
-                  fontSize: '0.75rem',
-                  fontWeight: 800,
-                  color: '#FF6600',
-                  background: '#FFF5ED',
-                  padding: '0.35rem 0.75rem',
-                  borderRadius: '20px',
-                  border: '1px solid #FFD6B3',
-                  letterSpacing: '0.02em',
-                }}
-              >
+              <span className="jijenge-badge jijenge-badge-warning">
                 Ref: {loan.transactionRef || 'N/A'}
               </span>
-              <h3 style={{ fontSize: '1.35rem', fontWeight: 800, marginTop: '0.65rem', marginBottom: 0, color: '#0f172a', fontFamily: 'inherit' }}>
+              <h3 className="text-xl font-extrabold text-brand-navy mt-3 mb-0">
                 {loan.fullName || 'Valued Customer'}
               </h3>
             </div>
 
-            <span
-              style={{
-                padding: '0.45rem 0.95rem',
-                borderRadius: '20px',
-                fontSize: '0.825rem',
-                fontWeight: 800,
-                display: 'inline-flex',
-                alignItems: 'center',
-                gap: '0.35rem',
-                background: badgeConfig.bg,
-                color: badgeConfig.color,
-                border: `1.5px solid ${badgeConfig.border}`,
-              }}
-            >
+            <span className={`jijenge-badge jijenge-badge-${
+              badgeConfig.text.toLowerCase().includes('disbursed') || badgeConfig.text.toLowerCase().includes('approved') || badgeConfig.text.toLowerCase().includes('paid')
+                ? 'success'
+                : badgeConfig.text.toLowerCase().includes('rejected') || badgeConfig.text.toLowerCase().includes('failed') || badgeConfig.text.toLowerCase().includes('cancel')
+                  ? 'error'
+                  : 'warning'
+            } px-3 py-1.5`}>
               {badgeConfig.text}
             </span>
           </div>
 
           {/* Info Grid */}
-          <div
-            style={{
-              display: 'grid',
-              gridTemplateColumns: 'repeat(auto-fit, minmax(170px, 1fr))',
-              gap: '1.25rem',
-              background: '#f8fafc',
-              border: '1px solid #e2e8f0',
-              borderRadius: '16px',
-              padding: '1.35rem',
-              marginBottom: '2rem',
-            }}
-          >
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-5 bg-slate-50 border border-slate-100 rounded-2xl p-5 mb-8">
             <div>
-              <span style={{ fontSize: '0.75rem', color: '#64748b', fontWeight: 700, display: 'block', textTransform: 'uppercase', marginBottom: '0.2rem' }}>
+              <span className="text-[11px] text-slate-500 font-bold tracking-wider uppercase block mb-1">
                 Loan Amount Matched
               </span>
-              <strong style={{ fontSize: '1.35rem', color: '#0f172a', fontWeight: 800 }}>
+              <strong className="text-lg font-black text-brand-navy">
                 KES {(loan.amount || 0).toLocaleString()}
               </strong>
             </div>
             <div>
-              <span style={{ fontSize: '0.75rem', color: '#64748b', fontWeight: 700, display: 'block', textTransform: 'uppercase', marginBottom: '0.2rem' }}>
+              <span className="text-[11px] text-slate-500 font-bold tracking-wider uppercase block mb-1">
                 Processing Fee
               </span>
-              <strong style={{ fontSize: '1.35rem', color: '#0284c7', fontWeight: 800 }}>
+              <strong className="text-lg font-black text-sky-600">
                 KES {(loan.processingFee || 0).toLocaleString()}
               </strong>
             </div>
             <div>
-              <span style={{ fontSize: '0.75rem', color: '#64748b', fontWeight: 700, display: 'block', textTransform: 'uppercase', marginBottom: '0.2rem' }}>
+              <span className="text-[11px] text-slate-500 font-bold tracking-wider uppercase block mb-1">
                 Fee Status
               </span>
-              <span
-                style={{
-                  fontSize: '0.9rem',
-                  fontWeight: 800,
-                  color: loan.feeStatus === 'Paid' ? '#047857' : '#b45309',
-                }}
-              >
+              <span className={`text-sm font-black ${loan.feeStatus === 'Paid' ? 'text-emerald-600' : 'text-amber-600'}`}>
                 {(loan.feeStatus || 'Pending').replace(/_/g, ' ')}
               </span>
             </div>
             <div>
-              <span style={{ fontSize: '0.75rem', color: '#64748b', fontWeight: 700, display: 'block', textTransform: 'uppercase', marginBottom: '0.2rem' }}>
+              <span className="text-[11px] text-slate-500 font-bold tracking-wider uppercase block mb-1">
                 Date Applied
               </span>
-              <strong style={{ fontSize: '0.925rem', color: '#0f172a', fontWeight: 700 }}>
+              <strong className="text-sm font-extrabold text-brand-navy">
                 {loan.createdAt ? new Date(loan.createdAt).toLocaleDateString('en-GB', {
                   day: '2-digit',
                   month: '2-digit',
@@ -406,19 +255,11 @@ export const TrackLoanView: React.FC<TrackLoanViewProps> = ({ onTabChange, onOpe
 
           {/* Fee Payment Prompt Block if unpaid */}
           {(loan.status === 'Pending_STK_Fee_Payment' || loan.feeStatus === 'Pending_STK_Push') && (
-            <div
-              style={{
-                background: '#f0f9ff',
-                border: '1.5px solid #bae6fd',
-                borderRadius: '16px',
-                padding: '1.5rem',
-                marginBottom: '2rem',
-              }}
-            >
-              <h4 style={{ fontSize: '1.1rem', fontWeight: 800, color: '#0369a1', margin: '0 0 0.5rem 0', fontFamily: 'inherit' }}>
+            <div className="jijenge-alert jijenge-alert-info flex-col p-6 mb-8">
+              <h4 className="text-base font-extrabold text-sky-800 mb-2">
                 Action Required: Complete Processing Fee Payment
               </h4>
-              <p style={{ fontSize: '0.9rem', color: '#475569', margin: '0 0 1.25rem 0', lineHeight: 1.5 }}>
+              <p className="text-sm text-slate-600 mb-5 leading-relaxed">
                 Your application is pre-approved for <strong>KES {(loan.amount || 0).toLocaleString()}</strong>. To complete assessment and disburse funds, pay the processing fee of <strong>KES {(loan.processingFee || 0).toLocaleString()}</strong> via M-Pesa STK push.
               </p>
 
@@ -426,33 +267,19 @@ export const TrackLoanView: React.FC<TrackLoanViewProps> = ({ onTabChange, onOpe
                 type="button"
                 onClick={triggerPayment}
                 disabled={paymentLoading}
-                style={{
-                  background: '#FF6600',
-                  color: '#ffffff',
-                  border: 'none',
-                  padding: '0.8rem 1.5rem',
-                  borderRadius: '12px',
-                  fontSize: '0.9rem',
-                  fontWeight: 800,
-                  cursor: paymentLoading ? 'not-allowed' : 'pointer',
-                  display: 'inline-flex',
-                  alignItems: 'center',
-                  gap: '0.5rem',
-                  fontFamily: 'inherit',
-                  boxShadow: '0 4px 14px rgba(255,102,0,0.28)',
-                }}
+                className="btn-primary px-6 py-2.5 rounded-xl text-sm"
               >
                 <CreditCard size={16} aria-hidden="true" />
                 <span>{paymentLoading ? 'Triggering prompt...' : 'Pay Processing Fee Now'}</span>
               </button>
 
               {paymentMessage && (
-                <p style={{ marginTop: '0.75rem', fontSize: '0.88rem', fontWeight: 700, color: '#047857' }}>
+                <p className="mt-3 text-sm font-bold text-emerald-600">
                   {paymentMessage}
                 </p>
               )}
               {paymentError && (
-                <p style={{ marginTop: '0.75rem', fontSize: '0.88rem', fontWeight: 700, color: '#991b1b' }}>
+                <p className="mt-3 text-sm font-bold text-red-600">
                   {paymentError}
                 </p>
               )}
@@ -462,21 +289,12 @@ export const TrackLoanView: React.FC<TrackLoanViewProps> = ({ onTabChange, onOpe
           {/* Timeline */}
           {Array.isArray(stages) && stages.length > 0 && (
             <div>
-              <h4 style={{ fontSize: '1.1rem', fontWeight: 800, color: '#0f172a', marginBottom: '1.25rem', fontFamily: 'inherit' }}>
+              <h4 className="text-base font-black text-brand-navy mb-5">
                 Application Process Timeline
               </h4>
 
-              <div style={{ position: 'relative', paddingLeft: '2rem' }}>
-                <div
-                  style={{
-                    position: 'absolute',
-                    left: '7px',
-                    top: '10px',
-                    bottom: '10px',
-                    width: '2px',
-                    background: '#e2e8f0',
-                  }}
-                />
+              <div className="relative pl-8">
+                <div className="absolute left-[7px] top-2 bottom-2 w-0.5 bg-slate-100" />
 
                 {stages.map((stage, idx) => {
                   const stageName = stage?.name || '';
@@ -486,34 +304,30 @@ export const TrackLoanView: React.FC<TrackLoanViewProps> = ({ onTabChange, onOpe
                   const isCompleted = completedIdx !== -1 && idx <= completedIdx;
 
                   return (
-                    <div key={stage?.id || idx} style={{ position: 'relative', marginBottom: '1.5rem' }}>
+                    <div key={stage?.id || idx} className="relative mb-6 last:mb-0">
                       <div
-                        style={{
-                          position: 'absolute',
-                          left: '-2rem',
-                          top: '2px',
-                          width: '16px',
-                          height: '16px',
-                          borderRadius: '50%',
-                          background: isCurrent ? '#FF6600' : isCompleted ? '#10b981' : '#cbd5e1',
-                          border: isCurrent ? '3px solid #FFD6B3' : 'none',
-                          boxSizing: 'border-box',
-                          zIndex: 2,
-                        }}
+                        className={`absolute -left-8 top-1.5 w-4 h-4 rounded-full z-10 ${
+                          isCurrent
+                            ? 'bg-[#FF6600] border-4 border-[#FFF0E5]'
+                            : isCompleted
+                              ? 'bg-emerald-500'
+                              : 'bg-slate-300'
+                        }`}
                       />
 
                       <div>
                         <strong
-                          style={{
-                            fontSize: '0.925rem',
-                            color: isCurrent ? '#FF6600' : isCompleted ? '#0f172a' : '#94a3b8',
-                            fontWeight: 700,
-                            fontFamily: 'inherit',
-                          }}
+                          className={`text-sm ${
+                            isCurrent
+                              ? 'text-[#FF6600]'
+                              : isCompleted
+                                ? 'text-brand-navy'
+                                : 'text-slate-400'
+                          } font-bold`}
                         >
                           {stageName.replace(/_/g, ' ')}
                         </strong>
-                        <p style={{ fontSize: '0.85rem', color: '#64748b', margin: '0.2rem 0 0 0', lineHeight: 1.5 }}>
+                        <p className="text-xs text-slate-500 mt-1 leading-relaxed">
                           {stage?.description || ''}
                         </p>
                       </div>
@@ -528,3 +342,4 @@ export const TrackLoanView: React.FC<TrackLoanViewProps> = ({ onTabChange, onOpe
     </div>
   );
 };
+

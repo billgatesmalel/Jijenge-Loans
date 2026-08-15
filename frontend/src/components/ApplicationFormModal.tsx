@@ -302,40 +302,26 @@ export const ApplicationFormModal: React.FC<ApplicationFormModalProps> = ({ onTa
 
       <div className="application-form-wrapper">
         {/* Step Progress Stepper */}
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '2rem', background: '#f8fafc', padding: '1rem 1.25rem', borderRadius: '16px', border: '1px solid #e2e8f0' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.85rem', fontWeight: 800, color: '#FF6600' }}>
-            <span style={{ width: 24, height: 24, borderRadius: '50%', background: '#FF6600', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.75rem' }}>1</span>
+        <div className="flex items-center justify-between mb-8 bg-slate-50 border border-slate-200 p-4 rounded-2xl">
+          <div className="flex items-center gap-2 text-xs sm:text-sm font-black text-[#FF6600]">
+            <span className="w-6 h-6 rounded-full bg-[#FF6600] text-white flex items-center justify-center text-xs">1</span>
             <span>Personal</span>
           </div>
-          <div style={{ flex: 1, height: 2, background: '#cbd5e1', margin: '0 0.75rem' }} />
-          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.85rem', fontWeight: 800, color: '#64748b' }}>
-            <span style={{ width: 24, height: 24, borderRadius: '50%', background: '#cbd5e1', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.75rem' }}>2</span>
+          <div className="flex-1 h-0.5 bg-slate-300 mx-3" />
+          <div className="flex items-center gap-2 text-xs sm:text-sm font-black text-slate-400">
+            <span className="w-6 h-6 rounded-full bg-slate-300 text-white flex items-center justify-center text-xs">2</span>
             <span>Business</span>
           </div>
-          <div style={{ flex: 1, height: 2, background: '#cbd5e1', margin: '0 0.75rem' }} />
-          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.85rem', fontWeight: 800, color: '#64748b' }}>
-            <span style={{ width: 24, height: 24, borderRadius: '50%', background: '#cbd5e1', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.75rem' }}>3</span>
+          <div className="flex-1 h-0.5 bg-slate-300 mx-3" />
+          <div className="flex items-center gap-2 text-xs sm:text-sm font-black text-slate-400">
+            <span className="w-6 h-6 rounded-full bg-slate-300 text-white flex items-center justify-center text-xs">3</span>
             <span>Assessment</span>
           </div>
         </div>
 
         {submitErrorMessage && (
-          <div
-            style={{
-              marginBottom: '1.5rem',
-              background: '#fef2f2',
-              border: '1.5px solid #fecaca',
-              padding: '1rem 1.25rem',
-              borderRadius: '12px',
-              color: '#991b1b',
-              fontSize: '0.9rem',
-              fontWeight: 600,
-              display: 'flex',
-              alignItems: 'center',
-              gap: '0.65rem',
-            }}
-          >
-            <span style={{ fontSize: '1.2rem' }}>⚠️</span>
+          <div className="jijenge-alert jijenge-alert-error mb-6">
+            <span className="text-lg">⚠️</span>
             <span>{submitErrorMessage}</span>
           </div>
         )}
@@ -348,14 +334,14 @@ export const ApplicationFormModal: React.FC<ApplicationFormModalProps> = ({ onTa
               <span>1. Personal Information</span>
             </h3>
             <div className="form-grid">
-              <div className="form-group" style={{ gridColumn: 'span 2' }}>
-                <label htmlFor="full-name">Full Name (As shown on ID) *</label>
+              <div className="form-group sm:col-span-2">
+                <label htmlFor="full-name" className="jijenge-label">Full Name (As shown on ID) *</label>
                 <input
                   id="full-name"
                   type="text"
                   placeholder="Enter Full Name"
                   value={fullName}
-                  className={formErrors.fullName ? 'input-error' : ''}
+                  className={`jijenge-input ${formErrors.fullName ? 'jijenge-input-error' : ''}`}
                   onChange={(e) => {
                     setFullName(e.target.value);
                     if (formErrors.fullName) setFormErrors((p) => ({ ...p, fullName: '' }));
@@ -366,13 +352,13 @@ export const ApplicationFormModal: React.FC<ApplicationFormModalProps> = ({ onTa
               </div>
 
               <div className="form-group">
-                <label htmlFor="national-id">National ID Number *</label>
+                <label htmlFor="national-id" className="jijenge-label">National ID Number *</label>
                 <input
                   id="national-id"
                   type="text"
                   placeholder="Enter National ID"
                   value={nationalId}
-                  className={formErrors.nationalId ? 'input-error' : ''}
+                  className={`jijenge-input ${formErrors.nationalId ? 'jijenge-input-error' : ''}`}
                   onChange={(e) => {
                     setNationalId(e.target.value);
                     if (formErrors.nationalId) setFormErrors((p) => ({ ...p, nationalId: '' }));
@@ -383,7 +369,7 @@ export const ApplicationFormModal: React.FC<ApplicationFormModalProps> = ({ onTa
               </div>
 
               <div className="form-group">
-                <label htmlFor="applicant-age">Age (Years) *</label>
+                <label htmlFor="applicant-age" className="jijenge-label">Age (Years) *</label>
                 <input
                   id="applicant-age"
                   type="number"
@@ -391,7 +377,7 @@ export const ApplicationFormModal: React.FC<ApplicationFormModalProps> = ({ onTa
                   min="18"
                   max="90"
                   value={age}
-                  className={formErrors.age ? 'input-error' : ''}
+                  className={`jijenge-input ${formErrors.age ? 'jijenge-input-error' : ''}`}
                   onChange={(e) => {
                     setAge(e.target.value);
                     if (formErrors.age) setFormErrors((p) => ({ ...p, age: '' }));
@@ -402,13 +388,13 @@ export const ApplicationFormModal: React.FC<ApplicationFormModalProps> = ({ onTa
               </div>
 
               <div className="form-group">
-                <label htmlFor="phone-number">Phone Number (M-Pesa Line) *</label>
+                <label htmlFor="phone-number" className="jijenge-label">Phone Number (M-Pesa Line) *</label>
                 <input
                   id="phone-number"
                   type="tel"
                   placeholder="e.g. 07XXXXXXXX"
                   value={phoneNumber}
-                  className={formErrors.phoneNumber ? 'input-error' : ''}
+                  className={`jijenge-input ${formErrors.phoneNumber ? 'jijenge-input-error' : ''}`}
                   onChange={(e) => {
                     setPhoneNumber(e.target.value);
                     if (formErrors.phoneNumber) setFormErrors((p) => ({ ...p, phoneNumber: '' }));
@@ -419,11 +405,11 @@ export const ApplicationFormModal: React.FC<ApplicationFormModalProps> = ({ onTa
               </div>
 
               <div className="form-group">
-                <label htmlFor="applicant-gender">Gender *</label>
+                <label htmlFor="applicant-gender" className="jijenge-label">Gender *</label>
                 <select
                   id="applicant-gender"
                   value={gender}
-                  className={formErrors.gender ? 'input-error' : ''}
+                  className={`jijenge-select ${formErrors.gender ? 'jijenge-input-error' : ''}`}
                   onChange={(e) => {
                     setGender(e.target.value);
                     if (formErrors.gender) setFormErrors((p) => ({ ...p, gender: '' }));
@@ -438,11 +424,11 @@ export const ApplicationFormModal: React.FC<ApplicationFormModalProps> = ({ onTa
               </div>
 
               <div className="form-group">
-                <label htmlFor="marital-status">Marital Status *</label>
+                <label htmlFor="marital-status" className="jijenge-label">Marital Status *</label>
                 <select
                   id="marital-status"
                   value={maritalStatus}
-                  className={formErrors.maritalStatus ? 'input-error' : ''}
+                  className={`jijenge-select ${formErrors.maritalStatus ? 'jijenge-input-error' : ''}`}
                   onChange={(e) => {
                     setMaritalStatus(e.target.value);
                     if (formErrors.maritalStatus) setFormErrors((p) => ({ ...p, maritalStatus: '' }));
@@ -468,11 +454,11 @@ export const ApplicationFormModal: React.FC<ApplicationFormModalProps> = ({ onTa
             </h3>
             <div className="form-grid">
               <div className="form-group">
-                <label htmlFor="business-type">Business Category *</label>
+                <label htmlFor="business-type" className="jijenge-label">Business Category *</label>
                 <select
                   id="business-type"
                   value={businessType}
-                  className={formErrors.businessType ? 'input-error' : ''}
+                  className={`jijenge-select ${formErrors.businessType ? 'jijenge-input-error' : ''}`}
                   onChange={(e) => {
                     setBusinessType(e.target.value);
                     if (formErrors.businessType) setFormErrors((p) => ({ ...p, businessType: '' }));
@@ -492,13 +478,13 @@ export const ApplicationFormModal: React.FC<ApplicationFormModalProps> = ({ onTa
               </div>
 
               <div className="form-group">
-                <label htmlFor="county-location">County *</label>
+                <label htmlFor="county-location" className="jijenge-label">County *</label>
                 <input
                   id="county-location"
                   type="text"
                   placeholder="Enter County"
                   value={county}
-                  className={formErrors.county ? 'input-error' : ''}
+                  className={`jijenge-input ${formErrors.county ? 'jijenge-input-error' : ''}`}
                   onChange={(e) => {
                     setCounty(e.target.value);
                     if (formErrors.county) setFormErrors((p) => ({ ...p, county: '' }));
@@ -509,13 +495,13 @@ export const ApplicationFormModal: React.FC<ApplicationFormModalProps> = ({ onTa
               </div>
 
               <div className="form-group">
-                <label htmlFor="town-area">Town / Area *</label>
+                <label htmlFor="town-area" className="jijenge-label">Town / Area *</label>
                 <input
                   id="town-area"
                   type="text"
                   placeholder="Enter Town or Area"
                   value={townArea}
-                  className={formErrors.townArea ? 'input-error' : ''}
+                  className={`jijenge-input ${formErrors.townArea ? 'jijenge-input-error' : ''}`}
                   onChange={(e) => {
                     setTownArea(e.target.value);
                     if (formErrors.townArea) setFormErrors((p) => ({ ...p, townArea: '' }));
@@ -526,11 +512,11 @@ export const ApplicationFormModal: React.FC<ApplicationFormModalProps> = ({ onTa
               </div>
 
               <div className="form-group">
-                <label htmlFor="monthly-income">Monthly Income (KES) *</label>
+                <label htmlFor="monthly-income" className="jijenge-label">Monthly Income (KES) *</label>
                 <select
                   id="monthly-income"
                   value={monthlyIncome}
-                  className={formErrors.monthlyIncome ? 'input-error' : ''}
+                  className={`jijenge-select ${formErrors.monthlyIncome ? 'jijenge-input-error' : ''}`}
                   onChange={(e) => {
                     setMonthlyIncome(e.target.value);
                     if (formErrors.monthlyIncome) setFormErrors((p) => ({ ...p, monthlyIncome: '' }));
@@ -554,7 +540,7 @@ export const ApplicationFormModal: React.FC<ApplicationFormModalProps> = ({ onTa
               By continuing, you agree to our Terms & Conditions and Privacy Policy. All credit profiles are verified under Central Bank regulations.
             </p>
 
-            <button type="submit" disabled={submitting} className="btn-cta-large btn-form-submit">
+            <button type="submit" disabled={submitting} className="btn-primary w-full">
               <span>{submitting ? 'Submitting Application...' : 'Submit Application for Assessment'}</span>
               {!submitting && (
                 <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
@@ -569,23 +555,23 @@ export const ApplicationFormModal: React.FC<ApplicationFormModalProps> = ({ onTa
 
       {/* 5-Second Professional Loan Assessment Loader Modal */}
       {showAssessmentLoader && (
-        <div className="modal-backdrop" id="fetching-loader-modal" style={{ display: 'flex', zIndex: 9999 }}>
-          <div className="modal-dialog" style={{ maxWidth: '480px', textAlign: 'center', padding: '2.25rem 1.75rem', background: '#ffffff', borderRadius: '16px' }}>
+        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center z-[99999] p-4">
+          <div className="bg-white rounded-3xl border border-slate-200 p-8 shadow-2xl max-w-[480px] w-full text-center">
             <div className="processing-box">
-              <div className="spinner-ring" style={{ width: '58px', height: '58px', borderWidth: '5px', borderTopColor: '#FF6600', margin: '0 auto 1.25rem auto' }} />
-              <h3 style={{ fontSize: '1.35rem', fontWeight: 800, color: '#0f172a', marginBottom: '0.35rem' }}>Assessing Application...</h3>
-              <p className="processing-sub" style={{ fontSize: '0.875rem', color: '#FF6600', fontWeight: 700, margin: '0 0 1.25rem 0' }}>
+              <div className="w-14 h-14 rounded-full border-4 border-slate-200 border-t-[#FF6600] animate-spin mx-auto mb-5" />
+              <h3 className="text-xl font-extrabold text-brand-navy mb-1">Assessing Application...</h3>
+              <p className="text-sm text-[#FF6600] font-bold mb-5">
                 Verifying your information...
               </p>
-              <div className="progress-bar-wrap" style={{ height: '10px', borderRadius: '5px', background: '#e2e8f0', overflow: 'hidden' }}>
-                <div className="progress-bar-fill" style={{ width: `${progressFill}%`, background: '#FF6600', height: '100%', transition: 'width 0.8s ease' }} />
+              <div className="h-2 rounded-full bg-slate-100 overflow-hidden">
+                <div className="bg-[#FF6600] h-full transition-all duration-300" style={{ width: `${progressFill}%` }} />
               </div>
-              <ul className="verification-steps" style={{ marginTop: '1.25rem', fontSize: '0.85rem', textAlign: 'left', background: '#f8fafc', padding: '1rem', borderRadius: '12px', border: '1px solid #e2e8f0', listStyle: 'none' }}>
-                <li style={{ marginBottom: '0.4rem', color: assessmentStep >= 1 ? '#047857' : '#64748b' }}>{assessmentStep >= 1 ? '✓' : '⏳'} Verifying ID and Identity Records...</li>
-                <li style={{ marginBottom: '0.4rem', color: assessmentStep >= 2 ? '#047857' : '#64748b' }}>{assessmentStep >= 2 ? '✓' : '⏳'} Fetching applicant financial details...</li>
-                <li style={{ marginBottom: '0.4rem', color: assessmentStep >= 3 ? '#047857' : '#64748b' }}>{assessmentStep >= 3 ? '✓' : '⏳'} Assessing credit bureau history...</li>
-                <li style={{ marginBottom: '0.4rem', color: assessmentStep >= 4 ? '#047857' : '#64748b' }}>{assessmentStep >= 4 ? '✓' : '⏳'} Calculating maximum loan limit...</li>
-                <li style={{ color: assessmentStep >= 5 ? '#047857' : '#64748b' }}>{assessmentStep >= 5 ? '✓' : '⏳'} Preparing customized loan package offer...</li>
+              <ul className="mt-5 text-xs text-left bg-slate-50 border border-slate-100 p-4 rounded-xl list-none space-y-2">
+                <li className={assessmentStep >= 1 ? 'text-emerald-600 font-bold' : 'text-slate-400'}>{assessmentStep >= 1 ? '✓' : '⏳'} Verifying ID and Identity Records...</li>
+                <li className={assessmentStep >= 2 ? 'text-emerald-600 font-bold' : 'text-slate-400'}>{assessmentStep >= 2 ? '✓' : '⏳'} Fetching applicant financial details...</li>
+                <li className={assessmentStep >= 3 ? 'text-emerald-600 font-bold' : 'text-slate-400'}>{assessmentStep >= 3 ? '✓' : '⏳'} Assessing credit bureau history...</li>
+                <li className={assessmentStep >= 4 ? 'text-emerald-600 font-bold' : 'text-slate-400'}>{assessmentStep >= 4 ? '✓' : '⏳'} Calculating maximum loan limit...</li>
+                <li className={assessmentStep >= 5 ? 'text-emerald-600 font-bold' : 'text-slate-400'}>{assessmentStep >= 5 ? '✓' : '⏳'} Preparing customized loan package offer...</li>
               </ul>
             </div>
           </div>
@@ -594,73 +580,72 @@ export const ApplicationFormModal: React.FC<ApplicationFormModalProps> = ({ onTa
 
       {/* Full-Screen Checkout & Verification View Modal */}
       {checkoutOpen && loanOffer && (
-        <div className="modal-backdrop" id="apply-modal" style={{ display: 'flex', flexDirection: 'column', zIndex: 999 }}>
+        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm flex flex-col z-[999] overflow-y-auto">
           {/* Checkout Header */}
-          <header style={{ background: '#0f172a', padding: '1rem 1.75rem', color: '#ffffff', display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%', boxSizing: 'border-box' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-              <img src="/logo.png" alt="Jijenge Loans" style={{ width: '36px', height: '36px', objectFit: 'contain' }} />
-              <span style={{ fontWeight: 800, fontSize: '1.15rem', color: '#ffffff', letterSpacing: '-0.3px' }}>Jijenge Loans</span>
+          <header className="bg-brand-navy px-6 py-4 text-white flex justify-between items-center w-full sticky top-0 z-10 shadow-md">
+            <div className="flex items-center gap-3">
+              <img src="/logo.png" alt="Jijenge Loans" className="w-9 h-9 object-contain" />
+              <span className="font-extrabold text-lg text-white tracking-tight">Jijenge Loans</span>
             </div>
             <button
               onClick={() => setCheckoutOpen(false)}
-              style={{ background: 'none', border: 'none', color: '#ffffff', fontSize: '1.5rem', cursor: 'pointer' }}
+              className="text-white hover:text-slate-300 text-xl font-bold bg-none border-none cursor-pointer"
               aria-label="Close offer view"
             >
               ✕
             </button>
           </header>
 
-          <div className="modal-dialog" style={{ flex: 1, padding: '2rem 1.5rem', width: '100%', maxWidth: '680px', margin: '0 auto' }}>
+          <div className="flex-1 p-6 sm:p-8 w-full max-w-[680px] mx-auto flex items-center justify-center">
             {/* Stage 1: Matched Offer */}
             {checkoutStage === 1 && (
-              <div className="modal-stage active">
-                <div className="payment-setup-box" style={{ background: '#ffffff', border: '1px solid #e2e8f0', borderRadius: '16px', padding: '2rem 1.75rem', boxShadow: '0 4px 20px rgba(0,0,0,0.04)' }}>
-                  <div style={{ background: '#FFF5ED', borderRadius: '14px', padding: '1.5rem 1.25rem', textAlign: 'center', marginBottom: '1.5rem', border: '1px solid #FFD6B3' }}>
-                    <span style={{ background: '#FF6600', color: '#ffffff', fontSize: '0.725rem', fontWeight: 800, padding: '0.25rem 0.65rem', borderRadius: '20px', textTransform: 'uppercase', letterSpacing: '0.5px', display: 'inline-block', marginBottom: '0.5rem' }}>Application Submitted Successfully</span>
-                    <h2 style={{ fontSize: '1.65rem', fontWeight: 800, color: '#0f172a', margin: '0 0 0.5rem 0', letterSpacing: '-0.5px' }}>Your Loan Application Assessment Result</h2>
-                    <p style={{ fontSize: '0.875rem', color: '#475569', margin: 0, lineHeight: 1.5 }}>
+              <div className="modal-stage active w-full">
+                <div className="bg-white rounded-3xl border border-slate-200 p-6 sm:p-8 shadow-xl w-full">
+                  <div className="bg-[#FFF5ED] border border-[#FFD6B3] rounded-2xl p-6 text-center mb-6">
+                    <span className="jijenge-badge jijenge-badge-success mb-2 text-xs uppercase tracking-wider">Application Submitted Successfully</span>
+                    <h2 className="text-xl sm:text-2xl font-black text-brand-navy mt-1 mb-2 tracking-tight">Your Loan Application Assessment Result</h2>
+                    <p className="text-xs sm:text-sm text-slate-600 m-0 leading-relaxed">
                       Your application has been received and verified against Central Bank credit scoring models. You are matched with the offer below.
                     </p>
                   </div>
 
-                  <div style={{ background: 'linear-gradient(135deg, #0f172a 0%, #1e293b 100%)', color: '#ffffff', borderRadius: '14px', padding: '1.5rem', marginBottom: '1.5rem', position: 'relative', overflow: 'hidden' }}>
-                    <span style={{ fontSize: '0.78rem', textTransform: 'uppercase', letterSpacing: '0.8px', color: '#94a3b8', fontWeight: 700, display: 'block', marginBottom: '0.25rem' }}>MATCHED LOAN OFFER</span>
-                    <h3 style={{ fontSize: '2.25rem', fontWeight: 800, color: '#FF6600', margin: 0 }}>KES {(loanOffer.amount || 0).toLocaleString()}</h3>
-                    <div style={{ marginTop: '1rem', paddingTop: '1rem', borderTop: '1px solid rgba(255,255,255,0.1)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <div className="bg-gradient-to-br from-[#0F172A] to-[#1E293B] text-white rounded-2xl p-6 mb-6 relative overflow-hidden">
+                    <span className="text-[11px] font-bold tracking-widest text-slate-400 uppercase block mb-1">MATCHED LOAN OFFER</span>
+                    <h3 className="text-3xl sm:text-4xl font-black text-[#FF6600] m-0">KES {(loanOffer.amount || 0).toLocaleString()}</h3>
+                    <div className="mt-4 pt-4 border-t border-white/10 flex justify-between items-center">
                       <div>
-                        <span style={{ fontSize: '0.75rem', color: '#cbd5e1' }}>Assigned Package:</span>
-                        <strong style={{ display: 'block', fontSize: '1.1rem', color: '#ffffff' }}>{loanOffer.packageName}</strong>
+                        <span className="text-xs text-slate-300">Assigned Package:</span>
+                        <strong className="block text-base text-white mt-0.5">{loanOffer.packageName}</strong>
                       </div>
-                      <span style={{ background: 'rgba(255, 102, 0, 0.25)', border: '1px solid #FF6600', color: '#FF6600', fontSize: '0.75rem', padding: '0.35rem 0.75rem', borderRadius: '20px', alignSelf: 'center' }}>✓ Verified</span>
+                      <span className="jijenge-badge jijenge-badge-warning px-3 py-1">✓ Verified</span>
                     </div>
                   </div>
 
-                  <div style={{ background: '#f8fafc', border: '1.5px solid #e2e8f0', borderRadius: '12px', padding: '1.25rem', marginBottom: '1.5rem' }}>
-                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.15rem 1.5rem', fontSize: '0.875rem' }}>
+                  <div className="bg-slate-50 border border-slate-200 rounded-2xl p-5 mb-6">
+                    <div className="grid grid-cols-2 gap-4 text-sm">
                       <div>
-                        <span style={{ fontSize: '0.78rem', color: '#64748b', display: 'block' }}>Loan Package</span>
-                        <strong style={{ color: '#0f172a', fontWeight: 800 }}>{loanOffer.packageName}</strong>
+                        <span className="text-xs text-slate-500 block mb-0.5">Loan Package</span>
+                        <strong className="text-slate-900 font-extrabold">{loanOffer.packageName}</strong>
                       </div>
                       <div>
-                        <span style={{ fontSize: '0.78rem', color: '#64748b', display: 'block' }}>Processing Fee</span>
-                        <strong style={{ color: '#FF6600', fontWeight: 800 }}>KES {(loanOffer.processingFee || 0).toLocaleString()}</strong>
+                        <span className="text-xs text-slate-500 block mb-0.5">Processing Fee</span>
+                        <strong className="text-[#FF6600] font-extrabold">KES {(loanOffer.processingFee || 0).toLocaleString()}</strong>
                       </div>
                       <div>
-                        <span style={{ fontSize: '0.78rem', color: '#64748b', display: 'block' }}>Repayment Period</span>
-                        <strong style={{ color: '#0f172a', fontWeight: 800 }}>{loanOffer.tenureDays} Days</strong>
+                        <span className="text-xs text-slate-500 block mb-0.5">Repayment Period</span>
+                        <strong className="text-slate-900 font-extrabold">{loanOffer.tenureDays} Days</strong>
                       </div>
                       <div>
-                        <span style={{ fontSize: '0.78rem', color: '#64748b', display: 'block' }}>Repayment Cycle</span>
-                        <strong style={{ color: '#0f172a', fontWeight: 800 }}>Weekly</strong>
+                        <span className="text-xs text-slate-500 block mb-0.5">Repayment Cycle</span>
+                        <strong className="text-slate-900 font-extrabold">Weekly</strong>
                       </div>
                     </div>
                   </div>
 
                   <button
                     type="button"
-                    className="btn-cta-large"
+                    className="btn-primary w-full"
                     onClick={() => setCheckoutStage(2)}
-                    style={{ width: '100%', background: '#FF6600', boxShadow: '0 6px 20px rgba(255,102,0,0.28)' }}
                   >
                     Confirm &amp; Proceed to Payment &rarr;
                   </button>
@@ -670,17 +655,17 @@ export const ApplicationFormModal: React.FC<ApplicationFormModalProps> = ({ onTa
 
             {/* Stage 2: Payment */}
             {checkoutStage === 2 && (
-              <div className="modal-stage active">
-                <div className="payment-setup-box" style={{ background: '#ffffff', border: '1px solid #e2e8f0', borderRadius: '16px', padding: '2rem 1.75rem', boxShadow: '0 4px 20px rgba(0,0,0,0.04)' }}>
-                  <div style={{ textAlign: 'center', marginBottom: '1.5rem' }}>
-                    <h2 style={{ fontSize: '1.5rem', fontWeight: 800, color: '#0f172a', margin: '0 0 0.5rem 0' }}>M-Pesa Verification Payment</h2>
-                    <p style={{ fontSize: '0.875rem', color: '#64748b', margin: 0, lineHeight: 1.5 }}>
+              <div className="modal-stage active w-full">
+                <div className="bg-white rounded-3xl border border-slate-200 p-6 sm:p-8 shadow-xl w-full">
+                  <div className="text-center mb-6">
+                    <h2 className="text-xl sm:text-2xl font-black text-brand-navy m-0">M-Pesa Verification Payment</h2>
+                    <p className="text-xs sm:text-sm text-slate-600 mt-2 mb-0 leading-relaxed">
                       A verification fee of <strong>KES {(loanOffer.processingFee || 0).toLocaleString()}</strong> is required to activate and disburse your matched offer of <strong>KES {(loanOffer.amount || 0).toLocaleString()}</strong>.
                     </p>
                   </div>
 
-                  <div style={{ background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: '12px', padding: '1.25rem', marginBottom: '1.5rem' }}>
-                    <ul style={{ margin: 0, paddingLeft: '1.25rem', fontSize: '0.85rem', color: '#475569', lineHeight: 1.6 }}>
+                  <div className="bg-slate-50 border border-slate-200 rounded-2xl p-5 mb-6">
+                    <ul className="list-disc pl-5 text-xs sm:text-sm text-slate-600 space-y-2 m-0">
                       <li>Ensure your phone is unlocked and active.</li>
                       <li>Click the button below to receive an M-Pesa STK push prompt.</li>
                       <li>Enter your M-Pesa secret PIN to confirm payment.</li>
@@ -690,21 +675,20 @@ export const ApplicationFormModal: React.FC<ApplicationFormModalProps> = ({ onTa
 
                   <button
                     type="button"
-                    className="btn-cta-large"
+                    className="btn-primary w-full"
                     onClick={sendStkPush}
                     disabled={stkLoading}
-                    style={{ width: '100%', background: '#FF6600', boxShadow: '0 6px 20px rgba(255, 102, 0, 0.28)' }}
                   >
                     {stkLoading ? 'Triggering STK push...' : '💳 Send M-Pesa STK Push'}
                   </button>
 
                   {stkMessage && (
-                    <p style={{ marginTop: '1rem', fontSize: '0.88rem', fontWeight: 700, color: '#047857', textAlign: 'center' }}>
+                    <p className="mt-4 text-sm font-bold text-emerald-600 text-center">
                       {stkMessage}
                     </p>
                   )}
                   {stkError && (
-                    <p style={{ marginTop: '1rem', fontSize: '0.88rem', fontWeight: 700, color: '#be123c', textAlign: 'center' }}>
+                    <p className="mt-4 text-sm font-bold text-red-600 text-center">
                       {stkError}
                     </p>
                   )}
@@ -714,23 +698,22 @@ export const ApplicationFormModal: React.FC<ApplicationFormModalProps> = ({ onTa
 
             {/* Stage 3: Success */}
             {checkoutStage === 3 && (
-              <div className="modal-stage active" style={{ textAlign: 'center' }}>
-                <div style={{ background: '#ffffff', border: '1px solid #e2e8f0', borderRadius: '16px', padding: '3rem 2rem', boxShadow: '0 4px 20px rgba(0,0,0,0.04)' }}>
-                  <div style={{ fontSize: '3.5rem', marginBottom: '1.5rem' }}>🎉</div>
-                  <h2 style={{ fontSize: '1.75rem', fontWeight: 800, color: '#0f172a', marginBottom: '0.75rem' }}>
-                    Application Submitted &amp; Verified Successfully!
+              <div className="modal-stage active w-full">
+                <div className="bg-white rounded-3xl border border-slate-200 p-8 sm:p-12 shadow-xl w-full text-center">
+                  <div className="text-5xl mb-5">🎉</div>
+                  <h2 className="text-xl sm:text-2xl font-black text-brand-navy mb-3">
+                    Application Submitted &amp; Verified!
                   </h2>
-                  <p style={{ fontSize: '0.95rem', color: '#475569', lineHeight: 1.6, marginBottom: '2rem' }}>
+                  <p className="text-sm text-slate-600 leading-relaxed mb-6">
                     Your verification fee payment has been confirmed. Your loan application has moved to final review. Your allocated funds will be disbursed to your M-Pesa line <strong>{loanOffer.phoneNumber}</strong> shortly.
                   </p>
                   <button
-                    className="btn-cta-large"
+                    className="btn-primary w-full max-w-[280px] mx-auto block"
                     onClick={() => {
                       setCheckoutOpen(false);
                       onTabChange('home');
                       window.location.hash = '#customer';
                     }}
-                    style={{ width: '100%', maxWidth: '280px', margin: '0 auto', background: '#FF6600', boxShadow: '0 6px 20px rgba(255,102,0,0.28)' }}
                   >
                     Go to Customer Portal
                   </button>
@@ -743,3 +726,4 @@ export const ApplicationFormModal: React.FC<ApplicationFormModalProps> = ({ onTa
     </div>
   );
 };
+

@@ -59,7 +59,7 @@ const NAV_SECTIONS = [
 ];
 
 const ALL_NAV_ITEMS = NAV_SECTIONS.flatMap(s => s.items);
-const ORANGE = '#f97316';
+const ORANGE = '#FF6600';
 const ITEMS_PER_PAGE = 10;
 
 export const AdminDashboardModal: React.FC<AdminDashboardProps> = ({ onClose }) => {
@@ -838,18 +838,18 @@ export const AdminDashboardModal: React.FC<AdminDashboardProps> = ({ onClose }) 
                       margin: '0.15rem auto', padding: '0.65rem 1rem',
                       borderRadius: '10px',
                       justifyContent: sidebarCollapsed ? 'center' : 'flex-start',
-                      background: active ? '#eef2fe' : 'transparent',
-                      border: active ? '1px solid #dbeafe' : '1px solid transparent',
+                      background: active ? '#FFF5ED' : 'transparent',
+                      border: active ? '1px solid #FFD6B3' : '1px solid transparent',
                       cursor: 'pointer', position: 'relative', transition: 'all 0.15s',
                       outline: 'none', boxSizing: 'border-box'
                     }}
                     onMouseEnter={e => { if (!active) (e.currentTarget as HTMLElement).style.background = '#f8fafc'; }}
                     onMouseLeave={e => { if (!active) (e.currentTarget as HTMLElement).style.background = 'transparent'; }}
                   >
-                    {active && <div style={{ position: 'absolute', left: 0, top: '25%', bottom: '25%', width: '3px', background: '#4f46e5', borderRadius: '0 3px 3px 0' }} />}
-                    <Icon size={18} color={active ? '#4f46e5' : item.color} style={{ flexShrink: 0 }} />
+                    {active && <div style={{ position: 'absolute', left: 0, top: '25%', bottom: '25%', width: '3px', background: '#FF6600', borderRadius: '0 3px 3px 0' }} />}
+                    <Icon size={18} color={active ? '#FF6600' : item.color} style={{ flexShrink: 0 }} />
                     {!sidebarCollapsed && (
-                      <span style={{ color: active ? '#4f46e5' : '#475569', fontSize: '0.85rem', fontWeight: active ? 700 : 500, flex: 1, textAlign: 'left', whiteSpace: 'nowrap' }}>
+                      <span style={{ color: active ? '#FF6600' : '#475569', fontSize: '0.85rem', fontWeight: active ? 700 : 500, flex: 1, textAlign: 'left', whiteSpace: 'nowrap' }}>
                         {item.label}
                       </span>
                     )}
@@ -963,8 +963,8 @@ export const AdminDashboardModal: React.FC<AdminDashboardProps> = ({ onClose }) 
 
                   {arrivedViaSwitch && (
                     <button onClick={() => { setProfileOpen(false); handleBackToCustomerDashboard(); }}
-                      style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', width: '100%', padding: '0.6rem 0.75rem', background: 'none', border: 'none', borderRadius: '8px', cursor: 'pointer', color: '#4f46e5', fontSize: '0.85rem', fontWeight: 600, textAlign: 'left', transition: 'background 0.1s' }}
-                      onMouseEnter={e => (e.currentTarget as HTMLElement).style.background = '#f5f3ff'}
+                      style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', width: '100%', padding: '0.6rem 0.75rem', background: 'none', border: 'none', borderRadius: '8px', cursor: 'pointer', color: '#FF6600', fontSize: '0.85rem', fontWeight: 600, textAlign: 'left', transition: 'background 0.1s' }}
+                      onMouseEnter={e => (e.currentTarget as HTMLElement).style.background = '#FFF5ED'}
                       onMouseLeave={e => (e.currentTarget as HTMLElement).style.background = 'transparent'}
                     >
                       <ArrowLeft size={14} /> Back to Customer Dashboard
@@ -1187,7 +1187,7 @@ export const AdminDashboardModal: React.FC<AdminDashboardProps> = ({ onClose }) 
                           <div style={{ fontSize: '0.875rem', fontWeight: 700, color: '#334155' }}>{pkg}</div>
                           <div style={{ fontSize: '0.72rem', color: '#94a3b8' }}>Allocated Package</div>
                         </div>
-                        <span style={{ background: '#eef2fe', color: '#4f46e5', padding: '3px 8px', borderRadius: '12px', fontSize: '0.75rem', fontWeight: 700 }}>{count} ({pct}%)</span>
+                        <span style={{ background: '#FFF5ED', color: '#FF6600', padding: '3px 8px', borderRadius: '12px', fontSize: '0.75rem', fontWeight: 700 }}>{count} ({pct}%)</span>
                       </div>
                     );
                   })}
@@ -1346,7 +1346,7 @@ export const AdminDashboardModal: React.FC<AdminDashboardProps> = ({ onClose }) 
                             <td style={{ padding: '0.65rem 0.85rem', fontWeight: 700, color: '#0f172a' }}>{b.name}</td>
                             <td style={{ padding: '0.65rem 0.85rem' }}>KES {b.minSalary.toLocaleString()}</td>
                             <td style={{ padding: '0.65rem 0.85rem' }}>KES {b.maxSalary.toLocaleString()}</td>
-                            <td style={{ padding: '0.65rem 0.85rem', color: '#4f46e5', fontWeight: 600 }}>{b.assignedPackageName}</td>
+                            <td style={{ padding: '0.65rem 0.85rem', color: '#FF6600', fontWeight: 600 }}>{b.assignedPackageName}</td>
                             <td style={{ padding: '0.65rem 0.85rem', fontWeight: 700, color: '#065f46' }}>KES {b.maxLimit.toLocaleString()}</td>
                             <td style={{ padding: '0.65rem 0.85rem', display: 'flex', gap: '0.4rem' }}>
                               <button onClick={() => handleEditBracket(b)}
@@ -1410,7 +1410,7 @@ export const AdminDashboardModal: React.FC<AdminDashboardProps> = ({ onClose }) 
                 <div style={{ padding: '0.4rem' }}>
                   {tickets.length > 0 ? tickets.map((t: any) => (
                     <button key={t.id} onClick={() => setSelectedTicket(t)}
-                      style={{ width: '100%', padding: '0.85rem', textAlign: 'left', border: 'none', borderRadius: '10px', cursor: 'pointer', marginBottom: '0.2rem', transition: 'background 0.1s', borderLeft: `3.5px solid ${t.status === 'OPEN' ? ORANGE : '#cbd5e1'}`, background: selectedTicket?.id === t.id ? '#eef2fe' : 'transparent', fontFamily: 'inherit' }}
+                      style={{ width: '100%', padding: '0.85rem', textAlign: 'left', border: 'none', borderRadius: '10px', cursor: 'pointer', marginBottom: '0.2rem', transition: 'background 0.1s', borderLeft: `3.5px solid ${t.status === 'OPEN' ? ORANGE : '#cbd5e1'}`, background: selectedTicket?.id === t.id ? '#FFF5ED' : 'transparent', fontFamily: 'inherit' }}
                       onMouseEnter={e => { if (selectedTicket?.id !== t.id) (e.currentTarget as HTMLElement).style.background = '#f8fafc'; }}
                       onMouseLeave={e => { if (selectedTicket?.id !== t.id) (e.currentTarget as HTMLElement).style.background = 'transparent'; }}
                     >
@@ -1444,7 +1444,7 @@ export const AdminDashboardModal: React.FC<AdminDashboardProps> = ({ onClose }) 
                         const isAdminMsg = m.sender === 'ADMIN';
                         return (
                           <div key={m.id} style={{ display: 'flex', justifyContent: isAdminMsg ? 'flex-end' : 'flex-start' }}>
-                            <div style={{ maxWidth: '70%', padding: '0.6rem 0.9rem', borderRadius: isAdminMsg ? '12px 12px 3px 12px' : '12px 12px 12px 3px', background: isAdminMsg ? '#4f46e5' : '#fff', border: isAdminMsg ? 'none' : '1px solid #e2e8f0', color: isAdminMsg ? '#fff' : '#0f172a', fontSize: '0.875rem', lineHeight: 1.5 }}>
+                            <div style={{ maxWidth: '70%', padding: '0.6rem 0.9rem', borderRadius: isAdminMsg ? '12px 12px 3px 12px' : '12px 12px 12px 3px', background: isAdminMsg ? '#0f172a' : '#fff', border: isAdminMsg ? 'none' : '1px solid #e2e8f0', color: isAdminMsg ? '#fff' : '#0f172a', fontSize: '0.875rem', lineHeight: 1.5 }}>
                               {m.text}
                               <div style={{ fontSize: '0.63rem', opacity: 0.65, marginTop: '0.2rem', textAlign: 'right' }}>
                                 {new Date(m.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
@@ -1458,7 +1458,7 @@ export const AdminDashboardModal: React.FC<AdminDashboardProps> = ({ onClose }) 
                       <input type="text" placeholder="Type support message reply..." value={supportReply} onChange={e => setSupportReply(e.target.value)}
                         style={{ flex: 1, padding: '0.65rem 1rem', border: '1.5px solid #e2e8f0', borderRadius: '10px', fontSize: '0.875rem', outline: 'none', fontFamily: 'inherit' }}
                       />
-                      <button type="submit" style={{ display: 'flex', alignItems: 'center', gap: '0.35rem', padding: '0.65rem 1.1rem', background: '#4f46e5', color: '#fff', border: 'none', borderRadius: '10px', cursor: 'pointer', fontSize: '0.875rem', fontWeight: 700, fontFamily: 'inherit' }}>
+                      <button type="submit" style={{ display: 'flex', alignItems: 'center', gap: '0.35rem', padding: '0.65rem 1.1rem', background: ORANGE, color: '#fff', border: 'none', borderRadius: '10px', cursor: 'pointer', fontSize: '0.875rem', fontWeight: 700, fontFamily: 'inherit' }}>
                         <Send size={14} /> Send
                       </button>
                     </form>

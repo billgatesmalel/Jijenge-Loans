@@ -478,56 +478,29 @@ export const CustomerDashboardModal: React.FC<CustomerDashboardProps> = ({ onClo
         </div>
       </div>
 
+
+
       {/* MAIN CONTENT AREA */}
-      <main
-        style={!isLoggedIn ? {
-          flex: 1,
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          padding: '2.5rem 1.25rem',
-          boxSizing: 'border-box',
-          width: '100%',
-        } : {
-          flex: 1,
-          width: '100%',
-          maxWidth: 900,
-          margin: '0 auto',
-          padding: '2.5rem 1.25rem',
-          boxSizing: 'border-box',
-        }}
-      >
+      <main className={`flex-grow flex items-center justify-center p-6 w-full ${isLoggedIn ? 'max-w-[900px] mx-auto' : ''}`}>
         {!isLoggedIn ? (
-          <div className="login-card">
+          <div className="bg-white rounded-3xl border border-slate-200 p-6 sm:p-9 shadow-lg max-w-[440px] w-full">
             {/* Icon + heading */}
-            <div style={{ textAlign: 'center', marginBottom: '1.75rem' }}>
-              <div style={{
-                background: 'var(--brand-orange-light)',
-                color: 'var(--brand-orange)',
-                width: 52,
-                height: 52,
-                borderRadius: 14,
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                fontSize: '1.6rem',
-                margin: '0 auto 0.85rem',
-                border: '1.5px solid #FFD6B3',
-              }}>
+            <div className="text-center mb-6">
+              <div className="bg-[#FFF5ED] text-[#FF6600] border border-[#FFD6B3] w-12 h-12 rounded-xl flex items-center justify-center text-xl mx-auto mb-3">
                 🔐
               </div>
-              <h2 style={{ fontSize: '1.35rem', fontWeight: 800, color: 'var(--text-headline)', margin: '0 0 0.25rem', fontFamily: 'var(--font-family)' }}>
+              <h2 className="text-xl font-extrabold text-brand-navy mb-1">
                 Customer Portal Login
               </h2>
-              <p style={{ fontSize: '0.875rem', color: 'var(--text-muted)', margin: 0, lineHeight: 1.5, fontFamily: 'var(--font-family)' }}>
+              <p className="text-xs text-slate-500 m-0 leading-relaxed">
                 Access your allocated loan balance &amp; withdraw to M-Pesa
               </p>
             </div>
 
             <form onSubmit={handleLoginSubmit}>
               {/* Phone */}
-              <div style={{ marginBottom: '1.15rem' }}>
-                <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 700, color: '#1e293b', marginBottom: '0.4rem', fontFamily: 'var(--font-family)' }}>
+              <div className="mb-4">
+                <label htmlFor="customer-phone" className="jijenge-label">
                   Registered M-Pesa Phone Number
                 </label>
                 <input
@@ -541,44 +514,22 @@ export const CustomerDashboardModal: React.FC<CustomerDashboardProps> = ({ onClo
                     setError('');
                     setResendSent(false);
                   }}
-                  onFocus={onFocus}
-                  onBlur={(e) => {
-                    onBlur(e);
-                    if (phone.trim() && !validatePhoneNumber(phone)) {
-                      setPhoneError('Please enter a valid M-Pesa phone number (e.g. 07XXXXXXXX)');
-                    } else {
-                      setPhoneError('');
-                    }
-                  }}
-                  style={{
-                    width: '100%',
-                    height: 'var(--input-height)',
-                    padding: '0.85rem 1.1rem',
-                    borderRadius: 'var(--radius-md)',
-                    border: '1.5px solid var(--border-light)',
-                    fontSize: '0.95rem',
-                    outline: 'none',
-                    boxSizing: 'border-box',
-                    fontFamily: 'var(--font-family)',
-                    transition: 'var(--transition)',
-                  }}
+                  className={`jijenge-input ${phoneError ? 'jijenge-input-error' : ''}`}
                   required
                 />
                 {phoneError && (
-                  <div style={{ color: '#ef4444', fontSize: '0.78rem', marginTop: '0.35rem', fontWeight: 600, fontFamily: 'var(--font-family)' }}>
+                  <div className="text-red-500 text-xs mt-1.5 font-semibold">
                     {phoneError}
                   </div>
                 )}
               </div>
 
               {/* PIN with show/hide toggle */}
-              <div style={{ marginBottom: '0.5rem' }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.4rem' }}>
-                  <label style={{ fontSize: '0.85rem', fontWeight: 700, color: '#1e293b', fontFamily: 'var(--font-family)' }}>
-                    Security PIN
-                  </label>
-                </div>
-                <div style={{ position: 'relative' }}>
+              <div className="mb-2">
+                <label htmlFor="customer-pin" className="jijenge-label">
+                  Security PIN
+                </label>
+                <div className="relative">
                   <input
                     id="customer-pin"
                     type={showPin ? 'text' : 'password'}
@@ -589,20 +540,7 @@ export const CustomerDashboardModal: React.FC<CustomerDashboardProps> = ({ onClo
                       setError('');
                       setResendSent(false);
                     }}
-                    onFocus={onFocus}
-                    onBlur={onBlur}
-                    style={{
-                      width: '100%',
-                      height: 'var(--input-height)',
-                      padding: '0.85rem 3rem 0.85rem 1.1rem',
-                      borderRadius: 'var(--radius-md)',
-                      border: '1.5px solid var(--border-light)',
-                      fontSize: '0.95rem',
-                      outline: 'none',
-                      boxSizing: 'border-box',
-                      fontFamily: 'var(--font-family)',
-                      transition: 'var(--transition)',
-                    }}
+                    className="jijenge-input pr-12"
                     required
                   />
                   {/* Eye toggle */}
@@ -610,22 +548,7 @@ export const CustomerDashboardModal: React.FC<CustomerDashboardProps> = ({ onClo
                     type="button"
                     onClick={() => setShowPin(v => !v)}
                     aria-label={showPin ? 'Hide PIN' : 'Show PIN'}
-                    style={{
-                      position: 'absolute',
-                      right: '0.9rem',
-                      top: '50%',
-                      transform: 'translateY(-50%)',
-                      background: 'none',
-                      border: 'none',
-                      cursor: 'pointer',
-                      color: '#94a3b8',
-                      padding: '0.2rem',
-                      display: 'flex',
-                      alignItems: 'center',
-                      transition: 'color 0.15s ease',
-                    }}
-                    onMouseEnter={(e) => { (e.currentTarget as HTMLButtonElement).style.color = '#475569'; }}
-                    onMouseLeave={(e) => { (e.currentTarget as HTMLButtonElement).style.color = '#94a3b8'; }}
+                    className="absolute right-3.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-700 bg-none border-none p-1 cursor-pointer flex items-center transition-colors"
                   >
                     {showPin ? <EyeOff size={18} /> : <Eye size={18} />}
                   </button>
@@ -633,9 +556,9 @@ export const CustomerDashboardModal: React.FC<CustomerDashboardProps> = ({ onClo
               </div>
 
               {/* Resend PIN */}
-              <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: '1.5rem' }}>
+              <div className="flex justify-end mb-6">
                 {resendCooldown > 0 ? (
-                  <span style={{ fontSize: '0.78rem', color: 'var(--text-muted)', fontWeight: 600, fontFamily: 'var(--font-family)' }}>
+                  <span className="text-xs text-slate-400 font-bold">
                     Resend PIN in {resendCooldown}s
                   </span>
                 ) : (
@@ -643,20 +566,7 @@ export const CustomerDashboardModal: React.FC<CustomerDashboardProps> = ({ onClo
                     type="button"
                     onClick={handleResendPin}
                     disabled={resendLoading}
-                    style={{
-                      background: 'none',
-                      border: 'none',
-                      cursor: resendLoading ? 'not-allowed' : 'pointer',
-                      color: resendLoading ? '#94a3b8' : 'var(--brand-orange)',
-                      fontSize: '0.78rem',
-                      fontWeight: 700,
-                      padding: 0,
-                      fontFamily: 'var(--font-family)',
-                      textDecoration: 'none',
-                      transition: 'color 0.15s ease',
-                    }}
-                    onMouseEnter={(e) => { if (!resendLoading) (e.currentTarget as HTMLButtonElement).style.textDecoration = 'underline'; }}
-                    onMouseLeave={(e) => { (e.currentTarget as HTMLButtonElement).style.textDecoration = 'none'; }}
+                    className="text-xs font-bold text-[#FF6600] hover:underline bg-none border-none p-0 cursor-pointer disabled:text-slate-400 disabled:no-underline"
                   >
                     {resendLoading ? 'Sending...' : 'Resend PIN via SMS'}
                   </button>
@@ -668,15 +578,7 @@ export const CustomerDashboardModal: React.FC<CustomerDashboardProps> = ({ onClo
                 type="submit"
                 id="btn-customer-login"
                 disabled={loginLoading}
-                className="btn-primary"
-                style={{
-                  width: '100%',
-                  background: loginLoading ? '#FFA366' : 'var(--brand-orange)',
-                  border: loginLoading ? '1.5px solid #FFA366' : '1.5px solid var(--brand-orange)',
-                  cursor: loginLoading ? 'not-allowed' : 'pointer',
-                  boxShadow: loginLoading ? 'none' : 'var(--shadow-orange)',
-                  transform: 'none',
-                }}
+                className="btn-primary w-full"
               >
                 {loginLoading ? 'Verifying credentials...' : (
                   <>
@@ -689,81 +591,50 @@ export const CustomerDashboardModal: React.FC<CustomerDashboardProps> = ({ onClo
 
             {/* Error Message */}
             {error && (
-              <div style={{
-                marginTop: '1.1rem',
-                display: 'flex',
-                alignItems: 'center',
-                gap: '0.5rem',
-                color: '#ef4444',
-                background: '#fef2f2',
-                border: '1.5px solid #fee2e2',
-                padding: '0.85rem 1.1rem',
-                borderRadius: 12,
-                fontSize: '0.875rem',
-                fontWeight: 600,
-                fontFamily: 'var(--font-family)',
-              }}>
-                <AlertCircle size={16} style={{ flexShrink: 0 }} />
+              <div className="jijenge-alert jijenge-alert-error mt-4">
+                <AlertCircle size={16} className="flex-shrink-0" />
                 <span>{error}</span>
               </div>
             )}
 
             {/* Success Message for SMS */}
             {resendSent && (
-              <div style={{
-                marginTop: '1.1rem',
-                display: 'flex',
-                alignItems: 'center',
-                gap: '0.5rem',
-                color: '#047857',
-                background: '#ecfdf5',
-                border: '1.5px solid #a7f3d0',
-                padding: '0.85rem 1.1rem',
-                borderRadius: 12,
-                fontSize: '0.875rem',
-                fontWeight: 600,
-                fontFamily: 'var(--font-family)',
-              }}>
-                <AlertCircle size={16} style={{ flexShrink: 0, color: '#10b981' }} />
+              <div className="jijenge-alert jijenge-alert-success mt-4">
+                <AlertCircle size={16} className="flex-shrink-0 text-emerald-600" />
                 <span>PIN sent successfully. Check your phone for your new PIN.</span>
               </div>
             )}
 
             {/* Security footer */}
-            <div style={{
-              marginTop: '1.5rem',
-              paddingTop: '1rem',
-              borderTop: '1px solid #f1f5f9',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              gap: '0.5rem',
-              fontSize: '0.75rem',
-              color: '#94a3b8',
-              fontFamily: 'var(--font-family)',
-            }}>
-              <Lock size={14} style={{ color: '#10b981', flexShrink: 0 }} aria-hidden />
+            <div className="mt-6 pt-4 border-t border-slate-100 flex items-center justify-center gap-2 text-[10px] text-slate-400">
+              <Lock size={12} className="text-emerald-500 flex-shrink-0" aria-hidden />
               <span>256-Bit SSL Encrypted Connection · ODPC Data Protected</span>
             </div>
           </div>
         ) : (
           /* ── PORTAL DASHBOARD (logged in) ── */
           userData && (
-            <div style={{ background: '#ffffff', border: '1.5px solid #e2e8f0', padding: '2.5rem', borderRadius: 24, boxShadow: '0 10px 30px rgba(0,0,0,0.03)' }}>
+            <div className="bg-white border border-slate-200 p-6 sm:p-9 rounded-3xl shadow-md w-full">
               {/* Welcome header */}
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '1rem', borderBottom: '1.5px solid #f1f5f9', paddingBottom: '1.5rem', marginBottom: '2rem' }}>
+              <div className="flex justify-between items-start flex-wrap gap-4 border-b border-slate-100 pb-5 mb-6">
                 <div>
-                  <h2 id="welcome-name" style={{ fontSize: '1.6rem', fontWeight: 800, color: '#0f172a', margin: '0 0 0.35rem', fontFamily: 'inherit' }}>
+                  <h2 id="welcome-name" className="text-xl sm:text-2xl font-black text-brand-navy mt-0 mb-1 tracking-tight">
                     Welcome, {userData.fullName}!
                   </h2>
-                  <p id="welcome-phone" style={{ fontSize: '0.875rem', color: '#64748b', margin: 0, fontWeight: 600 }}>
+                  <p id="welcome-phone" className="text-xs sm:text-sm text-slate-500 font-bold m-0">
                     📱 {userData.phoneNumber} {latestLoan && `| Ref: ${latestLoan.transactionRef}`}
                   </p>
                 </div>
                 {latestLoan && (
-                  <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end' }}>
-                    <span style={{ fontSize: '0.75rem', color: '#94a3b8', fontWeight: 700, textTransform: 'uppercase', marginBottom: '0.25rem' }}>Loan Status</span>
-                    <span className={`badge-status ${getStatusBadgeClass(latestLoan.status)}`} style={{ padding: '0.4rem 0.85rem', borderRadius: 20, fontSize: '0.825rem', fontWeight: 800 }}>
+                  <div className="flex flex-col items-end">
+                    <span className="text-[10px] text-slate-400 font-bold uppercase mb-1">Loan Status</span>
+                    <span className={`jijenge-badge jijenge-badge-${
+                      latestLoan.status.toLowerCase().includes('disbursed') || latestLoan.status.toLowerCase().includes('approved') || latestLoan.status.toLowerCase().includes('paid') || latestLoan.status.toLowerCase().includes('complete')
+                        ? 'success'
+                        : latestLoan.status.toLowerCase().includes('rejected') || latestLoan.status.toLowerCase().includes('failed') || latestLoan.status.toLowerCase().includes('cancel')
+                          ? 'error'
+                          : 'warning'
+                    } px-3 py-1.5`}>
                       {latestLoan.status.replace(/_/g, ' ')}
                     </span>
                   </div>
@@ -771,34 +642,33 @@ export const CustomerDashboardModal: React.FC<CustomerDashboardProps> = ({ onClo
               </div>
 
               {/* Balance cards */}
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '1.25rem', marginBottom: '2.5rem' }}>
-                <div style={{ background: '#ecfdf5', border: '1.5px solid #a7f3d0', borderRadius: 16, padding: '1.5rem' }}>
-                  <span style={{ fontSize: '0.75rem', color: '#047857', fontWeight: 700, display: 'block', textTransform: 'uppercase', marginBottom: '0.25rem' }}>Allocated Loan Balance</span>
-                  <strong style={{ fontSize: '1.75rem', color: '#047857', fontWeight: 800 }}>KES {allocatedBalance.toLocaleString()}</strong>
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-5 mb-8">
+                <div className="bg-emerald-50 border border-emerald-200 rounded-2xl p-5 shadow-sm">
+                  <span className="text-[11px] text-emerald-800 font-bold tracking-wider uppercase block mb-1">Allocated Loan Balance</span>
+                  <strong className="text-xl sm:text-2xl font-black text-emerald-800">KES {allocatedBalance.toLocaleString()}</strong>
                 </div>
-                <div style={{ background: '#f8fafc', border: '1.5px solid #e2e8f0', borderRadius: 16, padding: '1.5rem' }}>
-                  <span style={{ fontSize: '0.75rem', color: '#64748b', fontWeight: 700, display: 'block', textTransform: 'uppercase', marginBottom: '0.25rem' }}>M-Pesa Disbursal Fee</span>
-                  <strong style={{ fontSize: '1.75rem', color: '#475569', fontWeight: 800 }}>KES {formattedFee.toLocaleString()}</strong>
+                <div className="bg-slate-50 border border-slate-200 rounded-2xl p-5 shadow-sm">
+                  <span className="text-[11px] text-slate-500 font-bold tracking-wider uppercase block mb-1">M-Pesa Disbursal Fee</span>
+                  <strong className="text-xl sm:text-2xl font-black text-slate-700">KES {formattedFee.toLocaleString()}</strong>
                 </div>
-                <div style={{ background: '#f0f9ff', border: '1.5px solid #38bdf8', borderRadius: 16, padding: '1.5rem' }}>
-                  <span style={{ fontSize: '0.75rem', color: '#0369a1', fontWeight: 700, display: 'block', textTransform: 'uppercase', marginBottom: '0.25rem' }}>Amount You Will Receive</span>
-                  <strong style={{ fontSize: '1.75rem', color: '#0369a1', fontWeight: 800 }}>KES {allocatedBalance.toLocaleString()}</strong>
+                <div className="bg-sky-50 border border-sky-200 rounded-2xl p-5 shadow-sm">
+                  <span className="text-[11px] text-sky-800 font-bold tracking-wider uppercase block mb-1">Amount You Will Receive</span>
+                  <strong className="text-xl sm:text-2xl font-black text-sky-800">KES {allocatedBalance.toLocaleString()}</strong>
                 </div>
               </div>
 
               {/* Withdraw panel */}
               {latestLoan && allocatedBalance > 0 && (
-                <div style={{ background: '#f0f9ff', border: '1.5px solid #bae6fd', borderRadius: 16, padding: '1.5rem', marginBottom: '2.5rem' }}>
-                  <h3 style={{ fontSize: '1.1rem', fontWeight: 800, color: '#0369a1', margin: '0 0 0.5rem', fontFamily: 'inherit' }}>Withdraw Funds to M-Pesa</h3>
-                  <p style={{ fontSize: '0.875rem', color: '#475569', margin: '0 0 1.25rem', lineHeight: 1.5 }}>
+                <div className="jijenge-alert jijenge-alert-info flex-col p-6 mb-8">
+                  <h3 className="text-base font-extrabold text-sky-800 mb-1.5">Withdraw Funds to M-Pesa</h3>
+                  <p className="text-xs sm:text-sm text-slate-600 mb-4 leading-relaxed">
                     Your matched loan is active and pre-approved for immediate cashout. Press the button below to initiate disbursal.
                   </p>
                   <button
                     type="button"
-                    className="btn-submit"
+                    className="btn-primary w-full sm:max-w-[280px]"
                     onClick={handleWithdrawFunds}
                     disabled={withdrawLoading}
-                    style={{ maxWidth: 280, margin: 0 }}
                   >
                     {withdrawLoading ? 'Initiating...' : '💸 Request Withdrawal to M-Pesa'}
                   </button>
@@ -807,36 +677,42 @@ export const CustomerDashboardModal: React.FC<CustomerDashboardProps> = ({ onClo
 
               {/* Withdrawal history */}
               <div>
-                <h3 style={{ fontSize: '1.15rem', fontWeight: 800, color: '#0f172a', marginBottom: '1rem', fontFamily: 'inherit' }}>Withdrawal Transaction History</h3>
-                <div style={{ overflowX: 'auto' }}>
-                  <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.9rem' }}>
+                <h3 className="text-base font-black text-brand-navy mb-4">Withdrawal Transaction History</h3>
+                <div className="overflow-x-auto border border-slate-200 rounded-2xl">
+                  <table className="w-full border-collapse text-left text-sm">
                     <thead>
-                      <tr style={{ background: '#edf2f5', textAlign: 'left' }}>
+                      <tr className="bg-slate-50 border-b border-slate-200 text-slate-500 text-xs font-bold uppercase">
                         {['Date Requested', 'Disbursed Amount', 'Withdrawal Fee', 'Transaction ID', 'Disbursal Status'].map(h => (
-                          <th key={h} style={{ padding: '0.75rem 1rem', color: '#475569', fontWeight: 700, fontFamily: 'inherit' }}>{h}</th>
+                          <th key={h} className="px-4 py-3">{h}</th>
                         ))}
                       </tr>
                     </thead>
-                    <tbody>
+                    <tbody className="divide-y divide-slate-100">
                       {withdrawals.length > 0 ? withdrawals.map((w) => (
-                        <tr key={w.id} style={{ borderBottom: '1px solid #e2e8f0' }}>
-                          <td style={{ padding: '0.9rem 1rem', fontWeight: 500 }}>
+                        <tr key={w.id} className="hover:bg-slate-50/50">
+                          <td className="px-4 py-3 font-semibold text-slate-900">
                             {new Date(w.createdAt).toLocaleDateString('en-GB', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' })}
                           </td>
-                          <td style={{ padding: '0.9rem 1rem', fontWeight: 800 }}>KES {w.amount.toLocaleString()}</td>
-                          <td style={{ padding: '0.9rem 1rem' }}>KES {w.withdrawalFee.toLocaleString()}</td>
-                          <td style={{ padding: '0.9rem 1rem' }}>
-                            <code style={{ fontSize: '0.8rem', background: '#f1f5f9', padding: '0.2rem 0.4rem', borderRadius: 4 }}>{w.checkoutRequestId}</code>
+                          <td className="px-4 py-3 font-bold text-slate-900">KES {w.amount.toLocaleString()}</td>
+                          <td className="px-4 py-3 text-slate-600">KES {w.withdrawalFee.toLocaleString()}</td>
+                          <td className="px-4 py-3">
+                            <code className="text-xs bg-slate-100 px-2 py-0.5 rounded text-slate-700">{w.checkoutRequestId}</code>
                           </td>
-                          <td style={{ padding: '0.9rem 1rem' }}>
-                            <span className={`badge-status ${getStatusBadgeClass(w.status)}`} style={{ padding: '0.25rem 0.6rem', borderRadius: 12, fontSize: '0.78rem', fontWeight: 700 }}>
+                          <td className="px-4 py-3">
+                            <span className={`jijenge-badge jijenge-badge-${
+                              w.status.toLowerCase().includes('success') || w.status.toLowerCase().includes('approved') || w.status.toLowerCase().includes('disbursed') || w.status.toLowerCase().includes('paid')
+                                ? 'success'
+                                : w.status.toLowerCase().includes('reject') || w.status.toLowerCase().includes('fail')
+                                  ? 'error'
+                                  : 'warning'
+                            }`}>
                               {w.status}
                             </span>
                           </td>
                         </tr>
                       )) : (
                         <tr>
-                          <td colSpan={5} style={{ textAlign: 'center', color: '#94a3b8', padding: '2rem 1.5rem' }}>
+                          <td colSpan={5} className="text-center text-slate-400 py-8">
                             No withdrawals recorded yet.
                           </td>
                         </tr>
@@ -854,18 +730,18 @@ export const CustomerDashboardModal: React.FC<CustomerDashboardProps> = ({ onClo
 
       {/* ── Processing overlay ── */}
       {withdrawLoading && !withdrawSuccess && (
-        <div className="modal-backdrop" style={{ display: 'flex', zIndex: 999 }}>
-          <div className="modal-dialog" style={{ maxWidth: 440, textAlign: 'center', padding: '2.5rem 1.75rem', background: '#ffffff', borderRadius: 16 }}>
+        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center z-[99999] p-4">
+          <div className="bg-white rounded-3xl border border-slate-200 p-8 shadow-2xl max-w-[440px] w-full text-center">
             <div className="processing-box">
-              <div className="spinner-ring" style={{ width: 56, height: 56, borderWidth: 5, borderTopColor: '#FF6600', margin: '0 auto 1.25rem' }} />
-              <h3 style={{ fontSize: '1.35rem', fontWeight: 800, color: '#0f172a', marginBottom: '0.35rem', fontFamily: 'inherit' }}>
+              <div className="w-14 h-14 rounded-full border-4 border-slate-200 border-t-[#FF6600] animate-spin mx-auto mb-5" />
+              <h3 className="text-lg font-black text-brand-navy mb-2">
                 Initiating M-Pesa Withdrawal...
               </h3>
-              <p style={{ fontSize: '0.9rem', color: '#64748b', margin: '0 0 1.25rem', lineHeight: 1.5 }}>
+              <p className="text-xs sm:text-sm text-slate-500 mb-5 leading-relaxed">
                 Sending cashout prompt to <strong>{userData?.phoneNumber}</strong>. Enter your M-Pesa PIN to authorize withdrawal fee of <strong>KES {formattedFee.toLocaleString()}</strong>.
               </p>
-              <div style={{ height: 10, borderRadius: 5, background: '#e2e8f0', overflow: 'hidden' }}>
-                <div style={{ width: '60%', background: '#FF6600', height: '100%', borderRadius: 5 }} />
+              <div className="h-2 rounded-full bg-slate-100 overflow-hidden">
+                <div className="bg-[#FF6600] h-full animate-pulse" style={{ width: '60%' }} />
               </div>
             </div>
           </div>
@@ -874,17 +750,17 @@ export const CustomerDashboardModal: React.FC<CustomerDashboardProps> = ({ onClo
 
       {/* ── Success overlay ── */}
       {withdrawSuccess && (
-        <div className="modal-backdrop" style={{ display: 'flex', zIndex: 999 }}>
-          <div className="modal-dialog" style={{ maxWidth: 480, textAlign: 'center', padding: '2.5rem 2rem', background: '#ffffff', borderRadius: 16 }}>
-            <div style={{ fontSize: '3rem', marginBottom: '1rem' }}>🎉</div>
-            <h2 style={{ fontSize: '1.5rem', fontWeight: 800, color: '#0f172a', marginBottom: '0.75rem', fontFamily: 'inherit' }}>
-              Withdrawal Request Received Successfully
+        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center z-[99999] p-4">
+          <div className="bg-white rounded-3xl border border-slate-200 p-8 sm:p-12 shadow-2xl max-w-[480px] w-full text-center">
+            <div className="text-5xl mb-5">🎉</div>
+            <h2 className="text-xl sm:text-2xl font-black text-brand-navy mb-3">
+              Withdrawal Request Received!
             </h2>
-            <p style={{ fontSize: '0.9rem', color: '#475569', lineHeight: 1.6, marginBottom: '1.5rem' }}>
+            <p className="text-xs sm:text-sm text-slate-600 leading-relaxed mb-6">
               Your funds are being processed and will be sent to your M-Pesa line in <strong>less than 20 minutes</strong>.<br /><br />
               If funds have not arrived after 20 minutes, please contact our support team.
             </p>
-            <button type="button" className="btn-submit" onClick={closeSuccessOverlay} style={{ maxWidth: 240, margin: '0 auto' }}>
+            <button type="button" className="btn-primary w-full max-w-[240px] mx-auto block" onClick={closeSuccessOverlay}>
               Go to Dashboard
             </button>
           </div>

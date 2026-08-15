@@ -230,33 +230,12 @@ export const SupportChatModal: React.FC<SupportChatModalProps> = ({ isOpen, onCl
     setErrors({});
   };
 
-  const onFocus = (e: React.FocusEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
-    e.target.style.borderColor = '#FF6600';
-    e.target.style.boxShadow = '0 0 0 3.5px rgba(255, 102, 0, 0.15)';
-  };
-  const onBlur = (e: React.FocusEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
-    e.target.style.borderColor = '#e2e8f0';
-    e.target.style.boxShadow = 'none';
-  };
-
   if (!isOpen) return null;
 
   return (
     /* ── Backdrop Overlay ── */
     <div
-      style={{
-        position: 'fixed',
-        inset: 0,
-        background: 'rgba(15, 23, 42, 0.55)',
-        backdropFilter: 'blur(6px)',
-        WebkitBackdropFilter: 'blur(6px)',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        zIndex: 99999,
-        padding: '1rem',
-        boxSizing: 'border-box',
-      }}
+      className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center z-[99999] p-4"
       onClick={(e) => {
         if (e.target === e.currentTarget && !loading) onClose();
       }}
@@ -267,65 +246,27 @@ export const SupportChatModal: React.FC<SupportChatModalProps> = ({ isOpen, onCl
       {/* ── Modal Dialog Card ── */}
       <div
         ref={modalRef}
-        className="support-modal-card"
-        style={{
-          maxWidth: '520px',
-          width: '100%',
-          maxHeight: 'min(92vh, 580px)',
-          borderRadius: '20px',
-          background: '#ffffff',
-          padding: '1.35rem 1.5rem',
-          display: 'flex',
-          flexDirection: 'column',
-          border: '1px solid #e2e8f0',
-          boxShadow: '0 20px 50px rgba(15, 23, 42, 0.2)',
-          boxSizing: 'border-box',
-          overflow: 'hidden',
-        }}
+        className="bg-white rounded-3xl border border-slate-200 p-6 shadow-2xl max-w-[520px] w-full max-h-[min(92vh,580px)] flex flex-col overflow-hidden"
       >
         {/* ── Header ── */}
-        <div
-          style={{
-            display: 'flex',
-            justifyContent: 'space-between',
-            alignItems: 'center',
-            borderBottom: '1px solid #e2e8f0',
-            paddingBottom: '0.85rem',
-            marginBottom: '1rem',
-            width: '100%',
-            boxSizing: 'border-box',
-            flexShrink: 0,
-          }}
-        >
+        <div className="flex justify-between items-center border-b border-slate-100 pb-3 mb-4 flex-shrink-0">
           <div>
-            <h3
-              id="support-modal-title"
-              style={{ fontSize: '1.15rem', fontWeight: 900, color: '#0f172a', margin: '0 0 0.15rem 0', fontFamily: 'inherit', letterSpacing: '-0.025em' }}
-            >
+            <h3 id="support-modal-title" className="text-lg font-black text-brand-navy tracking-tight m-0">
               Live Customer Support
             </h3>
-            <span style={{ fontSize: '0.8rem', color: '#10b981', fontWeight: 700, display: 'inline-flex', alignItems: 'center', gap: '0.4rem', marginTop: '0.15rem' }}>
-              <span style={{ width: 8, height: 8, borderRadius: '50%', background: '#10b981', display: 'inline-block', flexShrink: 0 }} />
+            <span className="text-xs text-emerald-600 font-bold flex items-center gap-1.5 mt-0.5">
+              <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
               Online · 24/7 Agent Available
             </span>
           </div>
 
-          <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+          <div className="flex items-center gap-2">
             {ticketId && (
               <button
                 type="button"
                 onClick={handleResetChat}
-                style={{
-                  background: '#f1f5f9',
-                  color: '#64748b',
-                  border: '1px solid #cbd5e1',
-                  padding: '0.35rem 0.65rem',
-                  borderRadius: '8px',
-                  fontSize: '0.75rem',
-                  fontWeight: 700,
-                  cursor: 'pointer',
-                  fontFamily: 'inherit',
-                }}
+                className="btn-secondary px-3 py-1 text-xs"
+                style={{ minHeight: '32px', borderRadius: '8px' }}
                 title="Reset Chat & Create New Ticket"
               >
                 Reset
@@ -335,28 +276,7 @@ export const SupportChatModal: React.FC<SupportChatModalProps> = ({ isOpen, onCl
               type="button"
               onClick={onClose}
               aria-label="Close live customer support modal"
-              style={{
-                background: 'none',
-                border: 'none',
-                cursor: 'pointer',
-                color: '#64748b',
-                width: 36,
-                height: 36,
-                borderRadius: '50%',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                fontSize: '1.15rem',
-                transition: 'background 0.15s ease, color 0.15s ease',
-              }}
-              onMouseEnter={(e) => {
-                (e.currentTarget as HTMLButtonElement).style.background = '#f1f5f9';
-                (e.currentTarget as HTMLButtonElement).style.color = '#0f172a';
-              }}
-              onMouseLeave={(e) => {
-                (e.currentTarget as HTMLButtonElement).style.background = 'none';
-                (e.currentTarget as HTMLButtonElement).style.color = '#64748b';
-              }}
+              className="text-slate-400 hover:text-slate-900 hover:bg-slate-50 w-8 h-8 rounded-full flex items-center justify-center transition-colors text-lg"
             >
               ✕
             </button>
@@ -367,19 +287,12 @@ export const SupportChatModal: React.FC<SupportChatModalProps> = ({ isOpen, onCl
         {!ticketId ? (
           <form
             onSubmit={handleStartConversation}
-            style={{
-              flex: 1,
-              overflowY: 'auto',
-              display: 'flex',
-              flexDirection: 'column',
-              gap: '0.85rem',
-              paddingRight: '0.2rem',
-            }}
+            className="flex-1 overflow-y-auto flex flex-col gap-4 pr-1"
           >
             {/* Grid for Name & Phone */}
-            <div className="support-form-grid">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
-                <label htmlFor="guest-name" style={{ display: 'block', fontSize: '0.78rem', fontWeight: 700, color: '#0f172a', marginBottom: '0.35rem' }}>
+                <label htmlFor="guest-name" className="jijenge-label">
                   Full Name *
                 </label>
                 <input
@@ -389,20 +302,14 @@ export const SupportChatModal: React.FC<SupportChatModalProps> = ({ isOpen, onCl
                   placeholder="Your Name"
                   value={guestName}
                   onChange={(e) => { setGuestName(e.target.value); if (errors.name) setErrors(p => ({ ...p, name: undefined })); }}
-                  style={{
-                    ...inputBase,
-                    ...focusStyle,
-                    borderColor: errors.name ? '#ef4444' : '#e2e8f0',
-                  }}
-                  onFocus={onFocus}
-                  onBlur={onBlur}
+                  className={`jijenge-input ${errors.name ? 'jijenge-input-error' : ''}`}
                   required
                 />
-                {errors.name && <span style={{ fontSize: '0.7rem', color: '#ef4444', fontWeight: 600, marginTop: '0.2rem', display: 'block' }}>{errors.name}</span>}
+                {errors.name && <span className="text-[11px] text-red-600 font-bold mt-1 block">{errors.name}</span>}
               </div>
 
               <div>
-                <label htmlFor="guest-phone" style={{ display: 'block', fontSize: '0.78rem', fontWeight: 700, color: '#0f172a', marginBottom: '0.35rem' }}>
+                <label htmlFor="guest-phone" className="jijenge-label">
                   M-Pesa Phone *
                 </label>
                 <input
@@ -411,22 +318,16 @@ export const SupportChatModal: React.FC<SupportChatModalProps> = ({ isOpen, onCl
                   placeholder="e.g. 07XXXXXXXX"
                   value={guestPhone}
                   onChange={(e) => { setGuestPhone(e.target.value); if (errors.phone) setErrors(p => ({ ...p, phone: undefined })); }}
-                  style={{
-                    ...inputBase,
-                    ...focusStyle,
-                    borderColor: errors.phone ? '#ef4444' : '#e2e8f0',
-                  }}
-                  onFocus={onFocus}
-                  onBlur={onBlur}
+                  className={`jijenge-input ${errors.phone ? 'jijenge-input-error' : ''}`}
                   required
                 />
-                {errors.phone && <span style={{ fontSize: '0.7rem', color: '#ef4444', fontWeight: 600, marginTop: '0.2rem', display: 'block' }}>{errors.phone}</span>}
+                {errors.phone && <span className="text-[11px] text-red-600 font-bold mt-1 block">{errors.phone}</span>}
               </div>
             </div>
 
             <div>
-              <label htmlFor="guest-email" style={{ display: 'block', fontSize: '0.78rem', fontWeight: 700, color: '#0f172a', marginBottom: '0.35rem' }}>
-                Email Address <span style={{ color: '#64748b', fontWeight: 500 }}>(Optional)</span>
+              <label htmlFor="guest-email" className="jijenge-label">
+                Email Address <span className="text-slate-400 font-normal">(Optional)</span>
               </label>
               <input
                 id="guest-email"
@@ -434,28 +335,20 @@ export const SupportChatModal: React.FC<SupportChatModalProps> = ({ isOpen, onCl
                 placeholder="you@example.com"
                 value={guestEmail}
                 onChange={(e) => { setGuestEmail(e.target.value); if (errors.email) setErrors(p => ({ ...p, email: undefined })); }}
-                style={{
-                  ...inputBase,
-                  ...focusStyle,
-                  borderColor: errors.email ? '#ef4444' : '#e2e8f0',
-                }}
-                onFocus={onFocus}
-                onBlur={onBlur}
+                className={`jijenge-input ${errors.email ? 'jijenge-input-error' : ''}`}
               />
-              {errors.email && <span style={{ fontSize: '0.7rem', color: '#ef4444', fontWeight: 600, marginTop: '0.2rem', display: 'block' }}>{errors.email}</span>}
+              {errors.email && <span className="text-[11px] text-red-600 font-bold mt-1 block">{errors.email}</span>}
             </div>
 
             <div>
-              <label htmlFor="guest-subject" style={{ display: 'block', fontSize: '0.78rem', fontWeight: 700, color: '#0f172a', marginBottom: '0.35rem' }}>
+              <label htmlFor="guest-subject" className="jijenge-label">
                 Inquiry Subject
               </label>
               <select
                 id="guest-subject"
                 value={subject}
                 onChange={(e) => setSubject(e.target.value)}
-                style={{ ...inputBase, ...focusStyle }}
-                onFocus={onFocus as any}
-                onBlur={onBlur as any}
+                className="jijenge-select"
               >
                 <option value="General Loan Inquiry">General Loan Inquiry</option>
                 <option value="STK Processing Payment Error">STK Processing Payment Error</option>
@@ -465,8 +358,8 @@ export const SupportChatModal: React.FC<SupportChatModalProps> = ({ isOpen, onCl
               </select>
             </div>
 
-            <div style={{ display: 'flex', flexDirection: 'column', flex: 1, minHeight: '110px' }}>
-              <label htmlFor="guest-msg" style={{ display: 'block', fontSize: '0.78rem', fontWeight: 700, color: '#0f172a', marginBottom: '0.35rem' }}>
+            <div className="flex flex-col flex-1 min-h-[110px]">
+              <label htmlFor="guest-msg" className="jijenge-label">
                 Initial message *
               </label>
               <textarea
@@ -474,59 +367,17 @@ export const SupportChatModal: React.FC<SupportChatModalProps> = ({ isOpen, onCl
                 placeholder="How can we help you today?"
                 value={initialMsg}
                 onChange={(e) => { setInitialMsg(e.target.value); if (errors.msg) setErrors(p => ({ ...p, msg: undefined })); }}
-                style={{
-                  ...inputBase,
-                  ...focusStyle,
-                  flex: 1,
-                  resize: 'vertical',
-                  minHeight: '95px',
-                  maxHeight: '140px',
-                  borderColor: errors.msg ? '#ef4444' : '#e2e8f0',
-                }}
-                onFocus={onFocus as any}
-                onBlur={onBlur as any}
+                className={`jijenge-textarea flex-1 min-h-[95px] max-h-[140px] ${errors.msg ? 'jijenge-input-error' : ''}`}
                 required
               />
-              {errors.msg && <span style={{ fontSize: '0.7rem', color: '#ef4444', fontWeight: 600, marginTop: '0.2rem', display: 'block' }}>{errors.msg}</span>}
+              {errors.msg && <span className="text-[11px] text-red-600 font-bold mt-1 block">{errors.msg}</span>}
             </div>
 
             {/* ── Submit button: Primary Jijenge Orange CTA ── */}
             <button
               type="submit"
               disabled={loading}
-              style={{
-                width: '100%',
-                padding: '0.8rem 1rem',
-                background: loading ? '#E55C00' : '#FF6600',
-                color: '#ffffff',
-                border: 'none',
-                borderRadius: '12px',
-                fontSize: '0.95rem',
-                fontWeight: 800,
-                cursor: loading ? 'not-allowed' : 'pointer',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                gap: '0.5rem',
-                boxShadow: '0 6px 20px rgba(255, 102, 0, 0.28)',
-                transition: 'background 0.2s ease, transform 0.15s ease, box-shadow 0.2s ease',
-                fontFamily: 'inherit',
-                minHeight: '48px',
-                flexShrink: 0,
-                marginTop: '0.25rem',
-              }}
-              onMouseEnter={(e) => {
-                if (!loading) {
-                  (e.currentTarget as HTMLButtonElement).style.background = '#E55C00';
-                  (e.currentTarget as HTMLButtonElement).style.boxShadow = '0 8px 24px rgba(255, 102, 0, 0.35)';
-                }
-              }}
-              onMouseLeave={(e) => {
-                if (!loading) {
-                  (e.currentTarget as HTMLButtonElement).style.background = '#FF6600';
-                  (e.currentTarget as HTMLButtonElement).style.boxShadow = '0 6px 20px rgba(255, 102, 0, 0.28)';
-                }
-              }}
+              className="btn-primary w-full mt-1 flex-shrink-0"
             >
               <span>{loading ? 'Starting Conversation...' : 'Start Conversation'}</span>
               {!loading && (
@@ -538,27 +389,23 @@ export const SupportChatModal: React.FC<SupportChatModalProps> = ({ isOpen, onCl
           </form>
         ) : (
           /* ── CONVERSATION VIEW ── */
-          <div style={{ flex: 1, display: 'flex', flexDirection: 'column', height: '100%', overflow: 'hidden' }}>
+          <div className="flex-1 flex flex-col h-full overflow-hidden">
             {/* Messages timeline */}
-            <div style={{ flex: 1, overflowY: 'auto', paddingRight: '0.5rem', display: 'flex', flexDirection: 'column', gap: '0.65rem', marginBottom: '1rem' }}>
+            <div className="flex-1 overflow-y-auto pr-1 flex flex-col gap-3 mb-4">
               {messages.map((m) => {
                 const isMe = m.sender === 'CUSTOMER';
                 return (
                   <div
                     key={m.id}
-                    style={{
-                      alignSelf: isMe ? 'flex-end' : 'flex-start',
-                      background: isMe ? '#0f172a' : '#f1f5f9',
-                      color: isMe ? '#ffffff' : '#0f172a',
-                      padding: '0.6rem 0.95rem',
-                      borderRadius: isMe ? '12px 12px 4px 12px' : '12px 12px 12px 4px',
-                      maxWidth: '78%',
-                      fontSize: '0.875rem',
-                      boxShadow: '0 1px 3px rgba(15,23,42,0.06)',
-                    }}
+                    className={`max-w-[78%] p-3 rounded-2xl text-sm shadow-sm ${
+                      isMe
+                        ? 'bg-brand-navy text-white rounded-tr-none'
+                        : 'bg-slate-100 text-brand-navy rounded-tl-none'
+                    }`}
+                    style={{ alignSelf: isMe ? 'flex-end' : 'flex-start' }}
                   >
                     <div>{m.text}</div>
-                    <span style={{ fontSize: '0.65rem', opacity: 0.7, float: 'right', marginTop: '0.2rem' }}>
+                    <span className="text-[10px] opacity-70 float-right mt-1">
                       {new Date(m.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                     </span>
                   </div>
@@ -568,36 +415,19 @@ export const SupportChatModal: React.FC<SupportChatModalProps> = ({ isOpen, onCl
             </div>
 
             {/* Reply form */}
-            <form onSubmit={handleSendMessage} style={{ display: 'flex', gap: '0.5rem', flexShrink: 0 }}>
+            <form onSubmit={handleSendMessage} className="flex gap-2 flex-shrink-0">
               <input
                 type="text"
                 placeholder="Type your message..."
                 value={replyText}
                 onChange={(e) => setReplyText(e.target.value)}
-                style={{ flex: 1, padding: '0.65rem 0.95rem', borderRadius: '10px', border: '1.5px solid #e2e8f0', fontSize: '0.875rem', outline: 'none', fontFamily: 'inherit', transition: 'border-color 0.2s ease, box-shadow 0.2s ease' }}
-                onFocus={onFocus}
-                onBlur={onBlur}
+                className="jijenge-input flex-1"
+                style={{ height: '44px' }}
               />
               <button
                 type="submit"
-                style={{
-                  background: '#FF6600',
-                  color: '#ffffff',
-                  border: 'none',
-                  padding: '0.65rem 1.1rem',
-                  borderRadius: '10px',
-                  fontWeight: 800,
-                  cursor: 'pointer',
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '0.3rem',
-                  fontSize: '0.875rem',
-                  fontFamily: 'inherit',
-                  transition: 'background 0.2s ease',
-                  minHeight: '44px',
-                }}
-                onMouseEnter={(e) => { (e.currentTarget as HTMLButtonElement).style.background = '#E55C00'; }}
-                onMouseLeave={(e) => { (e.currentTarget as HTMLButtonElement).style.background = '#FF6600'; }}
+                className="btn-primary px-5 py-2 min-h-[44px] text-sm"
+                style={{ borderRadius: '10px' }}
               >
                 Send
                 <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">

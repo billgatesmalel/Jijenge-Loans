@@ -25,27 +25,19 @@ class TrackErrorBoundary extends React.Component<{ children: React.ReactNode }, 
   render() {
     if (this.state.hasError) {
       return (
-        <div style={{ textAlign: 'center', padding: '4rem 1.5rem', maxWidth: '600px', margin: '0 auto' }}>
-          <div style={{ fontSize: '2.5rem', marginBottom: '1rem' }}>⚠️</div>
-          <h3 style={{ fontSize: '1.4rem', fontWeight: 800, color: '#0f172a', marginBottom: '0.5rem' }}>
+        <div className="text-center py-16 px-6 max-w-lg mx-auto">
+          <div className="text-4xl mb-4">⚠️</div>
+          <h3 className="text-xl font-extrabold text-brand-navy mb-2">
             Something went wrong
           </h3>
-          <p style={{ fontSize: '0.95rem', color: '#64748b', marginBottom: '1.5rem', lineHeight: 1.6 }}>
+          <p className="text-sm text-brand-muted mb-6 leading-relaxed">
             We couldn't load the loan tracking page. Please refresh the page and try again.
           </p>
           <button
             type="button"
             onClick={() => window.location.reload()}
-            style={{
-              background: '#FF6600',
-              color: '#ffffff',
-              border: 'none',
-              padding: '0.85rem 1.75rem',
-              borderRadius: '12px',
-              fontWeight: 800,
-              cursor: 'pointer',
-              fontFamily: 'inherit',
-            }}
+            className="btn-primary"
+            style={{ borderRadius: '12px' }}
           >
             Refresh Page
           </button>
@@ -366,51 +358,18 @@ export const App: React.FC = () => {
               <div className="tab-cta-actions">
                 <button
                   type="button"
-                  className="btn-faq-primary"
+                  className="btn-primary"
                   onClick={() => switchTab('apply')}
-                  style={{
-                    background: '#FF6600',
-                    color: '#ffffff',
-                    border: 'none',
-                    padding: '0.85rem 1.75rem',
-                    borderRadius: '12px',
-                    fontSize: '0.95rem',
-                    fontWeight: 700,
-                    cursor: 'pointer',
-                    boxShadow: '0 6px 20px rgba(255, 102, 0, 0.28)',
-                    display: 'inline-flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    gap: '0.5rem',
-                    minHeight: '48px',
-                    fontFamily: 'inherit',
-                    transition: 'all 0.2s ease',
-                  }}
+                  style={{ borderRadius: '12px' }}
                 >
                   <span>Apply Now</span>
                   <ArrowRight size={16} aria-hidden="true" />
                 </button>
                 <button
                   type="button"
-                  className="btn-faq-secondary"
+                  className="btn-secondary"
                   onClick={() => setSupportOpen(true)}
-                  style={{
-                    background: '#f1f5f9',
-                    color: '#1e293b',
-                    border: '1px solid #cbd5e1',
-                    padding: '0.85rem 1.75rem',
-                    borderRadius: '12px',
-                    fontSize: '0.95rem',
-                    fontWeight: 700,
-                    cursor: 'pointer',
-                    display: 'inline-flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    gap: '0.5rem',
-                    minHeight: '48px',
-                    fontFamily: 'inherit',
-                    transition: 'all 0.2s ease',
-                  }}
+                  style={{ borderRadius: '12px' }}
                 >
                   <MessageCircle size={16} aria-hidden="true" />
                   <span>Talk to Support</span>
