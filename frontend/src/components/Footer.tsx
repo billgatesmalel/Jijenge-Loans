@@ -1,11 +1,12 @@
 import React from 'react';
-import { Phone, Mail, MapPin, ShieldCheck, Lock } from 'lucide-react';
+import { Phone, Mail, MapPin, ShieldCheck, Lock, ExternalLink } from 'lucide-react';
 
 interface FooterProps {
   onTabChange: (tabId: string) => void;
+  onOpenSupport?: () => void;
 }
 
-export const Footer: React.FC<FooterProps> = ({ onTabChange }) => {
+export const Footer: React.FC<FooterProps> = ({ onTabChange, onOpenSupport }) => {
   const year = new Date().getFullYear();
 
   return (
@@ -46,20 +47,74 @@ export const Footer: React.FC<FooterProps> = ({ onTabChange }) => {
         {/* Col 2: Quick Links */}
         <div className="footer-col">
           <h3 className="footer-col-title">Quick Links</h3>
-          <nav aria-label="Footer navigation">
+          <nav aria-label="Footer quick links navigation">
             <ul className="footer-nav-list">
               <li><a href="#home" onClick={() => onTabChange('home')}>Home</a></li>
               <li><a href="#how-it-works" onClick={() => onTabChange('how-it-works')}>How It Works</a></li>
               <li><a href="#apply" onClick={() => onTabChange('apply')}>Apply for a Loan</a></li>
               <li><a href="#faqs" onClick={() => onTabChange('faqs')}>FAQs</a></li>
-              <li><a href="#track">Track Your Loan</a></li>
             </ul>
           </nav>
         </div>
 
-        {/* Col 3: Contact */}
+        {/* Col 3: Customer Services */}
         <div className="footer-col">
-          <h3 className="footer-col-title">Contact Support</h3>
+          <h3 className="footer-col-title">Customer Services</h3>
+          <nav aria-label="Footer customer services navigation">
+            <ul className="footer-nav-list">
+              <li>
+                <a href="#customer" onClick={() => onTabChange('customer')}>
+                  Customer Login
+                </a>
+              </li>
+              <li>
+                <a href="#track" onClick={() => onTabChange('track')}>
+                  Track Application
+                </a>
+              </li>
+              {onOpenSupport && (
+                <li>
+                  <button
+                    type="button"
+                    className="footer-nav-btn"
+                    onClick={onOpenSupport}
+                  >
+                    Live Support Chat
+                  </button>
+                </li>
+              )}
+            </ul>
+          </nav>
+        </div>
+
+        {/* Col 4: Legal */}
+        <div className="footer-col">
+          <h3 className="footer-col-title">Legal</h3>
+          <ul className="footer-nav-list">
+            <li>
+              <a href="/privacy-policy" target="_blank" rel="noopener noreferrer">
+                Privacy Policy
+                <ExternalLink size={11} aria-hidden="true" style={{ marginLeft: '4px', display: 'inline', verticalAlign: 'middle' }} />
+              </a>
+            </li>
+            <li>
+              <a href="/terms" target="_blank" rel="noopener noreferrer">
+                Terms &amp; Conditions
+                <ExternalLink size={11} aria-hidden="true" style={{ marginLeft: '4px', display: 'inline', verticalAlign: 'middle' }} />
+              </a>
+            </li>
+            <li>
+              <a href="https://www.centralbank.go.ke" target="_blank" rel="noopener noreferrer">
+                CBK License
+                <ExternalLink size={11} aria-hidden="true" style={{ marginLeft: '4px', display: 'inline', verticalAlign: 'middle' }} />
+              </a>
+            </li>
+          </ul>
+        </div>
+
+        {/* Col 5: Contact */}
+        <div className="footer-col">
+          <h3 className="footer-col-title">Contact Us</h3>
           <ul className="footer-contact-list">
             <li>
               <Phone size={14} strokeWidth={1.8} aria-hidden="true" />
@@ -74,7 +129,7 @@ export const Footer: React.FC<FooterProps> = ({ onTabChange }) => {
               <span>Nairobi, Kenya</span>
             </li>
           </ul>
-          <p className="footer-hours">Mon – Sat &nbsp;|&nbsp; 8 AM – 8 PM EAT</p>
+          <p className="footer-hours">Mon – Sat&nbsp;|&nbsp;8 AM – 8 PM EAT</p>
         </div>
       </div>
 

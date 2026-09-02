@@ -387,7 +387,7 @@ export const App: React.FC = () => {
         </section>
       </main>
 
-      <Footer onTabChange={switchTab} />
+      <Footer onTabChange={switchTab} onOpenSupport={() => setSupportOpen(true)} />
       <SupportChatModal isOpen={supportOpen} onClose={() => setSupportOpen(false)} />
     </div>
   );

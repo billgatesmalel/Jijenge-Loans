@@ -26,11 +26,12 @@ export const Navbar: React.FC<NavbarProps> = ({ currentTab, onTabChange, onOpenS
     return () => window.removeEventListener('scroll', onScroll);
   }, []);
 
-  // Close drawer on hash navigation & control body scroll lock
+  // Close drawer when active tab changes (user navigated)
   useEffect(() => {
     setMobileOpen(false);
   }, [currentTab]);
 
+  // Control body scroll lock — prevent page scrolling when drawer is open
   useEffect(() => {
     if (mobileOpen) {
       document.body.style.overflow = 'hidden';
@@ -47,6 +48,10 @@ export const Navbar: React.FC<NavbarProps> = ({ currentTab, onTabChange, onOpenS
     { id: 'how-it-works', label: 'How It Works' },
     { id: 'faqs', label: 'FAQs' },
   ];
+
+  const closeMenu = () => setMobileOpen(false);
+  const handleNavClick = (id: string) => { onTabChange(id); closeMenu(); };
+  const handleSupportClick = () => { onOpenSupport(); closeMenu(); };
 
   return (
     <header className={`navbar${scrolled ? ' navbar--scrolled' : ''}`} role="banner">
@@ -123,17 +128,28 @@ export const Navbar: React.FC<NavbarProps> = ({ currentTab, onTabChange, onOpenS
         {/* ── Mobile hamburger ── */}
         <button
           type="button"
-          className="nav-hamburger"
+          className={`nav-hamburger${mobileOpen ? ' nav-hamburger--open' : ''}`}
           onClick={() => setMobileOpen(prev => !prev)}
           aria-label={mobileOpen ? 'Close navigation menu' : 'Open navigation menu'}
           aria-expanded={mobileOpen}
           aria-controls="mobile-nav-drawer"
         >
-          {mobileOpen
-            ? <X size={22} strokeWidth={2} aria-hidden="true" />
-            : <Menu size={22} strokeWidth={2} aria-hidden="true" />}
+          <span className="hamburger-icon" aria-hidden="true">
+            <span className="ham-bar ham-bar--top" />
+            <span className="ham-bar ham-bar--mid" />
+            <span className="ham-bar ham-bar--bot" />
+          </span>
         </button>
       </div>
+
+      {/* ── Backdrop overlay — tap to close ── */}
+      {mobileOpen && (
+        <div
+          className="mobile-drawer-backdrop"
+          onClick={closeMenu}
+          aria-hidden="true"
+        />
+      )}
 
       {/* ── Mobile drawer ── */}
       <div
@@ -141,6 +157,7 @@ export const Navbar: React.FC<NavbarProps> = ({ currentTab, onTabChange, onOpenS
         className={`mobile-drawer${mobileOpen ? ' mobile-drawer--open' : ''}`}
         role="navigation"
         aria-label="Mobile navigation"
+        aria-hidden={!mobileOpen}
       >
         <div className="mobile-drawer-inner">
           {navLinks.map(({ id, label }) => (
@@ -148,7 +165,8 @@ export const Navbar: React.FC<NavbarProps> = ({ currentTab, onTabChange, onOpenS
               key={id}
               type="button"
               className={`mobile-nav-link${currentTab === id ? ' mobile-nav-link--active' : ''}`}
-              onClick={() => { onTabChange(id); setMobileOpen(false); }}
+              onClick={() => handleNavClick(id)}
+              tabIndex={mobileOpen ? 0 : -1}
             >
               {label}
             </button>
@@ -156,7 +174,8 @@ export const Navbar: React.FC<NavbarProps> = ({ currentTab, onTabChange, onOpenS
           <button
             type="button"
             className="mobile-nav-link"
-            onClick={() => { onOpenSupport(); setMobileOpen(false); }}
+            onClick={handleSupportClick}
+            tabIndex={mobileOpen ? 0 : -1}
           >
             <MessageCircle size={15} strokeWidth={1.8} aria-hidden="true" />
             Support Chat
@@ -164,18 +183,29 @@ export const Navbar: React.FC<NavbarProps> = ({ currentTab, onTabChange, onOpenS
 
           <hr className="mobile-nav-divider" />
 
-          <a href="#track" className="mobile-nav-link" onClick={() => setMobileOpen(false)}>
+          <a
+            href="#track"
+            className="mobile-nav-link"
+            onClick={() => handleNavClick('track')}
+            tabIndex={mobileOpen ? 0 : -1}
+          >
             <ClipboardList size={15} strokeWidth={1.8} aria-hidden="true" />
             Track Loan
           </a>
-          <a href="#customer" className="mobile-nav-link" onClick={() => setMobileOpen(false)}>
+          <a
+            href="#customer"
+            className="mobile-nav-link"
+            onClick={closeMenu}
+            tabIndex={mobileOpen ? 0 : -1}
+          >
             <LogIn size={15} strokeWidth={1.8} aria-hidden="true" />
             Customer Login
           </a>
           <button
             type="button"
             className="btn-apply-cta mobile-apply-btn"
-            onClick={() => { onTabChange('apply'); setMobileOpen(false); }}
+            onClick={() => handleNavClick('apply')}
+            tabIndex={mobileOpen ? 0 : -1}
           >
             Apply Now
             <ChevronRight size={16} strokeWidth={2.5} aria-hidden="true" />

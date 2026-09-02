@@ -452,20 +452,73 @@ body {
 .nav-hamburger:hover { background: var(--pill-bg); }
 
 /* ─── Mobile Drawer ──────────────────────────────────────── */
+/* ─── Animated Hamburger ─────────────────────────── */
+.hamburger-icon {
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    width: 20px;
+    height: 14px;
+    pointer-events: none;
+}
+
+.ham-bar {
+    display: block;
+    width: 100%;
+    height: 2px;
+    border-radius: 2px;
+    background: currentColor;
+    transform-origin: center;
+    transition: transform 0.28s cubic-bezier(0.68, -0.55, 0.27, 1.55),
+                opacity 0.2s ease,
+                width 0.25s ease;
+}
+
+.nav-hamburger--open .ham-bar--top {
+    transform: translateY(6px) rotate(45deg);
+}
+.nav-hamburger--open .ham-bar--mid {
+    opacity: 0;
+    width: 0;
+}
+.nav-hamburger--open .ham-bar--bot {
+    transform: translateY(-6px) rotate(-45deg);
+}
+
+/* ─── Mobile Drawer Backdrop ─────────────────────── */
+.mobile-drawer-backdrop {
+    position: fixed;
+    inset: 0;
+    top: var(--nav-height);
+    background: rgba(15, 23, 42, 0.45);
+    backdrop-filter: blur(2px);
+    -webkit-backdrop-filter: blur(2px);
+    z-index: 998;
+    animation: fadeIn 0.18s ease;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+
+/* ─── Mobile Drawer ──────────────────────────────────────── */
 .mobile-drawer {
     display: none;
     position: absolute;
-    top: var(--nav-height);
+    top: 100%;
     left: 0;
     right: 0;
     background: #ffffff;
     border-bottom: 1px solid var(--border-light);
-    box-shadow: var(--shadow-lg);
+    box-shadow: 0 8px 32px rgba(15, 23, 42, 0.18);
     z-index: 999;
     transform: translateY(-8px);
     opacity: 0;
     pointer-events: none;
-    transition: opacity 0.2s ease, transform 0.2s ease;
+    transition: opacity 0.22s ease, transform 0.22s ease;
+    max-height: calc(100vh - var(--nav-height));
+    overflow-y: auto;
 }
 
 .mobile-drawer--open {
@@ -527,6 +580,7 @@ body {
     .nav-links { display: none; }
     .nav-actions { display: none; }
     .nav-hamburger { display: flex; }
+    /* Mobile drawer visibility is controlled by .mobile-drawer--open class, not display:block here */
     .mobile-drawer { display: block; }
 }
 
@@ -1967,24 +2021,44 @@ body {
 
 .footer-grid {
     display: grid;
-    grid-template-columns: 1.4fr 1fr 1fr;
-    gap: 3rem;
+    grid-template-columns: 1.6fr 1fr 1fr 1fr 1.2fr;
+    gap: 2rem;
     padding: 3.5rem 0 2.5rem;
     align-items: start;
 }
 
-@media (max-width: 900px) {
+/* Large tablet: 3 columns */
+@media (max-width: 1100px) {
     .footer-grid {
-        grid-template-columns: 1fr 1fr;
-        gap: 2.25rem;
+        grid-template-columns: 1fr 1fr 1fr;
+        gap: 2rem;
+    }
+    /* Brand spans full width on this layout */
+    .footer-col--brand {
+        grid-column: 1 / -1;
     }
 }
 
-@media (max-width: 640px) {
+/* Tablet: 2 columns */
+@media (max-width: 760px) {
+    .footer-grid {
+        grid-template-columns: 1fr 1fr;
+        gap: 1.75rem;
+    }
+    .footer-col--brand {
+        grid-column: 1 / -1;
+    }
+}
+
+/* Mobile: single column */
+@media (max-width: 480px) {
     .footer-grid {
         grid-template-columns: 1fr;
-        gap: 2rem;
+        gap: 1.75rem;
         padding: 2.5rem 0 2rem;
+    }
+    .footer-col--brand {
+        grid-column: unset;
     }
 }
 
@@ -2147,6 +2221,28 @@ body {
 .footer-legal {
     font-size: 0.775rem;
     color: #3a5060;
+}
+
+/* ─── Footer nav button (support chat trigger) ───── */
+.footer-nav-btn {
+    background: none;
+    border: none;
+    padding: 0;
+    margin: 0;
+    cursor: pointer;
+    color: #94a3b8;
+    font-size: 0.9rem;
+    font-weight: 500;
+    font-family: var(--font-family);
+    text-align: left;
+    transition: color var(--transition);
+    display: flex;
+    align-items: center;
+    min-height: 44px;
+}
+
+.footer-nav-btn:hover {
+    color: var(--brand-orange);
 }
 
 /* legacy aliases */
@@ -3155,8 +3251,6 @@ button, input, select, textarea, a {
 }
 
 /* ==========================================================================
-
-/* ==========================================================================
    Master Mobile-First Responsive System (Clean, Consolidated & Non-Blocking)
    ========================================================================== */
 
@@ -3193,27 +3287,8 @@ html, body, #root {
     transform: translateY(0);
 }
 
-/* Mobile Drawer Overlay Control - Prevent click blocking when closed */
-.mobile-drawer {
-    display: none !important;
-    position: fixed;
-    top: var(--nav-height);
-    left: 0;
-    right: 0;
-    bottom: 0;
-    background: #ffffff;
-    z-index: 999;
-    opacity: 0;
-    pointer-events: none;
-    transition: opacity 0.2s ease, transform 0.2s ease;
-    overflow-y: auto;
-}
-
-.mobile-drawer.mobile-drawer--open {
-    display: block !important;
-    opacity: 1 !important;
-    pointer-events: auto !important;
-}
+/* Mobile drawer: display controlled by media-query + --open modifier.
+   Duplicate block removed above to prevent conflict with the canonical rules. */
 
 /* Hero Headline Responsive Clamp */
 .hero-headline {
@@ -3301,46 +3376,8 @@ html, body, #root {
     }
 }
 
-/* Category Grid Responsive Breakpoints */
-.sectors-grid {
-    display: grid !important;
-    grid-template-columns: 1fr !important;
-    gap: 16px !important;
-    width: 100% !important;
-    overflow-x: visible !important;
-}
-
-@media (min-width: 640px) {
-    .sectors-grid {
-        grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
-        gap: 16px !important;
-    }
-}
-
-@media (min-width: 1024px) {
-    .sectors-grid {
-        grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
-        gap: 20px !important;
-    }
-}
-
-.sector-card-item {
-    width: 100% !important;
-    flex: unset !important;
-    max-width: none !important;
-}
-
-.sector-card-img-wrap {
-    width: 100% !important;
-    aspect-ratio: 16 / 10 !important;
-    height: auto !important;
-}
-
-.sector-card-img-wrap img {
-    width: 100% !important;
-    height: 100% !important;
-    object-fit: cover !important;
-}
+/* Carousel breakpoints are defined in the primary block above (lines ~794-839).
+   This duplicate block was removed — it was overriding the carousel with a vertical grid. */
 
 /* Compliance Strip Responsive Grid */
 .compliance-strip-inner {
