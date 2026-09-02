@@ -1,4 +1,4 @@
-import React, { useState, useRef, useCallback } from 'react';
+import React, { useState, useRef, useEffect, useCallback } from 'react';
 import {
   ArrowRight,
   ShieldCheck,
@@ -10,6 +10,8 @@ import {
   Package,
   Scissors,
   Utensils,
+  ChevronLeft,
+  ChevronRight,
 } from 'lucide-react';
 
 interface HeroProps {
@@ -61,33 +63,66 @@ const SECTORS = [
   },
 ];
 
-/* 3 pagination dots: each dot represents 2 cards */
-const DOT_COUNT = 3;
-
 export const Hero: React.FC<HeroProps> = ({ onTabChange }) => {
   const [activeIndex, setActiveIndex] = useState(0);
+  const [isPaused, setIsPaused] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
 
-  const handleScroll = useCallback(() => {
-    if (!scrollRef.current) return;
-    const { scrollLeft, scrollWidth, clientWidth } = scrollRef.current;
-    const maxScroll = scrollWidth - clientWidth;
-    if (maxScroll <= 0) return;
-    const dotIndex = Math.min(
-      DOT_COUNT - 1,
-      Math.round((scrollLeft / maxScroll) * (DOT_COUNT - 1))
-    );
-    setActiveIndex(dotIndex);
+  // Helper to measure card step width (width + gap)
+  const getStepWidth = useCallback(() => {
+    if (!scrollRef.current) return 0;
+    const card = scrollRef.current.querySelector('.sector-card-item') as HTMLElement;
+    if (!card) return 0;
+    return card.offsetWidth + 12; // card width + gap
   }, []);
 
-  const scrollToIndex = (dotIdx: number) => {
+  const scrollToIndex = useCallback((index: number) => {
     if (!scrollRef.current) return;
-    const { scrollWidth, clientWidth } = scrollRef.current;
-    const maxScroll = scrollWidth - clientWidth;
-    const targetScroll = (dotIdx / (DOT_COUNT - 1)) * maxScroll;
-    scrollRef.current.scrollTo({ left: targetScroll, behavior: 'smooth' });
-    setActiveIndex(dotIdx);
-  };
+    const stepWidth = getStepWidth();
+    const targetLeft = index * stepWidth;
+    scrollRef.current.scrollTo({ left: targetLeft, behavior: 'smooth' });
+    setActiveIndex(index);
+  }, [getStepWidth]);
+
+  const handleNext = useCallback(() => {
+    setActiveIndex(prev => {
+      const nextIndex = (prev + 1) % SECTORS.length;
+      scrollToIndex(nextIndex);
+      return nextIndex;
+    });
+  }, [scrollToIndex]);
+
+  const handlePrev = useCallback(() => {
+    setActiveIndex(prev => {
+      const prevIndex = (prev - 1 + SECTORS.length) % SECTORS.length;
+      scrollToIndex(prevIndex);
+      return prevIndex;
+    });
+  }, [scrollToIndex]);
+
+  // Auto-swipe to the left card-by-card every 3.5 seconds when active
+  useEffect(() => {
+    if (isPaused) return;
+    const timer = setInterval(() => {
+      if (scrollRef.current && scrollRef.current.scrollWidth > scrollRef.current.clientWidth) {
+        handleNext();
+      }
+    }, 3500);
+    return () => clearInterval(timer);
+  }, [isPaused, handleNext]);
+
+  // Listen to manual scroll events (finger touch swipe) to update active index
+  const handleScroll = useCallback(() => {
+    if (!scrollRef.current) return;
+    const stepWidth = getStepWidth();
+    if (stepWidth <= 0) return;
+    const scrollLeft = scrollRef.current.scrollLeft;
+    const calculatedIndex = Math.min(
+      SECTORS.length - 1,
+      Math.max(0, Math.round(scrollLeft / stepWidth))
+    );
+    setActiveIndex(calculatedIndex);
+  }, [getStepWidth]);
 
   return (
     <div className="hero-section">
@@ -158,10 +193,15 @@ export const Hero: React.FC<HeroProps> = ({ onTabChange }) => {
           </div>
         </div>
 
-        {/* ── Right: Sector Cards — Swipe on mobile / 3-col grid on desktop ── */}
-        <div className="hero-right-wrap">
-
-          {/* Scroll container (flex snap on mobile, grid on md+) */}
+        {/* ── Right: Sector Cards — Auto-swiping / interactive carousel on mobile/tablet ── */}
+        <div
+          className="hero-right-wrap"
+          onMouseEnter={() => setIsPaused(true)}
+          onMouseLeave={() => setIsPaused(false)}
+          onTouchStart={() => setIsPaused(true)}
+          onTouchEnd={() => setTimeout(() => setIsPaused(false), 4000)}
+        >
+          {/* Scroll container (flex snap on mobile, grid on lg+) */}
           <div
             ref={scrollRef}
             onScroll={handleScroll}
@@ -195,16 +235,38 @@ export const Hero: React.FC<HeroProps> = ({ onTabChange }) => {
             ))}
           </div>
 
-          {/* Interactive pagination dots — hidden on desktop */}
-          <div className="sectors-dots">
-            {Array.from({ length: DOT_COUNT }).map((_, idx) => (
-              <button
-                key={idx}
-                onClick={() => scrollToIndex(idx)}
-                className={`sec-dot${activeIndex === idx ? ' active' : ''}`}
-                aria-label={`Go to slide group ${idx + 1}`}
-              />
-            ))}
+          {/* Interactive Carousel Controls (Prev/Next buttons & 6 slide dots) */}
+          <div className="sectors-carousel-controls" aria-label="Category Carousel Controls">
+            <button
+              type="button"
+              className="carousel-arr-btn carousel-arr-prev"
+              onClick={handlePrev}
+              aria-label="Previous business category"
+            >
+              <ChevronLeft size={18} strokeWidth={2.5} />
+            </button>
+
+            <div className="sectors-dots" role="tablist" aria-label="Category image slides">
+              {SECTORS.map((sector, idx) => (
+                <button
+                  key={sector.label}
+                  onClick={() => scrollToIndex(idx)}
+                  className={`sec-dot${activeIndex === idx ? ' active' : ''}`}
+                  aria-label={`Go to ${sector.label} slide`}
+                  aria-selected={activeIndex === idx}
+                  role="tab"
+                />
+              ))}
+            </div>
+
+            <button
+              type="button"
+              className="carousel-arr-btn carousel-arr-next"
+              onClick={handleNext}
+              aria-label="Next business category"
+            >
+              <ChevronRight size={18} strokeWidth={2.5} />
+            </button>
           </div>
         </div>
 

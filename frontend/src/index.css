@@ -988,14 +988,49 @@ body {
     transform: translateX(3px);
 }
 
-/* Pagination Dots — interactive pill-style, visible on mobile only */
+/* Carousel Controls (Prev/Next buttons & 6 Dots) — visible on mobile/tablet, hidden on desktop */
+.sectors-carousel-controls {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.75rem;
+    width: 100%;
+    margin-top: 0.75rem;
+}
+
+.carousel-arr-btn {
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    background: #ffffff;
+    border: 1.5px solid var(--border-light);
+    color: var(--brand-dark);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    box-shadow: var(--shadow-sm);
+    transition: background 0.2s ease, border-color 0.2s ease, transform 0.2s ease, color 0.2s ease;
+    flex-shrink: 0;
+}
+
+.carousel-arr-btn:hover {
+    background: var(--brand-orange);
+    color: #ffffff;
+    border-color: var(--brand-orange);
+    transform: scale(1.08);
+}
+
+.carousel-arr-btn:active {
+    transform: scale(0.95);
+}
+
 .sectors-dots {
     display: flex;
     align-items: center;
     justify-content: center;
-    gap: 0.5rem;
-    width: 100%;
-    margin-top: 1rem;
+    gap: 0.45rem;
+    margin: 0;
 }
 
 .sec-dot {
@@ -1020,9 +1055,9 @@ body {
     background: var(--brand-orange);
 }
 
-/* Hide dots on tablet/desktop where grid is shown */
-@media (min-width: 640px) {
-    .sectors-dots {
+/* Hide controls on desktop where 3-col grid is shown */
+@media (min-width: 1024px) {
+    .sectors-carousel-controls {
         display: none;
     }
 }
