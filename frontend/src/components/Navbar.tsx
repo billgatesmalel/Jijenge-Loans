@@ -26,10 +26,21 @@ export const Navbar: React.FC<NavbarProps> = ({ currentTab, onTabChange, onOpenS
     return () => window.removeEventListener('scroll', onScroll);
   }, []);
 
-  // Close drawer on hash navigation
+  // Close drawer on hash navigation & control body scroll lock
   useEffect(() => {
     setMobileOpen(false);
   }, [currentTab]);
+
+  useEffect(() => {
+    if (mobileOpen) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = '';
+    }
+    return () => {
+      document.body.style.overflow = '';
+    };
+  }, [mobileOpen]);
 
   const navLinks = [
     { id: 'home', label: 'Home' },

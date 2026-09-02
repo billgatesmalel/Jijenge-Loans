@@ -104,10 +104,8 @@ export const Hero: React.FC<HeroProps> = ({ onTabChange }) => {
 
           {/* Headline */}
           <h1 className="hero-headline">
-            Grow your business<br />
-            with <em className="hero-headline__accent">fast,<br />
-            collateral-free</em><br />
-            funding
+            Grow your business with{' '}
+            <em className="hero-headline__accent">fast, collateral-free</em> funding
           </h1>
 
           {/* Sub text */}
