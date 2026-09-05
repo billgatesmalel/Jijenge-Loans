@@ -606,21 +606,21 @@ button, input, select, textarea, a {
 @media (max-width: 639px) {
     .hero-content {
         max-width: 100%;
-        padding-left: 2px;
-        padding-right: 2px;
+        padding-left: 0;
+        padding-right: 16px;
     }
     .hero-headline {
-        font-size: clamp(1.65rem, 6vw, 2.25rem);
-        line-height: 1.15;
+        font-size: clamp(1.55rem, 5.5vw, 2.1rem);
+        line-height: 1.18;
         letter-spacing: -0.025em;
         word-break: normal;
         overflow-wrap: break-word;
-        max-width: 100%;
+        max-width: 92%;
     }
     .hero-subtext {
-        font-size: 0.9375rem;
-        line-height: 1.6;
-        max-width: 98%;
+        font-size: 0.925rem;
+        line-height: 1.62;
+        max-width: 90%;
     }
     .hero-cta-group {
         width: 100%;
@@ -1553,22 +1553,63 @@ button, input, select, textarea, a {
     align-items: center;
     justify-content: space-between;
     gap: 0.75rem;
+    width: 100%;
 }
 
 .form-step-nav .btn-primary,
 .form-step-nav .btn-secondary {
-    flex: 1;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    min-height: 48px;
+    padding: 0.75rem 1.5rem;
+    border-radius: var(--radius-md);
+    font-weight: 700;
+    font-size: 0.95rem;
+    box-sizing: border-box;
 }
 
-@media (min-width: 480px) {
+@media (max-width: 639px) {
+    .form-step-nav {
+        display: flex;
+        flex-direction: row;
+        align-items: center;
+        justify-content: space-between;
+        gap: 0.75rem;
+        width: 100%;
+    }
+
     .form-step-nav .btn-primary,
     .form-step-nav .btn-secondary {
-        flex: unset;
-        min-width: 140px;
+        flex: 1;
+        width: 100%;
+        justify-content: center;
     }
+
+    .form-step-nav > button:only-child,
+    .form-step-nav > div:only-child button {
+        flex: 1 1 100%;
+        width: 100%;
+    }
+}
+
+@media (min-width: 640px) {
     .form-step-nav {
         justify-content: flex-end;
     }
+
+    .form-step-nav .btn-primary,
+    .form-step-nav .btn-secondary {
+        min-width: 180px;
+        flex: 0 0 auto;
+    }
+
+    .form-step-nav > button:only-child {
+        min-width: 260px;
+        margin-left: auto;
+    }
+
     .form-step-nav .btn-secondary:first-child {
         margin-right: auto;
     }
