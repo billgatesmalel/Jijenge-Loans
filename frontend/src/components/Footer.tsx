@@ -50,7 +50,7 @@ export const Footer: React.FC<FooterProps> = ({ onOpenSupport }) => {
         </div>
 
         {/* Col 2: Quick Links */}
-        <div className="footer-col">
+        <div className="footer-col footer-col--quick-links">
           <h3 className="footer-col-title">Quick Links</h3>
           <nav aria-label="Footer quick links navigation">
             <ul className="footer-nav-list">
@@ -63,7 +63,7 @@ export const Footer: React.FC<FooterProps> = ({ onOpenSupport }) => {
         </div>
 
         {/* Col 3: Customer Services */}
-        <div className="footer-col">
+        <div className="footer-col footer-col--services">
           <h3 className="footer-col-title">Customer Services</h3>
           <nav aria-label="Footer customer services navigation">
             <ul className="footer-nav-list">
@@ -98,7 +98,7 @@ export const Footer: React.FC<FooterProps> = ({ onOpenSupport }) => {
         </div>
 
         {/* Col 4: Legal */}
-        <div className="footer-col">
+        <div className="footer-col footer-col--legal">
           <h3 className="footer-col-title">LEGAL</h3>
           <nav aria-label="Footer legal navigation">
             <ul className="footer-nav-list">
@@ -130,7 +130,7 @@ export const Footer: React.FC<FooterProps> = ({ onOpenSupport }) => {
         </div>
 
         {/* Col 5: Contact */}
-        <div className="footer-col">
+        <div className="footer-col footer-col--contact">
           <h3 className="footer-col-title">Contact Us</h3>
           <ul className="footer-contact-list">
             <li>

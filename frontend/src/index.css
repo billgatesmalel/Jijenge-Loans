@@ -1805,28 +1805,98 @@ button, input, select, textarea, a {
 .site-footer {
     background: var(--brand-navy);
     color: #ffffff;
-    padding-top: 4rem;
+    padding-top: 3.25rem;
     margin-top: auto;
 }
 
 .footer-grid {
     display: grid;
-    grid-template-columns: 1fr;
-    gap: 32px;
-    padding-bottom: 3.5rem;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 2rem 1.25rem;
+    padding-bottom: 2.75rem;
 }
 
-@media (min-width: 640px) and (max-width: 1023px) {
+/* Mobile Section 1: Company Information (Full Width) */
+.footer-col--brand {
+    grid-column: 1 / -1;
+    margin-bottom: 0.25rem;
+}
+
+/* Mobile Section 2: Navigation Grid (2 Columns) */
+.footer-col--quick-links {
+    grid-column: 1 / 2;
+}
+
+.footer-col--services {
+    grid-column: 2 / 3;
+}
+
+/* Mobile Section 3: Legal & Contact Grid (2 Columns) */
+.footer-col--legal {
+    grid-column: 1 / 2;
+}
+
+.footer-col--contact {
+    grid-column: 2 / 3;
+}
+
+/* Single column fallback for extremely narrow viewports (<340px) */
+@media (max-width: 339px) {
     .footer-grid {
-        grid-template-columns: repeat(2, minmax(0, 1fr));
-        gap: 24px;
+        grid-template-columns: 1fr;
+        gap: 1.75rem;
+    }
+    .footer-col--brand,
+    .footer-col--quick-links,
+    .footer-col--services,
+    .footer-col--legal,
+    .footer-col--contact {
+        grid-column: 1 / -1;
     }
 }
 
-@media (min-width: 1024px) {
+/* Tablet (640px - 1023px) Layout */
+@media (min-width: 640px) and (max-width: 1023px) {
     .footer-grid {
-        grid-template-columns: 1.4fr repeat(4, 1fr);
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 2.25rem 2rem;
+    }
+    .footer-col--brand {
+        grid-column: 1 / -1;
+        max-width: 620px;
+    }
+    .footer-col--quick-links {
+        grid-column: 1 / 2;
+    }
+    .footer-col--services {
+        grid-column: 2 / 3;
+    }
+    .footer-col--legal {
+        grid-column: 1 / 2;
+    }
+    .footer-col--contact {
+        grid-column: 2 / 3;
+    }
+}
+
+/* Desktop (1024px+) Multi-Column Layout */
+@media (min-width: 1024px) {
+    .site-footer {
+        padding-top: 4rem;
+    }
+    .footer-grid {
+        grid-template-columns: 1.4fr repeat(4, minmax(0, 1fr));
         gap: 2rem;
+        padding-bottom: 3.5rem;
+    }
+    .footer-col--brand,
+    .footer-col--quick-links,
+    .footer-col--services,
+    .footer-col--legal,
+    .footer-col--contact {
+        grid-column: auto;
+        max-width: none;
+        margin-bottom: 0;
     }
 }
 
@@ -1839,7 +1909,7 @@ button, input, select, textarea, a {
     display: flex;
     align-items: center;
     gap: 0.75rem;
-    margin-bottom: 1rem;
+    margin-bottom: 0.85rem;
 }
 
 .footer-brand-title {
@@ -1849,16 +1919,17 @@ button, input, select, textarea, a {
 }
 
 .footer-desc {
-    font-size: 0.9rem;
+    font-size: 0.875rem;
     color: #94a3b8;
     line-height: 1.6;
-    margin-bottom: 1.25rem;
+    margin-bottom: 1.15rem;
+    max-width: 520px;
 }
 
 .footer-compliance-badges {
     display: flex;
     align-items: center;
-    gap: 0.75rem;
+    gap: 0.6rem;
     flex-wrap: wrap;
 }
 
@@ -1876,12 +1947,12 @@ button, input, select, textarea, a {
 }
 
 .footer-col-title {
-    font-size: 0.95rem;
+    font-size: 0.9rem;
     font-weight: 800;
     text-transform: uppercase;
     letter-spacing: 0.06em;
     color: #ffffff;
-    margin-bottom: 1.25rem;
+    margin-bottom: 1rem;
 }
 
 .footer-nav-list, .footer-contact-list {
@@ -1890,13 +1961,13 @@ button, input, select, textarea, a {
     margin: 0;
     display: flex;
     flex-direction: column;
-    gap: 0.75rem;
+    gap: 0.7rem;
 }
 
 .footer-nav-list a, .footer-nav-btn {
     color: #94a3b8;
     text-decoration: none;
-    font-size: 0.9rem;
+    font-size: 0.875rem;
     font-weight: 500;
     background: none;
     border: none;
@@ -1916,7 +1987,7 @@ button, input, select, textarea, a {
     gap: 0.35rem;
     color: #94a3b8 !important;
     text-decoration: none;
-    font-size: 0.9rem;
+    font-size: 0.875rem;
     font-weight: 500;
     transition: color var(--transition);
 }
@@ -1939,21 +2010,34 @@ button, input, select, textarea, a {
 
 .footer-contact-list li {
     display: flex;
-    align-items: center;
-    gap: 0.6rem;
-    font-size: 0.9rem;
+    align-items: flex-start;
+    gap: 0.55rem;
+    font-size: 0.85rem;
     color: #94a3b8;
+    word-break: break-word;
+    overflow-wrap: anywhere;
+}
+
+.footer-contact-list li svg {
+    flex-shrink: 0;
+    margin-top: 3px;
+}
+
+.footer-contact-list a {
+    word-break: break-word;
+    overflow-wrap: anywhere;
 }
 
 .footer-hours {
     font-size: 0.8rem;
     color: #64748b;
-    margin-top: 1rem;
+    margin-top: 0.85rem;
+    line-height: 1.4;
 }
 
 .footer-bottom {
     border-top: 1px solid #1e293b;
-    padding: 1.75rem 0;
+    padding: 1.5rem 0;
     background: #090d16;
     width: 100%;
 }
@@ -1973,21 +2057,23 @@ button, input, select, textarea, a {
 
 @media (max-width: 768px) {
     .footer-bottom-inner {
-        padding-left: 16px;
-        padding-right: 16px;
+        padding-left: 24px;
+        padding-right: 24px;
     }
 }
 
 .footer-copy {
-    font-size: 0.85rem;
+    font-size: 0.8125rem;
     color: #94a3b8;
     margin: 0;
+    line-height: 1.5;
 }
 
 .footer-legal {
-    font-size: 0.78rem;
+    font-size: 0.75rem;
     color: #64748b;
     margin: 0;
+    line-height: 1.4;
 }
 
 /* ─── 12. Support Chat & Toast Styles ─────────────────────────────────── */
