@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
+import { Link, NavLink, useLocation, useNavigate } from 'react-router-dom';
 import {
-  HelpCircle,
   MessageCircle,
   ClipboardList,
   LogIn,
@@ -11,14 +11,14 @@ import {
 } from 'lucide-react';
 
 interface NavbarProps {
-  currentTab: string;
-  onTabChange: (tabId: string) => void;
-  onOpenSupport: () => void;
+  onOpenSupport?: () => void;
 }
 
-export const Navbar: React.FC<NavbarProps> = ({ currentTab, onTabChange, onOpenSupport }) => {
+export const Navbar: React.FC<NavbarProps> = ({ onOpenSupport }) => {
   const [scrolled, setScrolled] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
+  const location = useLocation();
+  const navigate = useNavigate();
 
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 8);
@@ -26,10 +26,11 @@ export const Navbar: React.FC<NavbarProps> = ({ currentTab, onTabChange, onOpenS
     return () => window.removeEventListener('scroll', onScroll);
   }, []);
 
-  // Close drawer when active tab changes (user navigated)
+  // Close drawer and scroll to top when path changes
   useEffect(() => {
     setMobileOpen(false);
-  }, [currentTab]);
+    window.scrollTo({ top: 0, behavior: 'instant' });
+  }, [location.pathname]);
 
   // Control body scroll lock — prevent page scrolling when drawer is open
   useEffect(() => {
@@ -44,24 +45,37 @@ export const Navbar: React.FC<NavbarProps> = ({ currentTab, onTabChange, onOpenS
   }, [mobileOpen]);
 
   const navLinks = [
-    { id: 'home', label: 'Home' },
-    { id: 'how-it-works', label: 'How It Works' },
-    { id: 'faqs', label: 'FAQs' },
+    { path: '/', label: 'Home' },
+    { path: '/how-it-works', label: 'How It Works' },
+    { path: '/faqs', label: 'FAQs' },
+    { path: '/support', label: 'Support' },
   ];
 
   const closeMenu = () => setMobileOpen(false);
-  const handleNavClick = (id: string) => { onTabChange(id); closeMenu(); };
-  const handleSupportClick = () => { onOpenSupport(); closeMenu(); };
+
+  const handleNavClick = (path: string) => {
+    closeMenu();
+    navigate(path);
+  };
+
+  const handleSupportClick = () => {
+    closeMenu();
+    if (onOpenSupport) {
+      onOpenSupport();
+    } else {
+      navigate('/support');
+    }
+  };
 
   return (
     <header className={`navbar${scrolled ? ' navbar--scrolled' : ''}`} role="banner">
       <div className="nav-container">
 
         {/* ── Brand ── */}
-        <a
-          href="#home"
+        <Link
+          to="/"
           className="nav-brand"
-          onClick={() => onTabChange('home')}
+          onClick={closeMenu}
           aria-label="Jijenge Loans — Home"
         >
           <img
@@ -74,55 +88,40 @@ export const Navbar: React.FC<NavbarProps> = ({ currentTab, onTabChange, onOpenS
           <div className="brand-text-wrapper">
             <span className="brand-title">Jijenge Loans</span>
           </div>
-        </a>
+        </Link>
 
         {/* ── Desktop nav links ── */}
         <nav className="nav-links" aria-label="Main navigation">
-          {navLinks.map(({ id, label }) => (
-            <button
-              key={id}
-              type="button"
-              className={`nav-link${currentTab === id ? ' nav-link--active' : ''}`}
-              onClick={() => onTabChange(id)}
-              aria-current={currentTab === id ? 'page' : undefined}
+          {navLinks.map(({ path, label }) => (
+            <NavLink
+              key={path}
+              to={path}
+              end={path === '/'}
+              className={({ isActive }) => `nav-link${isActive ? ' nav-link--active' : ''}`}
             >
               {label}
-            </button>
+            </NavLink>
           ))}
-          <button
-            type="button"
-            className="nav-link"
-            onClick={onOpenSupport}
-            aria-label="Open live support chat"
-          >
-            Support
-          </button>
-          <a
-            href="#track"
-            className={`nav-link${currentTab === 'track' ? ' nav-link--active' : ''}`}
-            onClick={() => onTabChange('track')}
+          <NavLink
+            to="/track-loan"
+            className={({ isActive }) => `nav-link${isActive ? ' nav-link--active' : ''}`}
             aria-label="Track Loan"
           >
             <ClipboardList size={14} strokeWidth={1.8} aria-hidden="true" />
             Track Loan
-          </a>
+          </NavLink>
         </nav>
 
         {/* ── Desktop right actions ── */}
         <div className="nav-actions" role="group" aria-label="Account actions">
-          <a href="#customer" className="btn-nav-outline">
+          <Link to="/customer" className="btn-nav-outline">
             <LogIn size={14} strokeWidth={1.8} aria-hidden="true" />
             Customer Login
-          </a>
-          <button
-            type="button"
-            className="btn-apply-cta"
-            onClick={() => onTabChange('apply')}
-            aria-label="Start loan application"
-          >
+          </Link>
+          <Link to="/apply" className="btn-apply-cta" aria-label="Start loan application">
             Apply Now
             <ArrowRight size={14} strokeWidth={2.2} aria-hidden="true" />
-          </button>
+          </Link>
         </div>
 
         {/* ── Mobile hamburger ── */}
@@ -160,20 +159,21 @@ export const Navbar: React.FC<NavbarProps> = ({ currentTab, onTabChange, onOpenS
         aria-hidden={!mobileOpen}
       >
         <div className="mobile-drawer-inner">
-          {navLinks.map(({ id, label }) => (
+          {navLinks.map(({ path, label }) => (
             <button
-              key={id}
+              key={path}
               type="button"
-              className={`mobile-nav-link${currentTab === id ? ' mobile-nav-link--active' : ''}`}
-              onClick={() => handleNavClick(id)}
+              className={`mobile-nav-link${location.pathname === path ? ' mobile-nav-link--active' : ''}`}
+              onClick={() => handleNavClick(path)}
               tabIndex={mobileOpen ? 0 : -1}
             >
               {label}
             </button>
           ))}
+          
           <button
             type="button"
-            className="mobile-nav-link"
+            className={`mobile-nav-link${location.pathname === '/support' ? ' mobile-nav-link--active' : ''}`}
             onClick={handleSupportClick}
             tabIndex={mobileOpen ? 0 : -1}
           >
@@ -183,28 +183,30 @@ export const Navbar: React.FC<NavbarProps> = ({ currentTab, onTabChange, onOpenS
 
           <hr className="mobile-nav-divider" />
 
-          <a
-            href="#track"
-            className="mobile-nav-link"
-            onClick={() => handleNavClick('track')}
+          <button
+            type="button"
+            className={`mobile-nav-link${location.pathname === '/track-loan' ? ' mobile-nav-link--active' : ''}`}
+            onClick={() => handleNavClick('/track-loan')}
             tabIndex={mobileOpen ? 0 : -1}
           >
             <ClipboardList size={15} strokeWidth={1.8} aria-hidden="true" />
             Track Loan
-          </a>
-          <a
-            href="#customer"
+          </button>
+
+          <button
+            type="button"
             className="mobile-nav-link"
-            onClick={closeMenu}
+            onClick={() => handleNavClick('/customer')}
             tabIndex={mobileOpen ? 0 : -1}
           >
             <LogIn size={15} strokeWidth={1.8} aria-hidden="true" />
             Customer Login
-          </a>
+          </button>
+
           <button
             type="button"
             className="btn-apply-cta mobile-apply-btn"
-            onClick={() => handleNavClick('apply')}
+            onClick={() => handleNavClick('/apply')}
             tabIndex={mobileOpen ? 0 : -1}
           >
             Apply Now
@@ -215,3 +217,5 @@ export const Navbar: React.FC<NavbarProps> = ({ currentTab, onTabChange, onOpenS
     </header>
   );
 };
+
+export default Navbar;

@@ -726,7 +726,7 @@ export const CustomerDashboardModal: React.FC<CustomerDashboardProps> = ({ onClo
         )}
       </main>
 
-      {!isLoggedIn && <Footer onTabChange={onClose} />}
+      {!isLoggedIn && <Footer />}
 
       {/* ── Processing overlay ── */}
       {withdrawLoading && !withdrawSuccess && (

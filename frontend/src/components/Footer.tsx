@@ -1,12 +1,12 @@
 import React from 'react';
+import { Link } from 'react-router-dom';
 import { Phone, Mail, MapPin, ShieldCheck, Lock, ExternalLink } from 'lucide-react';
 
 interface FooterProps {
-  onTabChange: (tabId: string) => void;
   onOpenSupport?: () => void;
 }
 
-export const Footer: React.FC<FooterProps> = ({ onTabChange, onOpenSupport }) => {
+export const Footer: React.FC<FooterProps> = ({ onOpenSupport }) => {
   const year = new Date().getFullYear();
 
   return (
@@ -49,10 +49,10 @@ export const Footer: React.FC<FooterProps> = ({ onTabChange, onOpenSupport }) =>
           <h3 className="footer-col-title">Quick Links</h3>
           <nav aria-label="Footer quick links navigation">
             <ul className="footer-nav-list">
-              <li><a href="#home" onClick={() => onTabChange('home')}>Home</a></li>
-              <li><a href="#how-it-works" onClick={() => onTabChange('how-it-works')}>How It Works</a></li>
-              <li><a href="#apply" onClick={() => onTabChange('apply')}>Apply for a Loan</a></li>
-              <li><a href="#faqs" onClick={() => onTabChange('faqs')}>FAQs</a></li>
+              <li><Link to="/">Home</Link></li>
+              <li><Link to="/how-it-works">How It Works</Link></li>
+              <li><Link to="/apply">Apply for a Loan</Link></li>
+              <li><Link to="/faqs">FAQs</Link></li>
             </ul>
           </nav>
         </div>
@@ -63,14 +63,14 @@ export const Footer: React.FC<FooterProps> = ({ onTabChange, onOpenSupport }) =>
           <nav aria-label="Footer customer services navigation">
             <ul className="footer-nav-list">
               <li>
-                <a href="#customer" onClick={() => onTabChange('customer')}>
+                <Link to="/customer">
                   Customer Login
-                </a>
+                </Link>
               </li>
               <li>
-                <a href="#track" onClick={() => onTabChange('track')}>
+                <Link to="/track-loan">
                   Track Application
-                </a>
+                </Link>
               </li>
               {onOpenSupport && (
                 <li>
@@ -147,3 +147,5 @@ export const Footer: React.FC<FooterProps> = ({ onTabChange, onOpenSupport }) =>
     </footer>
   );
 };
+
+export default Footer;
