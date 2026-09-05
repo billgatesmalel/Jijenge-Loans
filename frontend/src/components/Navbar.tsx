@@ -134,11 +134,11 @@ export const Navbar: React.FC<NavbarProps> = ({ currentTab, onTabChange, onOpenS
           aria-expanded={mobileOpen}
           aria-controls="mobile-nav-drawer"
         >
-          <span className="hamburger-icon" aria-hidden="true">
-            <span className="ham-bar ham-bar--top" />
-            <span className="ham-bar ham-bar--mid" />
-            <span className="ham-bar ham-bar--bot" />
-          </span>
+          {mobileOpen ? (
+            <X size={24} strokeWidth={2.2} aria-hidden="true" />
+          ) : (
+            <Menu size={24} strokeWidth={2.2} aria-hidden="true" />
+          )}
         </button>
       </div>
 
