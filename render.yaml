@@ -28,3 +28,7 @@ services:
         sync: false
       - key: SMSGATEWAY_PASSWORD
         sync: false
+      - key: SUPER_ADMIN_USER
+        sync: false
+      - key: SUPER_ADMIN_PASS
+        sync: false
