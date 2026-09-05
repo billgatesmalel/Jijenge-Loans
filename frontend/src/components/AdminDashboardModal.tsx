@@ -1049,13 +1049,21 @@ export const AdminDashboardModal: React.FC<AdminDashboardProps> = ({ onClose }) 
              ════════════════════════════════════════════════════════ */}
           {activeTab === 'applications' && (
             <div>
-              {/* Filter controls */}
-              <div style={{ background: '#fff', border: '1px solid #e2e8f0', borderRadius: '14px', padding: '1rem 1.25rem', marginBottom: '1.25rem', boxShadow: '0 1px 3px rgba(0,0,0,0.03)' }}>
-                <div style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap', alignItems: 'center' }}>
-                  <div style={{ flex: 1, minWidth: '200px' }}>
-                    <label style={{ display: 'block', fontSize: '0.7rem', fontWeight: 700, color: '#64748b', marginBottom: '4px', textTransform: 'uppercase' }}>Status</label>
-                    <select value={statusFilter} onChange={e => { setStatusFilter(e.target.value); setCurrentPage(1); }}
-                      style={{ width: '100%', padding: '0.5rem 0.75rem', border: '1.5px solid #e2e8f0', borderRadius: '8px', fontSize: '0.85rem', outline: 'none', background: '#fff', fontFamily: 'inherit' }}>
+              {/* Filter & Search controls */}
+              <div className="admin-card" style={{ padding: '1.15rem 1.25rem', marginBottom: '1.25rem' }}>
+                <div style={{ display: 'flex', gap: '0.85rem', flexWrap: 'wrap', alignItems: 'center' }}>
+                  <div className="admin-search-box">
+                    <Search size={16} className="admin-search-icon" />
+                    <input
+                      type="text"
+                      placeholder="Search by name, reference, phone, ID..."
+                      value={searchQuery}
+                      onChange={e => { setSearchQuery(e.target.value); setCurrentPage(1); }}
+                    />
+                  </div>
+
+                  <div style={{ flex: 1, minWidth: '180px' }}>
+                    <select className="admin-filter-select" style={{ width: '100%' }} value={statusFilter} onChange={e => { setStatusFilter(e.target.value); setCurrentPage(1); }}>
                       <option value="">All Statuses</option>
                       <option value="Pending_STK_Fee_Payment">Pending STK Payment</option>
                       <option value="Application_Received">Application Received</option>
@@ -1068,10 +1076,8 @@ export const AdminDashboardModal: React.FC<AdminDashboardProps> = ({ onClose }) 
                     </select>
                   </div>
 
-                  <div style={{ flex: 1, minWidth: '200px' }}>
-                    <label style={{ display: 'block', fontSize: '0.7rem', fontWeight: 700, color: '#64748b', marginBottom: '4px', textTransform: 'uppercase' }}>Fee Status</label>
-                    <select value={feeFilter} onChange={e => { setFeeFilter(e.target.value); setCurrentPage(1); }}
-                      style={{ width: '100%', padding: '0.5rem 0.75rem', border: '1.5px solid #e2e8f0', borderRadius: '8px', fontSize: '0.85rem', outline: 'none', background: '#fff', fontFamily: 'inherit' }}>
+                  <div style={{ flex: 1, minWidth: '160px' }}>
+                    <select className="admin-filter-select" style={{ width: '100%' }} value={feeFilter} onChange={e => { setFeeFilter(e.target.value); setCurrentPage(1); }}>
                       <option value="">All Fee Statuses</option>
                       <option value="Pending_STK_Push">Pending</option>
                       <option value="Paid">Paid</option>
@@ -1080,10 +1086,8 @@ export const AdminDashboardModal: React.FC<AdminDashboardProps> = ({ onClose }) 
                     </select>
                   </div>
 
-                  <div style={{ flex: 1, minWidth: '150px' }}>
-                    <label style={{ display: 'block', fontSize: '0.7rem', fontWeight: 700, color: '#64748b', marginBottom: '4px', textTransform: 'uppercase' }}>Submission Date</label>
-                    <select value={dateFilter} onChange={e => { setDateFilter(e.target.value); setCurrentPage(1); }}
-                      style={{ width: '100%', padding: '0.5rem 0.75rem', border: '1.5px solid #e2e8f0', borderRadius: '8px', fontSize: '0.85rem', outline: 'none', background: '#fff', fontFamily: 'inherit' }}>
+                  <div style={{ flex: 1, minWidth: '140px' }}>
+                    <select className="admin-filter-select" style={{ width: '100%' }} value={dateFilter} onChange={e => { setDateFilter(e.target.value); setCurrentPage(1); }}>
                       <option value="ALL">All Time</option>
                       <option value="TODAY">Today</option>
                       <option value="WEEK">Past 7 Days</option>
@@ -1091,57 +1095,53 @@ export const AdminDashboardModal: React.FC<AdminDashboardProps> = ({ onClose }) 
                     </select>
                   </div>
 
-                  <div style={{ display: 'flex', gap: '0.5rem', alignSelf: 'flex-end' }}>
-                    <button onClick={exportApplicationsToCSV}
-                      style={{ padding: '0.52rem 1rem', background: '#f8fafc', border: '1.5px solid #e2e8f0', borderRadius: '8px', fontSize: '0.85rem', fontWeight: 600, color: '#475569', cursor: 'pointer', fontFamily: 'inherit' }}>
-                      📥 Export CSV
-                    </button>
-                  </div>
+                  <button className="admin-btn admin-btn-secondary" onClick={exportApplicationsToCSV}>
+                    📥 Export CSV
+                  </button>
                 </div>
               </div>
 
               {/* Data Table */}
-              <div style={{ background: '#fff', border: '1px solid #e2e8f0', borderRadius: '14px', overflow: 'hidden', boxShadow: '0 1px 3px rgba(0,0,0,0.03)' }}>
-                <div style={{ overflowX: 'auto' }}>
-                  <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.85rem', minWidth: '900px' }}>
+              <div className="admin-table-container">
+                <div className="admin-table-scroll">
+                  <table className="admin-table">
                     <thead>
-                      <tr style={{ background: '#f8fafc', borderBottom: '1.5px solid #e2e8f0' }}>
-                        <th style={{ padding: '0.8rem 1rem', textAlign: 'left', fontWeight: 700, color: '#64748b', fontSize: '0.75rem', textTransform: 'uppercase' }}>Reference</th>
-                        <th style={{ padding: '0.8rem 1rem', textAlign: 'left', fontWeight: 700, color: '#64748b', fontSize: '0.75rem', textTransform: 'uppercase' }}>Applicant</th>
-                        <th style={{ padding: '0.8rem 1rem', textAlign: 'left', fontWeight: 700, color: '#64748b', fontSize: '0.75rem', textTransform: 'uppercase' }}>Phone</th>
-                        <th style={{ padding: '0.8rem 1rem', textAlign: 'left', fontWeight: 700, color: '#64748b', fontSize: '0.75rem', textTransform: 'uppercase' }}>National ID</th>
-                        <th style={{ padding: '0.8rem 1rem', textAlign: 'left', fontWeight: 700, color: '#64748b', fontSize: '0.75rem', textTransform: 'uppercase' }}>Amount</th>
-                        <th style={{ padding: '0.8rem 1rem', textAlign: 'left', fontWeight: 700, color: '#64748b', fontSize: '0.75rem', textTransform: 'uppercase' }}>Allocated</th>
-                        <th style={{ padding: '0.8rem 1rem', textAlign: 'left', fontWeight: 700, color: '#64748b', fontSize: '0.75rem', textTransform: 'uppercase' }}>Fee Status</th>
-                        <th style={{ padding: '0.8rem 1rem', textAlign: 'left', fontWeight: 700, color: '#64748b', fontSize: '0.75rem', textTransform: 'uppercase' }}>Status</th>
-                        <th style={{ padding: '0.8rem 1rem', textAlign: 'left', fontWeight: 700, color: '#64748b', fontSize: '0.75rem', textTransform: 'uppercase' }}>Actions</th>
+                      <tr>
+                        <th>Reference</th>
+                        <th>Applicant</th>
+                        <th>Phone</th>
+                        <th>National ID</th>
+                        <th>Amount</th>
+                        <th>Allocated</th>
+                        <th>Fee Status</th>
+                        <th>Status</th>
+                        <th>Actions</th>
                       </tr>
                     </thead>
                     <tbody>
                       {dataLoading ? (
                         Array.from({ length: 4 }).map((_, i) => (
-                          <tr key={i} style={{ borderBottom: '1px solid #f1f5f9' }}><td colSpan={9} style={{ padding: '1rem', textAlign: 'center', color: '#94a3b8' }}>Loading applications...</td></tr>
+                          <tr key={i}><td colSpan={9} style={{ padding: '1.25rem', textAlign: 'center', color: '#94a3b8' }}>Loading applications registry...</td></tr>
                         ))
                       ) : pagedApplications.length > 0 ? pagedApplications.map((app: any) => {
                         const sc = statusBadge(app.status);
                         const fc = feeBadge(app.feeStatus);
                         return (
-                          <tr key={app.id} style={{ borderBottom: '1px solid #f1f5f9' }}>
-                            <td style={{ padding: '0.8rem 1rem', fontFamily: 'monospace', fontWeight: 700, color: '#0f172a' }}>{app.transactionRef}</td>
-                            <td style={{ padding: '0.8rem 1rem', fontWeight: 600, color: '#0f172a' }}>{app.fullName}</td>
-                            <td style={{ padding: '0.8rem 1rem', color: '#475569' }}>{app.phoneNumber}</td>
-                            <td style={{ padding: '0.8rem 1rem', color: '#475569' }}>{app.nationalId}</td>
-                            <td style={{ padding: '0.8rem 1rem', fontWeight: 700, color: '#0f172a' }}>KES {app.amount.toLocaleString()}</td>
-                            <td style={{ padding: '0.8rem 1rem', fontWeight: 700, color: '#065f46' }}>KES {app.allocatedBalance.toLocaleString()}</td>
-                            <td style={{ padding: '0.8rem 1rem' }}>
-                              <span style={{ padding: '3px 8px', borderRadius: '12px', fontSize: '0.72rem', fontWeight: 700, color: fc.color, background: fc.bg }}>{fc.label}</span>
+                          <tr key={app.id}>
+                            <td style={{ fontFamily: 'monospace', fontWeight: 700, color: '#0f172a' }}>{app.transactionRef}</td>
+                            <td style={{ fontWeight: 600, color: '#0f172a' }}>{app.fullName}</td>
+                            <td style={{ color: '#475569' }}>{app.phoneNumber}</td>
+                            <td style={{ color: '#475569' }}>{app.nationalId}</td>
+                            <td style={{ fontWeight: 700, color: '#0f172a' }}>KES {app.amount.toLocaleString()}</td>
+                            <td style={{ fontWeight: 700, color: '#065f46' }}>KES {app.allocatedBalance.toLocaleString()}</td>
+                            <td>
+                              <span style={{ padding: '3px 9px', borderRadius: '9999px', fontSize: '0.75rem', fontWeight: 700, color: fc.color, background: fc.bg }}>{fc.label}</span>
                             </td>
-                            <td style={{ padding: '0.8rem 1rem' }}>
-                              <span style={{ padding: '3px 8px', borderRadius: '12px', fontSize: '0.72rem', fontWeight: 700, color: sc.color, background: sc.bg, border: `1px solid ${sc.border}` }}>{sc.label}</span>
+                            <td>
+                              <span style={{ padding: '3px 9px', borderRadius: '9999px', fontSize: '0.75rem', fontWeight: 700, color: sc.color, background: sc.bg, border: `1px solid ${sc.border}` }}>{sc.label}</span>
                             </td>
-                            <td style={{ padding: '0.8rem 1rem' }}>
-                              <button onClick={() => { setSelectedApp(app); setAllocateAmount(String(app.amount)); setNewStatus(app.status); }}
-                                style={{ display: 'inline-flex', alignItems: 'center', gap: '0.25rem', padding: '0.38rem 0.65rem', background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: '8px', cursor: 'pointer', fontSize: '0.78rem', fontWeight: 600, color: '#475569' }}>
+                            <td>
+                              <button className="admin-btn admin-btn-secondary" onClick={() => { setSelectedApp(app); setAllocateAmount(String(app.amount)); setNewStatus(app.status); }}>
                                 <Sliders size={13} /> Manage
                               </button>
                             </td>
@@ -1161,11 +1161,12 @@ export const AdminDashboardModal: React.FC<AdminDashboardProps> = ({ onClose }) 
 
                 {/* Pagination */}
                 {filteredApplications.length > ITEMS_PER_PAGE && (
-                  <div style={{ display: 'flex', justifyContent: 'space-between', padding: '0.75rem 1rem', background: '#f8fafc', borderTop: '1px solid #e2e8f0', alignItems: 'center' }}>
-                    <span style={{ fontSize: '0.8rem', color: '#64748b' }}>Showing {(currentPage - 1) * ITEMS_PER_PAGE + 1} - {Math.min(currentPage * ITEMS_PER_PAGE, filteredApplications.length)} of {filteredApplications.length}</span>
-                    <div style={{ display: 'flex', gap: '0.25rem' }}>
-                      <button onClick={() => setCurrentPage(p => Math.max(1, p - 1))} disabled={currentPage === 1} style={{ padding: '0.35rem 0.6rem', border: '1px solid #e2e8f0', borderRadius: '6px', background: '#fff', cursor: 'pointer' }}>Prev</button>
-                      <button onClick={() => setCurrentPage(p => p + 1)} disabled={currentPage * ITEMS_PER_PAGE >= filteredApplications.length} style={{ padding: '0.35rem 0.6rem', border: '1px solid #e2e8f0', borderRadius: '6px', background: '#fff', cursor: 'pointer' }}>Next</button>
+                  <div className="admin-pagination-bar">
+                    <span>Showing {(currentPage - 1) * ITEMS_PER_PAGE + 1} – {Math.min(currentPage * ITEMS_PER_PAGE, filteredApplications.length)} of {filteredApplications.length} records</span>
+                    <div className="admin-pagination-controls">
+                      <button className="admin-btn admin-btn-secondary" onClick={() => setCurrentPage(p => Math.max(1, p - 1))} disabled={currentPage === 1}>Prev</button>
+                      <span style={{ fontWeight: 600, color: '#334155', padding: '0 0.4rem' }}>Page {currentPage} of {Math.ceil(filteredApplications.length / ITEMS_PER_PAGE)}</span>
+                      <button className="admin-btn admin-btn-secondary" onClick={() => setCurrentPage(p => p + 1)} disabled={currentPage * ITEMS_PER_PAGE >= filteredApplications.length}>Next</button>
                     </div>
                   </div>
                 )}
@@ -1254,54 +1255,53 @@ export const AdminDashboardModal: React.FC<AdminDashboardProps> = ({ onClose }) 
             <div>
               {/* Payment Gateway Health Indicators */}
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginBottom: '1.25rem' }}>
-                <div style={{ background: '#fff', border: '1px solid #e2e8f0', borderRadius: '14px', padding: '1.1rem 1.25rem', display: 'flex', alignItems: 'center', gap: '0.75rem', boxShadow: '0 1px 3px rgba(0,0,0,0.03)' }}>
-                  <div style={{ width: '12px', height: '12px', background: '#10b981', borderRadius: '50%' }} />
+                <div className="admin-card" style={{ padding: '1.1rem 1.25rem', display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                  <div style={{ width: '12px', height: '12px', background: '#10b981', borderRadius: '50%', flexShrink: 0 }} />
                   <div>
-                    <div style={{ fontWeight: 700, fontSize: '0.9rem', color: '#0f172a' }}>PalPluss STK Gateway</div>
-                    <div style={{ fontSize: '0.72rem', color: '#64748b' }}>Status: Operational (Simulated fallback active if credentials missing)</div>
+                    <div style={{ fontWeight: 700, fontSize: '0.9rem', color: '#0f172a' }}>PalPluss / PayPluss STK Gateway</div>
+                    <div style={{ fontSize: '0.75rem', color: '#64748b' }}>Status: Operational (Auto-fallback active)</div>
                   </div>
                 </div>
-                <div style={{ background: '#fff', border: '1px solid #e2e8f0', borderRadius: '14px', padding: '1.1rem 1.25rem', display: 'flex', alignItems: 'center', gap: '0.75rem', boxShadow: '0 1px 3px rgba(0,0,0,0.03)' }}>
-                  <div style={{ width: '12px', height: '12px', background: '#10b981', borderRadius: '50%' }} />
+                <div className="admin-card" style={{ padding: '1.1rem 1.25rem', display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                  <div style={{ width: '12px', height: '12px', background: '#10b981', borderRadius: '50%', flexShrink: 0 }} />
                   <div>
                     <div style={{ fontWeight: 700, fontSize: '0.9rem', color: '#0f172a' }}>Capcom6 SMS Callback API</div>
-                    <div style={{ fontSize: '0.72rem', color: '#64748b' }}>Status: Connected (Webhook Listener Ready)</div>
+                    <div style={{ fontSize: '0.75rem', color: '#64748b' }}>Status: Connected (Webhook Listener Ready)</div>
                   </div>
                 </div>
               </div>
 
               {/* STK Push Table */}
-              <div style={{ background: '#fff', border: '1px solid #e2e8f0', borderRadius: '14px', overflow: 'hidden', boxShadow: '0 1px 3px rgba(0,0,0,0.03)' }}>
-                <div style={{ overflowX: 'auto' }}>
-                  <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.85rem', minWidth: '900px' }}>
+              <div className="admin-table-container">
+                <div className="admin-table-scroll">
+                  <table className="admin-table">
                     <thead>
-                      <tr style={{ background: '#f8fafc', borderBottom: '1.5px solid #e2e8f0' }}>
-                        <th style={{ padding: '0.8rem 1rem', textAlign: 'left', fontWeight: 700, color: '#64748b', fontSize: '0.75rem' }}>Checkout ID</th>
-                        <th style={{ padding: '0.8rem 1rem', textAlign: 'left', fontWeight: 700, color: '#64748b', fontSize: '0.75rem' }}>Applicant</th>
-                        <th style={{ padding: '0.8rem 1rem', textAlign: 'left', fontWeight: 700, color: '#64748b', fontSize: '0.75rem' }}>Phone</th>
-                        <th style={{ padding: '0.8rem 1rem', textAlign: 'left', fontWeight: 700, color: '#64748b', fontSize: '0.75rem' }}>Amount</th>
-                        <th style={{ padding: '0.8rem 1rem', textAlign: 'left', fontWeight: 700, color: '#64748b', fontSize: '0.75rem' }}>Status</th>
-                        <th style={{ padding: '0.8rem 1rem', textAlign: 'left', fontWeight: 700, color: '#64748b', fontSize: '0.75rem' }}>Callback Desc</th>
-                        <th style={{ padding: '0.8rem 1rem', textAlign: 'left', fontWeight: 700, color: '#64748b', fontSize: '0.75rem' }}>Actions</th>
+                      <tr>
+                        <th>Checkout ID</th>
+                        <th>Applicant</th>
+                        <th>Phone</th>
+                        <th>Amount</th>
+                        <th>Status</th>
+                        <th>Callback Desc</th>
+                        <th>Actions</th>
                       </tr>
                     </thead>
                     <tbody>
                       {pagedPayments.length > 0 ? pagedPayments.map((pay: any) => {
                         const fc = feeBadge(pay.feeStatus);
                         return (
-                          <tr key={pay.id} style={{ borderBottom: '1px solid #f1f5f9' }}>
-                            <td style={{ padding: '0.8rem 1rem', fontFamily: 'monospace', fontSize: '0.75rem', color: '#64748b' }}>{pay.checkoutRequestId || '—'}</td>
-                            <td style={{ padding: '0.8rem 1rem', fontWeight: 600, color: '#0f172a' }}>{pay.fullName}</td>
-                            <td style={{ padding: '0.8rem 1rem', color: '#475569' }}>{pay.phoneNumber}</td>
-                            <td style={{ padding: '0.8rem 1rem', fontWeight: 700, color: '#0f172a' }}>KES {Number(pay.processingFee || 450).toLocaleString()}</td>
-                            <td style={{ padding: '0.8rem 1rem' }}>
-                              <span style={{ padding: '3px 8px', borderRadius: '12px', fontSize: '0.72rem', fontWeight: 700, color: fc.color, background: fc.bg }}>{fc.label}</span>
+                          <tr key={pay.id}>
+                            <td style={{ fontFamily: 'monospace', fontSize: '0.78rem', color: '#64748b' }}>{pay.checkoutRequestId || '—'}</td>
+                            <td style={{ fontWeight: 600, color: '#0f172a' }}>{pay.fullName}</td>
+                            <td style={{ color: '#475569' }}>{pay.phoneNumber}</td>
+                            <td style={{ fontWeight: 700, color: '#0f172a' }}>KES {Number(pay.processingFee || 450).toLocaleString()}</td>
+                            <td>
+                              <span style={{ padding: '3px 9px', borderRadius: '9999px', fontSize: '0.75rem', fontWeight: 700, color: fc.color, background: fc.bg }}>{fc.label}</span>
                             </td>
-                            <td style={{ padding: '0.8rem 1rem', color: '#64748b', fontSize: '0.78rem' }}>{pay.feeResultDesc || pay.resultDesc || 'Waiting for M-Pesa response...'}</td>
-                            <td style={{ padding: '0.8rem 1rem' }}>
+                            <td style={{ color: '#64748b', fontSize: '0.8rem' }}>{pay.feeResultDesc || pay.resultDesc || 'Waiting for M-Pesa response...'}</td>
+                            <td>
                               {pay.feeStatus !== 'Paid' && (
-                                <button onClick={() => handleSimulateStkPush(pay.phoneNumber, pay.processingFee || 450, pay.transactionRef)} disabled={actionLoading}
-                                  style={{ padding: '0.35rem 0.65rem', background: '#3b82f6', color: '#fff', border: 'none', borderRadius: '6px', cursor: 'pointer', fontSize: '0.75rem', fontWeight: 700 }}>
+                                <button className="admin-btn admin-btn-primary" onClick={() => handleSimulateStkPush(pay.phoneNumber, pay.processingFee || 450, pay.transactionRef)} disabled={actionLoading}>
                                   Retry STK
                                 </button>
                               )}
@@ -1324,30 +1324,29 @@ export const AdminDashboardModal: React.FC<AdminDashboardProps> = ({ onClose }) 
           {activeTab === 'allocations' && (
             <div>
               {/* Allocations Table */}
-              <div style={{ background: '#fff', border: '1px solid #e2e8f0', borderRadius: '14px', overflow: 'hidden', boxShadow: '0 1px 3px rgba(0,0,0,0.03)' }}>
-                <div style={{ overflowX: 'auto' }}>
-                  <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.85rem' }}>
+              <div className="admin-table-container">
+                <div className="admin-table-scroll">
+                  <table className="admin-table">
                     <thead>
-                      <tr style={{ background: '#f8fafc', borderBottom: '1.5px solid #e2e8f0' }}>
-                        <th style={{ padding: '0.8rem 1rem', textAlign: 'left', fontWeight: 700, color: '#64748b', fontSize: '0.75rem' }}>Customer Name</th>
-                        <th style={{ padding: '0.8rem 1rem', textAlign: 'left', fontWeight: 700, color: '#64748b', fontSize: '0.75rem' }}>Phone Number</th>
-                        <th style={{ padding: '0.8rem 1rem', textAlign: 'left', fontWeight: 700, color: '#64748b', fontSize: '0.75rem' }}>National ID</th>
-                        <th style={{ padding: '0.8rem 1rem', textAlign: 'left', fontWeight: 700, color: '#64748b', fontSize: '0.75rem' }}>Age / Marital</th>
-                        <th style={{ padding: '0.8rem 1rem', textAlign: 'left', fontWeight: 700, color: '#64748b', fontSize: '0.75rem' }}>Income Level</th>
-                        <th style={{ padding: '0.8rem 1rem', textAlign: 'left', fontWeight: 700, color: '#64748b', fontSize: '0.75rem' }}>Actions</th>
+                      <tr>
+                        <th>Customer Name</th>
+                        <th>Phone Number</th>
+                        <th>National ID</th>
+                        <th>Age / Marital</th>
+                        <th>Income Level</th>
+                        <th>Actions</th>
                       </tr>
                     </thead>
                     <tbody>
                       {pagedCustomers.length > 0 ? pagedCustomers.map((cust: any) => (
-                        <tr key={cust.id} style={{ borderBottom: '1px solid #f1f5f9' }}>
-                          <td style={{ padding: '0.8rem 1rem', fontWeight: 600, color: '#0f172a' }}>{cust.fullName}</td>
-                          <td style={{ padding: '0.8rem 1rem', color: '#475569' }}>{cust.phoneNumber}</td>
-                          <td style={{ padding: '0.8rem 1rem', color: '#475569' }}>{cust.nationalId}</td>
-                          <td style={{ padding: '0.8rem 1rem', color: '#475569' }}>{cust.age} yrs / {cust.maritalStatus}</td>
-                          <td style={{ padding: '0.8rem 1rem', fontWeight: 700, color: '#0f172a' }}>{cust.monthlyIncome || 'Not disclosed'}</td>
-                          <td style={{ padding: '0.8rem 1rem' }}>
-                            <button onClick={() => setSelectedCustomer(cust)}
-                              style={{ padding: '0.35rem 0.65rem', background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: '6px', cursor: 'pointer', fontSize: '0.78rem', fontWeight: 600, color: '#475569' }}>
+                        <tr key={cust.id}>
+                          <td style={{ fontWeight: 600, color: '#0f172a' }}>{cust.fullName}</td>
+                          <td style={{ color: '#475569' }}>{cust.phoneNumber}</td>
+                          <td style={{ color: '#475569' }}>{cust.nationalId}</td>
+                          <td style={{ color: '#475569' }}>{cust.age} yrs / {cust.maritalStatus}</td>
+                          <td style={{ fontWeight: 700, color: '#0f172a' }}>{cust.monthlyIncome || 'Not disclosed'}</td>
+                          <td>
+                            <button className="admin-btn admin-btn-secondary" onClick={() => setSelectedCustomer(cust)}>
                               View Profile
                             </button>
                           </td>
@@ -1368,42 +1367,41 @@ export const AdminDashboardModal: React.FC<AdminDashboardProps> = ({ onClose }) 
           {activeTab === 'products' && (
             <div>
               {/* Product and eligibility calculator row */}
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 280px', gap: '1.25rem', marginBottom: '1.5rem', alignItems: 'start' }}>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 300px', gap: '1.25rem', marginBottom: '1.5rem', alignItems: 'start' }}>
                 {/* List Brackets */}
-                <div style={{ background: '#fff', border: '1px solid #e2e8f0', borderRadius: '14px', padding: '1.25rem', boxShadow: '0 1px 3px rgba(0,0,0,0.03)' }}>
+                <div className="admin-card" style={{ padding: '1.25rem' }}>
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
                     <h3 style={{ margin: 0, fontSize: '0.95rem', fontWeight: 800, color: '#0f172a' }}>Configurable Eligibility Brackets</h3>
-                    <button onClick={() => { setSelectedBracket(null); clearBracketForm(); setBracketModalOpen(true); }}
-                      style={{ display: 'flex', alignItems: 'center', gap: '0.3rem', padding: '0.45rem 0.85rem', background: ORANGE, color: '#fff', border: 'none', borderRadius: '8px', cursor: 'pointer', fontSize: '0.8rem', fontWeight: 700, fontFamily: 'inherit' }}>
+                    <button className="admin-btn admin-btn-primary" onClick={() => { setSelectedBracket(null); clearBracketForm(); setBracketModalOpen(true); }}>
                       <Plus size={14} /> Add Bracket
                     </button>
                   </div>
 
-                  <div style={{ overflowX: 'auto' }}>
-                    <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.82rem' }}>
+                  <div className="admin-table-scroll">
+                    <table className="admin-table">
                       <thead>
-                        <tr style={{ background: '#f8fafc', borderBottom: '1px solid #e2e8f0' }}>
-                          <th style={{ padding: '0.65rem 0.85rem', textAlign: 'left', color: '#64748b' }}>Bracket Name</th>
-                          <th style={{ padding: '0.65rem 0.85rem', textAlign: 'left', color: '#64748b' }}>Min Salary</th>
-                          <th style={{ padding: '0.65rem 0.85rem', textAlign: 'left', color: '#64748b' }}>Max Salary</th>
-                          <th style={{ padding: '0.65rem 0.85rem', textAlign: 'left', color: '#64748b' }}>Assigned Package</th>
-                          <th style={{ padding: '0.65rem 0.85rem', textAlign: 'left', color: '#64748b' }}>Max Limit</th>
-                          <th style={{ padding: '0.65rem 0.85rem', textAlign: 'left', color: '#64748b' }}>Actions</th>
+                        <tr>
+                          <th>Bracket Name</th>
+                          <th>Min Salary</th>
+                          <th>Max Salary</th>
+                          <th>Assigned Package</th>
+                          <th>Max Limit</th>
+                          <th>Actions</th>
                         </tr>
                       </thead>
                       <tbody>
                         {brackets.length > 0 ? brackets.map((b: any) => (
-                          <tr key={b.id} style={{ borderBottom: '1px solid #f1f5f9' }}>
-                            <td style={{ padding: '0.65rem 0.85rem', fontWeight: 700, color: '#0f172a' }}>{b.name}</td>
-                            <td style={{ padding: '0.65rem 0.85rem' }}>KES {b.minSalary.toLocaleString()}</td>
-                            <td style={{ padding: '0.65rem 0.85rem' }}>KES {b.maxSalary.toLocaleString()}</td>
-                            <td style={{ padding: '0.65rem 0.85rem', color: '#FF6600', fontWeight: 600 }}>{b.assignedPackageName}</td>
-                            <td style={{ padding: '0.65rem 0.85rem', fontWeight: 700, color: '#065f46' }}>KES {b.maxLimit.toLocaleString()}</td>
-                            <td style={{ padding: '0.65rem 0.85rem', display: 'flex', gap: '0.4rem' }}>
-                              <button onClick={() => handleEditBracket(b)}
-                                style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#3b82f6', padding: 4 }}><Edit size={14} /></button>
-                              <button onClick={() => handleDeleteBracket(b.id)}
-                                style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#ef4444', padding: 4 }}><Trash2 size={14} /></button>
+                          <tr key={b.id}>
+                            <td style={{ fontWeight: 700, color: '#0f172a' }}>{b.name}</td>
+                            <td>KES {b.minSalary.toLocaleString()}</td>
+                            <td>KES {b.maxSalary.toLocaleString()}</td>
+                            <td style={{ color: '#FF6600', fontWeight: 600 }}>{b.assignedPackageName}</td>
+                            <td style={{ fontWeight: 700, color: '#065f46' }}>KES {b.maxLimit.toLocaleString()}</td>
+                            <td>
+                              <div style={{ display: 'flex', gap: '0.4rem' }}>
+                                <button className="admin-btn admin-btn-secondary" style={{ height: '30px', padding: '0 0.5rem' }} onClick={() => handleEditBracket(b)}><Edit size={13} /></button>
+                                <button className="admin-btn admin-btn-danger" style={{ height: '30px', padding: '0 0.5rem' }} onClick={() => handleDeleteBracket(b.id)}><Trash2 size={13} /></button>
+                              </div>
                             </td>
                           </tr>
                         )) : (
@@ -1588,31 +1586,31 @@ export const AdminDashboardModal: React.FC<AdminDashboardProps> = ({ onClose }) 
               </div>
 
               {/* SMS Logs Table */}
-              <div style={{ background: '#fff', border: '1px solid #e2e8f0', borderRadius: '14px', overflow: 'hidden', boxShadow: '0 1px 3px rgba(0,0,0,0.03)' }}>
-                <div style={{ overflowX: 'auto' }}>
-                  <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.85rem' }}>
+              <div className="admin-table-container">
+                <div className="admin-table-scroll">
+                  <table className="admin-table">
                     <thead>
-                      <tr style={{ background: '#f8fafc', borderBottom: '1.5px solid #e2e8f0' }}>
-                        <th style={{ padding: '0.8rem 1rem', textAlign: 'left', fontWeight: 700, color: '#64748b', fontSize: '0.75rem' }}>Recipient</th>
-                        <th style={{ padding: '0.8rem 1rem', textAlign: 'left', fontWeight: 700, color: '#64748b', fontSize: '0.75rem' }}>Message Text</th>
-                        <th style={{ padding: '0.8rem 1rem', textAlign: 'left', fontWeight: 700, color: '#64748b', fontSize: '0.75rem' }}>Gateway status</th>
-                        <th style={{ padding: '0.8rem 1rem', textAlign: 'left', fontWeight: 700, color: '#64748b', fontSize: '0.75rem' }}>Time</th>
+                      <tr>
+                        <th>Recipient</th>
+                        <th>Message Text</th>
+                        <th>Gateway status</th>
+                        <th>Time</th>
                       </tr>
                     </thead>
                     <tbody>
                       {pagedSmsLogs.length > 0 ? pagedSmsLogs.map((log: any) => (
-                        <tr key={log.id} style={{ borderBottom: '1px solid #f1f5f9' }}>
-                          <td style={{ padding: '0.8rem 1rem', fontWeight: 700, color: '#0f172a' }}>{log.recipientPhone}</td>
-                          <td style={{ padding: '0.8rem 1rem', color: '#475569' }}>{log.message}</td>
-                          <td style={{ padding: '0.8rem 1rem' }}>
+                        <tr key={log.id}>
+                          <td style={{ fontWeight: 700, color: '#0f172a' }}>{log.recipientPhone}</td>
+                          <td style={{ color: '#475569', maxWidth: '400px', overflow: 'hidden', textOverflow: 'ellipsis' }}>{log.message}</td>
+                          <td>
                             <span style={{
-                              padding: '2px 8px', borderRadius: '10px', fontSize: '0.7rem', fontWeight: 700,
+                              padding: '3px 9px', borderRadius: '9999px', fontSize: '0.75rem', fontWeight: 700,
                               color: log.success ? '#065f46' : '#991b1b', background: log.success ? '#d1fae5' : '#fee2e2'
                             }}>
                               {log.simulated ? 'Simulated' : log.success ? 'Delivered' : 'Failed'}
                             </span>
                           </td>
-                          <td style={{ padding: '0.8rem 1rem', color: '#94a3b8', fontSize: '0.78rem' }}>{new Date(log.createdAt).toLocaleString()}</td>
+                          <td style={{ color: '#94a3b8', fontSize: '0.78rem' }}>{new Date(log.createdAt).toLocaleString()}</td>
                         </tr>
                       )) : (
                         <tr><td colSpan={4} style={{ padding: '2rem', textAlign: 'center', color: '#94a3b8' }}>No SMS logs found.</td></tr>
