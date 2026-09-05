@@ -163,6 +163,27 @@ button, input, select, textarea, a {
     justify-content: space-between;
     height: 100%;
     width: 100%;
+    max-width: 1280px;
+    margin: 0 auto;
+    padding: 0 1.5rem;
+    box-sizing: border-box;
+}
+
+@media (min-width: 1024px) {
+    .nav-container {
+        display: grid;
+        grid-template-columns: auto 1fr auto;
+        align-items: center;
+        gap: 1.5rem;
+    }
+
+    .nav-links {
+        justify-self: center;
+    }
+
+    .nav-actions {
+        justify-self: end;
+    }
 }
 
 .nav-brand {
