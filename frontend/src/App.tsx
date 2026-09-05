@@ -9,9 +9,8 @@ import { TrackLoanPage } from './pages/TrackLoanPage';
 import { ApplyPage } from './pages/ApplyPage';
 import { PrivacyPolicyPage } from './pages/PrivacyPolicyPage';
 import { TermsPage } from './pages/TermsPage';
-import { CustomerDashboardModal } from './components/CustomerDashboardModal';
+import { CustomerPage } from './pages/CustomerPage';
 import { AdminDashboardModal } from './components/AdminDashboardModal';
-import { SupportChatModal } from './components/SupportChatModal';
 
 export const AppContent: React.FC = () => {
   const [supportOpen, setSupportOpen] = useState(false);
@@ -38,22 +37,10 @@ export const AppContent: React.FC = () => {
         <Route path="/privacy-policy" element={<PrivacyPolicyPage />} />
         <Route path="/terms" element={<TermsPage />} />
         <Route path="/terms-and-conditions" element={<TermsPage />} />
+        <Route path="/customer" element={<CustomerPage />} />
       </Route>
 
-      {/* Standalone portal routes (no public navbar/footer) */}
-      <Route
-        path="/customer"
-        element={
-          <div className="portal-container login-active">
-            <CustomerDashboardModal
-              onClose={() => navigate('/')}
-              onOpenSupport={() => setSupportOpen(true)}
-            />
-            <SupportChatModal isOpen={supportOpen} onClose={() => setSupportOpen(false)} />
-          </div>
-        }
-      />
-
+      {/* Standalone admin portal route */}
       <Route
         path="/super-admin"
         element={<AdminDashboardModal onClose={() => navigate('/')} />}
