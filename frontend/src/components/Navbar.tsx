@@ -58,77 +58,79 @@ export const Navbar: React.FC<NavbarProps> = ({ onOpenSupport }) => {
   };
 
   return (
-    <header className={`navbar${scrolled ? ' navbar--scrolled' : ''}`} role="banner">
-      <div className="nav-container">
+    <>
+      <header className={`navbar${scrolled ? ' navbar--scrolled' : ''}`} role="banner">
+        <div className="nav-container">
 
-        {/* ── Brand ── */}
-        <Link
-          to="/"
-          className="nav-brand"
-          onClick={closeMenu}
-          aria-label="Jijenge Loans — Home"
-        >
-          <img
-            src="/logo.png"
-            alt="Jijenge Loans"
-            className="nav-logo-img"
-            width="36"
-            height="36"
-          />
-          <div className="brand-text-wrapper">
-            <span className="brand-title">Jijenge Loans</span>
-          </div>
-        </Link>
+          {/* ── Brand ── */}
+          <Link
+            to="/"
+            className="nav-brand"
+            onClick={closeMenu}
+            aria-label="Jijenge Loans — Home"
+          >
+            <img
+              src="/logo.png"
+              alt="Jijenge Loans"
+              className="nav-logo-img"
+              width="36"
+              height="36"
+            />
+            <div className="brand-text-wrapper">
+              <span className="brand-title">Jijenge Loans</span>
+            </div>
+          </Link>
 
-        {/* ── Desktop nav links ── */}
-        <nav className="nav-links" aria-label="Main navigation">
-          {navLinks.map(({ path, label }) => (
-            <NavLink
-              key={path}
-              to={path}
-              end={path === '/'}
-              className={({ isActive }) => `nav-link${isActive ? ' nav-link--active' : ''}`}
+          {/* ── Desktop nav links ── */}
+          <nav className="nav-links" aria-label="Main navigation">
+            {navLinks.map(({ path, label }) => (
+              <NavLink
+                key={path}
+                to={path}
+                end={path === '/'}
+                className={({ isActive }) => `nav-link${isActive ? ' nav-link--active' : ''}`}
+              >
+                {label}
+              </NavLink>
+            ))}
+          </nav>
+
+          {/* ── Desktop right actions ── */}
+          <div className="nav-actions" role="group" aria-label="Account actions">
+            <Link
+              to="/customer"
+              className={`btn-nav-outline${location.pathname === '/customer' ? ' btn-nav-outline--active' : ''}`}
             >
-              {label}
-            </NavLink>
-          ))}
-        </nav>
+              <LogIn size={14} strokeWidth={1.8} aria-hidden="true" />
+              Customer Login
+            </Link>
+            <Link
+              to="/apply"
+              className={`btn-apply-cta${location.pathname === '/apply' ? ' btn-apply-cta--active' : ''}`}
+              aria-label="Start loan application"
+            >
+              Apply Now
+              <ArrowRight size={14} strokeWidth={2.2} aria-hidden="true" />
+            </Link>
+          </div>
 
-        {/* ── Desktop right actions ── */}
-        <div className="nav-actions" role="group" aria-label="Account actions">
-          <Link
-            to="/customer"
-            className={`btn-nav-outline${location.pathname === '/customer' ? ' btn-nav-outline--active' : ''}`}
+          {/* ── Mobile hamburger ── */}
+          <button
+            type="button"
+            className={`nav-hamburger${mobileOpen ? ' nav-hamburger--open' : ''}`}
+            onClick={() => setMobileOpen(prev => !prev)}
+            aria-label={mobileOpen ? 'Close navigation menu' : 'Open navigation menu'}
+            aria-expanded={mobileOpen}
+            aria-controls="mobile-nav-drawer"
           >
-            <LogIn size={14} strokeWidth={1.8} aria-hidden="true" />
-            Customer Login
-          </Link>
-          <Link
-            to="/apply"
-            className={`btn-apply-cta${location.pathname === '/apply' ? ' btn-apply-cta--active' : ''}`}
-            aria-label="Start loan application"
-          >
-            Apply Now
-            <ArrowRight size={14} strokeWidth={2.2} aria-hidden="true" />
-          </Link>
+            {mobileOpen ? (
+              <X size={24} strokeWidth={2.2} aria-hidden="true" />
+            ) : (
+              <Menu size={24} strokeWidth={2.2} aria-hidden="true" />
+            )}
+          </button>
         </div>
-
-        {/* ── Mobile hamburger ── */}
-        <button
-          type="button"
-          className={`nav-hamburger${mobileOpen ? ' nav-hamburger--open' : ''}`}
-          onClick={() => setMobileOpen(prev => !prev)}
-          aria-label={mobileOpen ? 'Close navigation menu' : 'Open navigation menu'}
-          aria-expanded={mobileOpen}
-          aria-controls="mobile-nav-drawer"
-        >
-          {mobileOpen ? (
-            <X size={24} strokeWidth={2.2} aria-hidden="true" />
-          ) : (
-            <Menu size={24} strokeWidth={2.2} aria-hidden="true" />
-          )}
-        </button>
-      </div>
+      </header>
 
       {/* ── Backdrop overlay — tap to close ── */}
       {mobileOpen && (
@@ -147,6 +149,18 @@ export const Navbar: React.FC<NavbarProps> = ({ onOpenSupport }) => {
         aria-label="Mobile navigation"
         aria-hidden={!mobileOpen}
       >
+        <div className="mobile-drawer-header">
+          <span className="mobile-drawer-title">Navigation</span>
+          <button
+            type="button"
+            className="mobile-drawer-close-btn"
+            onClick={closeMenu}
+            aria-label="Close menu"
+          >
+            <X size={20} strokeWidth={2.2} />
+          </button>
+        </div>
+
         <div className="mobile-drawer-inner">
           {navLinks.map(({ path, label }) => (
             <button
@@ -168,7 +182,7 @@ export const Navbar: React.FC<NavbarProps> = ({ onOpenSupport }) => {
             onClick={() => handleNavClick('/customer')}
             tabIndex={mobileOpen ? 0 : -1}
           >
-            <LogIn size={15} strokeWidth={1.8} aria-hidden="true" />
+            <LogIn size={16} strokeWidth={1.8} aria-hidden="true" />
             Customer Login
           </button>
 
@@ -183,7 +197,7 @@ export const Navbar: React.FC<NavbarProps> = ({ onOpenSupport }) => {
           </button>
         </div>
       </div>
-    </header>
+    </>
   );
 };
 
