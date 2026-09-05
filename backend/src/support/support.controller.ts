@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Body, Query, Param } from '@nestjs/common';
+import { Controller, Get, Post, Put, Body, Query, Param } from '@nestjs/common';
 import { ApiTags, ApiOperation } from '@nestjs/swagger';
 import { SupportService } from './support.service';
 
@@ -6,6 +6,18 @@ import { SupportService } from './support.service';
 @Controller('support')
 export class SupportController {
   constructor(private readonly supportService: SupportService) {}
+
+  @ApiOperation({ summary: 'Get System Contact & Support Settings' })
+  @Get('settings')
+  async getSettings() {
+    return this.supportService.getSettings();
+  }
+
+  @ApiOperation({ summary: 'Update System Contact & Support Settings' })
+  @Put('settings')
+  async updateSettings(@Body() body: any) {
+    return this.supportService.updateSettings(body);
+  }
 
   @ApiOperation({ summary: 'Create Support Inquiry Ticket' })
   @Post('ticket')
@@ -28,3 +40,4 @@ export class SupportController {
     return this.supportService.addMessage(ticketId, body.sender, body.senderName, body.text);
   }
 }
+

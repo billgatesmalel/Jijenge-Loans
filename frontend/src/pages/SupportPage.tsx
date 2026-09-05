@@ -1,9 +1,10 @@
 import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import {
-  MessageCircle, Phone, Mail, MapPin, Clock, HelpCircle, ShieldCheck, ArrowRight,
+  MessageCircle, MessageSquare, Phone, Mail, MapPin, Clock, HelpCircle, ShieldCheck, ArrowRight,
   Send, CheckCircle, AlertCircle
 } from 'lucide-react';
+import { useSupportSettings } from '../lib/supportSettings';
 
 /* Phone Normalization Helper */
 const normalizeKenyanPhone = (raw: string): string | null => {
@@ -22,6 +23,7 @@ const normalizeKenyanPhone = (raw: string): string | null => {
 
 export const SupportPage: React.FC<{ onOpenSupport?: () => void }> = () => {
   const navigate = useNavigate();
+  const supportSettings = useSupportSettings();
 
   // Form State
   const [fullName, setFullName] = useState('');
@@ -36,51 +38,41 @@ export const SupportPage: React.FC<{ onOpenSupport?: () => void }> = () => {
   const [submitError, setSubmitError] = useState('');
   const [submittedTicket, setSubmittedTicket] = useState<any>(null);
 
+  const whatsappCleanNumber = (supportSettings.supportWhatsapp || '').replace(/\D/g, '');
+  const whatsappUrl = whatsappCleanNumber ? `https://wa.me/${whatsappCleanNumber}` : '#';
+
   const validateForm = () => {
     const errs: { name?: string; phone?: string; email?: string; msg?: string } = {};
-
-    if (!fullName.trim() || fullName.trim().length < 2) {
-      errs.name = 'Please enter your full name.';
+    if (!fullName.trim()) errs.name = 'Full name is required';
+    if (!phoneNumber.trim()) {
+      errs.phone = 'Phone number is required';
+    } else if (!normalizeKenyanPhone(phoneNumber)) {
+      errs.phone = 'Enter a valid Kenyan phone number (e.g. 0712345678)';
     }
-
-    const normPhone = normalizeKenyanPhone(phoneNumber);
-    if (!phoneNumber.trim() || !normPhone) {
-      errs.phone = 'Valid M-Pesa phone number required (e.g. 0712345678).';
+    if (email.trim() && !/\S+@\S+\.\S+/.test(email)) {
+      errs.email = 'Enter a valid email address';
     }
-
-    if (email.trim()) {
-      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-      if (!emailRegex.test(email.trim())) {
-        errs.email = 'Please enter a valid email address.';
-      }
+    if (!message.trim()) {
+      errs.msg = 'Please describe your inquiry';
     }
-
-    if (!message.trim() || message.trim().length < 10) {
-      errs.msg = 'Please enter a message (at least 10 characters).';
-    }
-
     setErrors(errs);
     return Object.keys(errs).length === 0;
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (submitting) return;
-
-    setSubmitError('');
-
     if (!validateForm()) return;
 
-    const normPhone = normalizeKenyanPhone(phoneNumber) || phoneNumber.trim();
-
     setSubmitting(true);
+    setSubmitError('');
 
     try {
+      const normalizedPhone = normalizeKenyanPhone(phoneNumber) || phoneNumber;
       const res = await fetch('/api/support/ticket', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          customerPhone: normPhone,
+          customerPhone: normalizedPhone,
           customerName: fullName.trim(),
           customerEmail: email.trim() || undefined,
           subject,
@@ -93,9 +85,9 @@ export const SupportPage: React.FC<{ onOpenSupport?: () => void }> = () => {
         setSubmittedTicket(data.ticket);
         localStorage.setItem('bl_chat_conversationId', data.ticket.id);
         localStorage.setItem('bl_chat_guestName', fullName.trim());
-        localStorage.setItem('bl_chat_guestPhone', normPhone);
+        localStorage.setItem('bl_chat_guestPhone', normalizedPhone);
       } else {
-        setSubmitError(data.message || 'Failed to submit support request. Please try again.');
+        setSubmitError(data.message || 'Failed to submit inquiry. Please try again.');
       }
     } catch (err) {
       setSubmitError('Connection failed. Please check your network connection.');
@@ -351,12 +343,15 @@ export const SupportPage: React.FC<{ onOpenSupport?: () => void }> = () => {
               <Phone size={22} strokeWidth={2} aria-hidden="true" />
             </div>
             <h3 style={{ fontSize: '1rem', marginBottom: '0.35rem' }}>Phone Support</h3>
-            <div style={{ fontSize: '1.05rem', fontWeight: 800, color: 'var(--brand-navy)', marginBottom: '0.25rem' }}>
-              +254 700 123 456
-            </div>
+            <a
+              href={`tel:${(supportSettings.supportPhone || '').replace(/\s+/g, '')}`}
+              style={{ fontSize: '1.05rem', fontWeight: 800, color: 'var(--brand-navy)', textDecoration: 'none', marginBottom: '0.25rem' }}
+            >
+              {supportSettings.supportPhone}
+            </a>
             <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)', display: 'flex', alignItems: 'center', gap: '0.35rem', marginTop: 'auto' }}>
               <Clock size={14} />
-              <span>Mon – Sat | 8 AM – 8 PM EAT</span>
+              <span>{supportSettings.supportHours}</span>
             </div>
           </div>
 
@@ -367,27 +362,32 @@ export const SupportPage: React.FC<{ onOpenSupport?: () => void }> = () => {
             </div>
             <h3 style={{ fontSize: '1rem', marginBottom: '0.35rem' }}>Email Customer Care</h3>
             <a
-              href="mailto:support@jijengeloans.co.ke"
-              style={{ fontSize: '0.9rem', fontWeight: 700, color: 'var(--brand-orange)', textDecoration: 'none', marginBottom: '0.25rem' }}
+              href={`mailto:${supportSettings.supportEmail}`}
+              style={{ fontSize: '0.9rem', fontWeight: 700, color: 'var(--brand-orange)', textDecoration: 'none', marginBottom: '0.25rem', wordBreak: 'break-all' }}
             >
-              support@jijengeloans.co.ke
+              {supportSettings.supportEmail}
             </a>
             <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginTop: 'auto' }}>
               Average response time: &lt; 2 hours
             </div>
           </div>
 
-          {/* Card 3: Hours */}
+          {/* Card 3: WhatsApp Support */}
           <div className="trust-card" style={{ display: 'flex', flexDirection: 'column' }}>
-            <div className="trust-icon-box">
-              <Clock size={22} strokeWidth={2} aria-hidden="true" />
+            <div className="trust-icon-box" style={{ background: '#DCFCE7', color: '#16A34A' }}>
+              <MessageSquare size={22} strokeWidth={2} aria-hidden="true" />
             </div>
-            <h3 style={{ fontSize: '1rem', marginBottom: '0.35rem' }}>Operating Hours</h3>
-            <div style={{ fontSize: '0.95rem', fontWeight: 800, color: 'var(--brand-navy)', marginBottom: '0.25rem' }}>
-              24/7 Customer Support
-            </div>
+            <h3 style={{ fontSize: '1rem', marginBottom: '0.35rem' }}>WhatsApp Support</h3>
+            <a
+              href={whatsappUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              style={{ fontSize: '0.95rem', fontWeight: 800, color: '#15803D', textDecoration: 'none', marginBottom: '0.25rem' }}
+            >
+              Chat on WhatsApp ↗
+            </a>
             <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginTop: 'auto' }}>
-              Automated &amp; Live Agent Assistance
+              Instant live chat assistance
             </div>
           </div>
 
@@ -396,13 +396,13 @@ export const SupportPage: React.FC<{ onOpenSupport?: () => void }> = () => {
             <div className="trust-icon-box">
               <MapPin size={22} strokeWidth={2} aria-hidden="true" />
             </div>
-            <h3 style={{ fontSize: '1rem', marginBottom: '0.35rem' }}>Nairobi Headquarters</h3>
+            <h3 style={{ fontSize: '1rem', marginBottom: '0.35rem' }}>Headquarters</h3>
             <p style={{ fontSize: '0.85rem', color: 'var(--text-body)', margin: '0 0 0.5rem' }}>
-              Nairobi, Kenya
+              {supportSettings.headquartersAddress}
             </p>
             <div style={{ fontSize: '0.78rem', color: 'var(--brand-navy)', fontWeight: 700, display: 'flex', alignItems: 'center', gap: '0.35rem', marginTop: 'auto' }}>
               <ShieldCheck size={15} style={{ color: 'var(--brand-emerald)' }} />
-              <span>CBK Licensed &amp; ODPC Data Protected</span>
+              <span>CBK Licensed &amp; ODPC Protected</span>
             </div>
           </div>
         </div>

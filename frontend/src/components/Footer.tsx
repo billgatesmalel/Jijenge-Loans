@@ -1,6 +1,7 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { Phone, Mail, MapPin, ShieldCheck, Lock, ExternalLink } from 'lucide-react';
+import { Phone, Mail, MapPin, ShieldCheck, Lock, ExternalLink, MessageSquare } from 'lucide-react';
+import { useSupportSettings } from '../lib/supportSettings';
 
 interface FooterProps {
   onOpenSupport?: () => void;
@@ -8,6 +9,10 @@ interface FooterProps {
 
 export const Footer: React.FC<FooterProps> = ({ onOpenSupport }) => {
   const year = new Date().getFullYear();
+  const supportSettings = useSupportSettings();
+
+  const whatsappCleanNumber = (supportSettings.supportWhatsapp || '').replace(/\D/g, '');
+  const whatsappUrl = whatsappCleanNumber ? `https://wa.me/${whatsappCleanNumber}` : '#';
 
   return (
     <footer className="site-footer" role="contentinfo">
@@ -72,6 +77,11 @@ export const Footer: React.FC<FooterProps> = ({ onOpenSupport }) => {
                   Track Application
                 </Link>
               </li>
+              <li>
+                <Link to="/support">
+                  Support Centre
+                </Link>
+              </li>
               {onOpenSupport && (
                 <li>
                   <button
@@ -125,18 +135,28 @@ export const Footer: React.FC<FooterProps> = ({ onOpenSupport }) => {
           <ul className="footer-contact-list">
             <li>
               <Phone size={14} strokeWidth={1.8} aria-hidden="true" />
-              <span>+254 700 123 456</span>
+              <a href={`tel:${(supportSettings.supportPhone || '').replace(/\s+/g, '')}`} style={{ color: 'inherit', textDecoration: 'none' }}>
+                {supportSettings.supportPhone}
+              </a>
             </li>
             <li>
               <Mail size={14} strokeWidth={1.8} aria-hidden="true" />
-              <span>support@jijengeloans.co.ke</span>
+              <a href={`mailto:${supportSettings.supportEmail}`} style={{ color: 'inherit', textDecoration: 'none' }}>
+                {supportSettings.supportEmail}
+              </a>
+            </li>
+            <li>
+              <MessageSquare size={14} strokeWidth={1.8} style={{ color: '#22c55e' }} aria-hidden="true" />
+              <a href={whatsappUrl} target="_blank" rel="noopener noreferrer" style={{ color: '#22c55e', textDecoration: 'none', fontWeight: 600 }}>
+                WhatsApp Support ↗
+              </a>
             </li>
             <li>
               <MapPin size={14} strokeWidth={1.8} aria-hidden="true" />
-              <span>Nairobi, Kenya</span>
+              <span>{supportSettings.headquartersAddress}</span>
             </li>
           </ul>
-          <p className="footer-hours">Mon – Sat&nbsp;|&nbsp;8 AM – 8 PM EAT</p>
+          <p className="footer-hours">{supportSettings.supportHours}</p>
         </div>
       </div>
 

@@ -1,9 +1,60 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 
+export const DEFAULT_SETTINGS = {
+  supportPhone: '+254 700 123 456',
+  supportEmail: 'support@jijengeloans.co.ke',
+  supportWhatsapp: '+254 700 123 456',
+  supportHours: '24/7 Customer Support',
+  headquartersAddress: 'Nairobi, Kenya',
+};
+
 @Injectable()
 export class SupportService {
   constructor(private readonly prisma: PrismaService) {}
+
+  async getSettings() {
+    try {
+      const rows = await this.prisma.systemSetting.findMany();
+      const settingsMap: Record<string, string> = {};
+      rows.forEach(r => { settingsMap[r.key] = r.value; });
+      return {
+        success: true,
+        settings: {
+          supportPhone: settingsMap['support_phone'] || DEFAULT_SETTINGS.supportPhone,
+          supportEmail: settingsMap['support_email'] || DEFAULT_SETTINGS.supportEmail,
+          supportWhatsapp: settingsMap['support_whatsapp'] || DEFAULT_SETTINGS.supportWhatsapp,
+          supportHours: settingsMap['support_hours'] || DEFAULT_SETTINGS.supportHours,
+          headquartersAddress: settingsMap['headquarters_address'] || DEFAULT_SETTINGS.headquartersAddress,
+        }
+      };
+    } catch (e) {
+      return { success: true, settings: DEFAULT_SETTINGS };
+    }
+  }
+
+  async updateSettings(settings: Partial<typeof DEFAULT_SETTINGS>) {
+    const keyMap: Record<string, string> = {
+      supportPhone: 'support_phone',
+      supportEmail: 'support_email',
+      supportWhatsapp: 'support_whatsapp',
+      supportHours: 'support_hours',
+      headquartersAddress: 'headquarters_address',
+    };
+
+    for (const [prop, value] of Object.entries(settings)) {
+      const key = keyMap[prop];
+      if (key && typeof value === 'string') {
+        await this.prisma.systemSetting.upsert({
+          where: { key },
+          update: { value },
+          create: { key, value },
+        });
+      }
+    }
+
+    return this.getSettings();
+  }
 
   async createTicket(customerPhone: string, customerName: string, subject: string, initialMessage: string) {
     const ticket = await this.prisma.supportTicket.create({
@@ -58,3 +109,4 @@ export class SupportService {
     return { success: true, message };
   }
 }
+

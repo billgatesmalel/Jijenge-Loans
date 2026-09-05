@@ -8,6 +8,8 @@ import {
   User, Menu, ClipboardList
 } from 'lucide-react';
 
+import { updateLocalSupportSettings, getCachedSupportSettings } from '../lib/supportSettings';
+
 interface AdminDashboardProps {
   onClose: () => void;
 }
@@ -53,7 +55,8 @@ const NAV_SECTIONS = [
     title: 'INTEGRATIONS & HELP',
     items: [
       { id: 'support',      label: 'Support Centre',         icon: MessageCircle, color: '#10b981' },
-      { id: 'sms',          label: 'SMS Manager',            icon: Mail, color: '#a855f7' }
+      { id: 'sms',          label: 'SMS Manager',            icon: Mail, color: '#a855f7' },
+      { id: 'settings',     label: 'Platform & Contact Settings', icon: Sliders, color: '#3b82f6' }
     ]
   }
 ];
@@ -129,6 +132,13 @@ export const AdminDashboardModal: React.FC<AdminDashboardProps> = ({ onClose }) 
   const [smsTemplateModal, setSmsTemplateModal] = useState(false);
   const [selectedTemplateKey, setSelectedTemplateKey] = useState('');
 
+  // System & Contact Settings Form Fields
+  const [settingsPhone, setSettingsPhone] = useState('+254 700 123 456');
+  const [settingsEmail, setSettingsEmail] = useState('support@jijengeloans.co.ke');
+  const [settingsWhatsapp, setSettingsWhatsapp] = useState('+254 700 123 456');
+  const [settingsHours, setSettingsHours] = useState('24/7 Customer Support');
+  const [settingsAddress, setSettingsAddress] = useState('Nairobi, Kenya');
+
   // Layout UI
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [profileOpen, setProfileOpen] = useState(false);
@@ -187,7 +197,7 @@ export const AdminDashboardModal: React.FC<AdminDashboardProps> = ({ onClose }) 
   const fetchAllAdminData = async (token: string) => {
     setDataLoading(true);
     try {
-      const [appRes, anaRes, tickRes, custRes, payRes, bracRes, smsLRes, smsTRes] = await Promise.all([
+      const [appRes, anaRes, tickRes, custRes, payRes, bracRes, smsLRes, smsTRes, setRes] = await Promise.all([
         fetch('/api/admin/applications', { headers: { Authorization: `Bearer ${token}` } }),
         fetch('/api/admin/analytics', { headers: { Authorization: `Bearer ${token}` } }),
         fetch('/api/support/tickets', { headers: { Authorization: `Bearer ${token}` } }),
@@ -196,6 +206,7 @@ export const AdminDashboardModal: React.FC<AdminDashboardProps> = ({ onClose }) 
         fetch('/api/admin/eligibility-brackets', { headers: { Authorization: `Bearer ${token}` } }),
         fetch('/api/admin/sms-logs', { headers: { Authorization: `Bearer ${token}` } }),
         fetch('/api/admin/sms-templates', { headers: { Authorization: `Bearer ${token}` } }),
+        fetch('/api/support/settings'),
       ]);
 
       if (appRes.ok) { const d = await appRes.json(); setApplications(d.items || d.applications || []); }
@@ -206,10 +217,50 @@ export const AdminDashboardModal: React.FC<AdminDashboardProps> = ({ onClose }) 
       if (bracRes.ok) { const d = await bracRes.json(); setBrackets(d.items || []); }
       if (smsLRes.ok) { const d = await smsLRes.json(); setSmsLogs(d.items || []); }
       if (smsTRes.ok) { const d = await smsTRes.json(); setSmsTemplates(d.items || []); }
+      if (setRes.ok) {
+        const d = await setRes.json();
+        if (d.settings) {
+          if (d.settings.supportPhone) setSettingsPhone(d.settings.supportPhone);
+          if (d.settings.supportEmail) setSettingsEmail(d.settings.supportEmail);
+          if (d.settings.supportWhatsapp) setSettingsWhatsapp(d.settings.supportWhatsapp);
+          if (d.settings.supportHours) setSettingsHours(d.settings.supportHours);
+          if (d.settings.headquartersAddress) setSettingsAddress(d.settings.headquartersAddress);
+          updateLocalSupportSettings(d.settings);
+        }
+      }
     } catch (e) {
       console.error('Failed to load full admin workspace data:', e);
     } finally {
       setDataLoading(false);
+    }
+  };
+
+  const handleSaveSystemSettings = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setActionLoading(true);
+    try {
+      const res = await fetch('/api/support/settings', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          supportPhone: settingsPhone,
+          supportEmail: settingsEmail,
+          supportWhatsapp: settingsWhatsapp,
+          supportHours: settingsHours,
+          headquartersAddress: settingsAddress,
+        }),
+      });
+      const data = await res.json();
+      if (res.ok && data.settings) {
+        updateLocalSupportSettings(data.settings);
+        showToast('Platform & contact settings saved and synced!');
+      } else {
+        alert(data.message || 'Failed to save settings.');
+      }
+    } catch {
+      alert('Network error while saving settings.');
+    } finally {
+      setActionLoading(false);
     }
   };
 
@@ -1572,6 +1623,123 @@ export const AdminDashboardModal: React.FC<AdminDashboardProps> = ({ onClose }) 
               </div>
             </div>
           )}
+
+          {/* TAB 8: Platform & Contact Settings */}
+          {activeTab === 'settings' && (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem', maxWidth: '720px' }}>
+              <div style={{ background: '#fff', border: '1px solid #e2e8f0', borderRadius: '16px', padding: '1.75rem', boxShadow: '0 1px 3px rgba(0,0,0,0.03)' }}>
+                <div style={{ borderBottom: '1px solid #f1f5f9', paddingBottom: '1rem', marginBottom: '1.5rem' }}>
+                  <h2 style={{ fontSize: '1.2rem', fontWeight: 800, color: '#0f172a', margin: '0 0 0.25rem' }}>
+                    🛠️ Platform Contact &amp; Support Settings
+                  </h2>
+                  <p style={{ fontSize: '0.85rem', color: '#64748b', margin: 0 }}>
+                    Configure the official contact phone, email, WhatsApp link, operating hours, and headquarters location. Changes here are synced across the entire website in real-time.
+                  </p>
+                </div>
+
+                <form onSubmit={handleSaveSystemSettings}>
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.25rem', marginBottom: '1.25rem' }}>
+                    {/* Phone Number */}
+                    <div>
+                      <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 700, color: '#475569', marginBottom: '6px' }}>
+                        Phone Support Number
+                      </label>
+                      <input
+                        type="text"
+                        value={settingsPhone}
+                        onChange={(e) => setSettingsPhone(e.target.value)}
+                        placeholder="e.g. +254 700 123 456"
+                        required
+                        style={{ width: '100%', padding: '0.7rem 0.85rem', border: '1.5px solid #e2e8f0', borderRadius: '8px', fontSize: '0.9rem', outline: 'none', boxSizing: 'border-box' }}
+                      />
+                    </div>
+
+                    {/* Support Email */}
+                    <div>
+                      <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 700, color: '#475569', marginBottom: '6px' }}>
+                        Email Customer Support
+                      </label>
+                      <input
+                        type="email"
+                        value={settingsEmail}
+                        onChange={(e) => setSettingsEmail(e.target.value)}
+                        placeholder="e.g. support@jijengeloans.co.ke"
+                        required
+                        style={{ width: '100%', padding: '0.7rem 0.85rem', border: '1.5px solid #e2e8f0', borderRadius: '8px', fontSize: '0.9rem', outline: 'none', boxSizing: 'border-box' }}
+                      />
+                    </div>
+                  </div>
+
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.25rem', marginBottom: '1.25rem' }}>
+                    {/* WhatsApp Support Number */}
+                    <div>
+                      <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 700, color: '#16a34a', marginBottom: '6px' }}>
+                        WhatsApp Support Number
+                      </label>
+                      <input
+                        type="text"
+                        value={settingsWhatsapp}
+                        onChange={(e) => setSettingsWhatsapp(e.target.value)}
+                        placeholder="e.g. +254 700 123 456"
+                        required
+                        style={{ width: '100%', padding: '0.7rem 0.85rem', border: '1.5px solid #bbf7d0', borderRadius: '8px', fontSize: '0.9rem', outline: 'none', boxSizing: 'border-box', background: '#f0fdf4' }}
+                      />
+                    </div>
+
+                    {/* Operating Hours */}
+                    <div>
+                      <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 700, color: '#475569', marginBottom: '6px' }}>
+                        Operating Hours
+                      </label>
+                      <input
+                        type="text"
+                        value={settingsHours}
+                        onChange={(e) => setSettingsHours(e.target.value)}
+                        placeholder="e.g. 24/7 Customer Support or Mon – Sat | 8 AM – 8 PM EAT"
+                        required
+                        style={{ width: '100%', padding: '0.7rem 0.85rem', border: '1.5px solid #e2e8f0', borderRadius: '8px', fontSize: '0.9rem', outline: 'none', boxSizing: 'border-box' }}
+                      />
+                    </div>
+                  </div>
+
+                  {/* Headquarters Address */}
+                  <div style={{ marginBottom: '1.75rem' }}>
+                    <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 700, color: '#475569', marginBottom: '6px' }}>
+                      Headquarters Address / Location
+                    </label>
+                    <input
+                      type="text"
+                      value={settingsAddress}
+                      onChange={(e) => setSettingsAddress(e.target.value)}
+                      placeholder="e.g. Nairobi, Kenya"
+                      required
+                      style={{ width: '100%', padding: '0.7rem 0.85rem', border: '1.5px solid #e2e8f0', borderRadius: '8px', fontSize: '0.9rem', outline: 'none', boxSizing: 'border-box' }}
+                    />
+                  </div>
+
+                  <button
+                    type="submit"
+                    disabled={actionLoading}
+                    style={{
+                      width: '100%',
+                      padding: '0.85rem',
+                      background: ORANGE,
+                      color: '#fff',
+                      border: 'none',
+                      borderRadius: '10px',
+                      fontSize: '0.95rem',
+                      fontWeight: 800,
+                      cursor: 'pointer',
+                      boxShadow: '0 4px 14px rgba(249,115,22,0.3)',
+                    }}
+                  >
+                    {actionLoading ? 'Saving Settings...' : 'Save & Sync System Settings'}
+                  </button>
+                </form>
+              </div>
+            </div>
+          )}
+
 
         </main>
       </div>
