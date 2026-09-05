@@ -1,4 +1,4 @@
-﻿import React, { useState } from 'react';
+import React, { useState } from 'react';
 import { Routes, Route, Navigate, useNavigate } from 'react-router-dom';
 import { PublicLayout } from './components/PublicLayout';
 import { HomePage } from './pages/HomePage';
@@ -7,6 +7,8 @@ import { FaqsPage } from './pages/FaqsPage';
 import { SupportPage } from './pages/SupportPage';
 import { TrackLoanPage } from './pages/TrackLoanPage';
 import { ApplyPage } from './pages/ApplyPage';
+import { PrivacyPolicyPage } from './pages/PrivacyPolicyPage';
+import { TermsPage } from './pages/TermsPage';
 import { CustomerDashboardModal } from './components/CustomerDashboardModal';
 import { AdminDashboardModal } from './components/AdminDashboardModal';
 import { SupportChatModal } from './components/SupportChatModal';
@@ -33,6 +35,9 @@ export const AppContent: React.FC = () => {
         <Route path="/support" element={<SupportPage onOpenSupport={() => setSupportOpen(true)} />} />
         <Route path="/track-loan" element={<TrackLoanPage onOpenSupport={() => setSupportOpen(true)} />} />
         <Route path="/apply" element={<ApplyPage />} />
+        <Route path="/privacy-policy" element={<PrivacyPolicyPage />} />
+        <Route path="/terms" element={<TermsPage />} />
+        <Route path="/terms-and-conditions" element={<TermsPage />} />
       </Route>
 
       {/* Standalone portal routes (no public navbar/footer) */}

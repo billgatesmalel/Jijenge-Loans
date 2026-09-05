@@ -89,27 +89,34 @@ export const Footer: React.FC<FooterProps> = ({ onOpenSupport }) => {
 
         {/* Col 4: Legal */}
         <div className="footer-col">
-          <h3 className="footer-col-title">Legal</h3>
-          <ul className="footer-nav-list">
-            <li>
-              <a href="/privacy-policy" target="_blank" rel="noopener noreferrer">
-                Privacy Policy
-                <ExternalLink size={11} aria-hidden="true" style={{ marginLeft: '4px', display: 'inline', verticalAlign: 'middle' }} />
-              </a>
-            </li>
-            <li>
-              <a href="/terms" target="_blank" rel="noopener noreferrer">
-                Terms &amp; Conditions
-                <ExternalLink size={11} aria-hidden="true" style={{ marginLeft: '4px', display: 'inline', verticalAlign: 'middle' }} />
-              </a>
-            </li>
-            <li>
-              <a href="https://www.centralbank.go.ke" target="_blank" rel="noopener noreferrer">
-                CBK License
-                <ExternalLink size={11} aria-hidden="true" style={{ marginLeft: '4px', display: 'inline', verticalAlign: 'middle' }} />
-              </a>
-            </li>
-          </ul>
+          <h3 className="footer-col-title">LEGAL</h3>
+          <nav aria-label="Footer legal navigation">
+            <ul className="footer-nav-list">
+              <li>
+                <Link to="/privacy-policy" className="footer-legal-link">
+                  <span>Privacy Policy</span>
+                  <ExternalLink size={13} className="footer-link-icon" aria-hidden="true" />
+                </Link>
+              </li>
+              <li>
+                <Link to="/terms" className="footer-legal-link">
+                  <span>Terms &amp; Conditions</span>
+                  <ExternalLink size={13} className="footer-link-icon" aria-hidden="true" />
+                </Link>
+              </li>
+              <li>
+                <a
+                  href="https://www.centralbank.go.ke"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="footer-legal-link"
+                >
+                  <span>CBK License</span>
+                  <ExternalLink size={13} className="footer-link-icon" aria-hidden="true" />
+                </a>
+              </li>
+            </ul>
+          </nav>
         </div>
 
         {/* Col 5: Contact */}

@@ -1651,8 +1651,8 @@ button, input, select, textarea, a {
 
 @media (min-width: 1024px) {
     .footer-grid {
-        grid-template-columns: 1.5fr 1fr 1fr 1fr;
-        gap: 2.5rem;
+        grid-template-columns: 1.4fr repeat(4, 1fr);
+        gap: 2rem;
     }
 }
 
@@ -1705,7 +1705,7 @@ button, input, select, textarea, a {
     font-size: 0.95rem;
     font-weight: 800;
     text-transform: uppercase;
-    letter-spacing: 0.05em;
+    letter-spacing: 0.06em;
     color: #ffffff;
     margin-bottom: 1.25rem;
 }
@@ -1733,6 +1733,33 @@ button, input, select, textarea, a {
 }
 
 .footer-nav-list a:hover, .footer-nav-btn:hover {
+    color: var(--brand-orange);
+}
+
+.footer-legal-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    color: #94a3b8 !important;
+    text-decoration: none;
+    font-size: 0.9rem;
+    font-weight: 500;
+    transition: color var(--transition);
+}
+
+.footer-legal-link:hover {
+    color: var(--brand-orange) !important;
+}
+
+.footer-legal-link .footer-link-icon {
+    flex-shrink: 0;
+    opacity: 0.85;
+    transition: transform var(--transition), color var(--transition);
+}
+
+.footer-legal-link:hover .footer-link-icon {
+    transform: translate(1px, -1px);
+    opacity: 1;
     color: var(--brand-orange);
 }
 
