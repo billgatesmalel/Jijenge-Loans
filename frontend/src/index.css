@@ -90,27 +90,22 @@ button, input, select, textarea, a {
     overflow-x: hidden;
 }
 
-.container {
+.container,
+.page-container {
     width: 100%;
-    max-width: 1280px;
+    max-width: 1400px;
     margin-left: auto;
     margin-right: auto;
-    padding-left: 1.25rem;
-    padding-right: 1.25rem;
+    padding-left: 24px;
+    padding-right: 24px;
     box-sizing: border-box;
 }
 
-@media (min-width: 640px) {
-    .container {
-        padding-left: 2rem;
-        padding-right: 2rem;
-    }
-}
-
-@media (min-width: 1024px) {
-    .container {
-        padding-left: 2.5rem;
-        padding-right: 2.5rem;
+@media (max-width: 768px) {
+    .container,
+    .page-container {
+        padding-left: 16px;
+        padding-right: 16px;
     }
 }
 
@@ -163,10 +158,16 @@ button, input, select, textarea, a {
     justify-content: space-between;
     height: 100%;
     width: 100%;
-    max-width: 1280px;
+    max-width: 1400px;
     margin: 0 auto;
-    padding: 0 1.5rem;
+    padding: 0 24px;
     box-sizing: border-box;
+}
+
+@media (max-width: 768px) {
+    .nav-container {
+        padding: 0 16px;
+    }
 }
 
 @media (min-width: 1024px) {
@@ -558,10 +559,24 @@ button, input, select, textarea, a {
 }
 
 @media (max-width: 639px) {
+    .hero-cta-group {
+        width: 100%;
+        max-width: 480px;
+        margin-left: auto;
+        margin-right: auto;
+    }
     .btn-hero-primary,
     .btn-hero-secondary {
         width: 100%;
-        min-height: 52px;
+        max-width: 480px;
+        min-height: 50px;
+        margin: 0 auto;
+    }
+    .hero-trust-bar-container {
+        max-width: 480px;
+        margin-left: auto;
+        margin-right: auto;
+        justify-content: center;
     }
 }
 
@@ -608,25 +623,27 @@ button, input, select, textarea, a {
 .sectors-grid {
     display: flex;
     flex-direction: row;
-    gap: 16px;
+    gap: 14px;
     overflow-x: auto;
     scroll-snap-type: x mandatory;
     scroll-behavior: smooth;
     -webkit-overflow-scrolling: touch;
     scrollbar-width: none;
     -ms-overflow-style: none;
-    padding: 0 4px 8px 4px;
+    padding: 4px 16px 12px 16px;
     width: 100%;
+    box-sizing: border-box;
 }
 
 .sectors-grid::-webkit-scrollbar {
     display: none;
 }
 
-/* Mobile Sector Cards: 85% width so next card peeks */
+/* Mobile Sector Cards: 82% width so next card peeks comfortably */
 .sectors-grid .sector-card-item {
-    flex: 0 0 85%;
-    width: 85%;
+    flex: 0 0 82%;
+    width: 82%;
+    max-width: 320px;
     scroll-snap-align: center;
 }
 
@@ -1390,16 +1407,17 @@ button, input, select, textarea, a {
     background: #ffffff;
     border: 1px solid var(--border-light);
     border-radius: var(--radius-2xl);
-    padding: 2.5rem 2rem;
+    padding: 2.25rem 1.75rem;
     box-shadow: var(--shadow-md);
-    max-width: 460px;
-    width: 100%;
+    width: calc(100% - 32px);
+    max-width: 480px;
     margin: 0 auto;
     box-sizing: border-box;
 }
 
 @media (max-width: 480px) {
     .customer-login-card {
+        width: 100%;
         padding: 1.75rem 1.25rem;
         border-radius: var(--radius-xl);
     }
@@ -1874,6 +1892,7 @@ button, input, select, textarea, a {
     border-top: 1px solid #1e293b;
     padding: 1.75rem 0;
     background: #090d16;
+    width: 100%;
 }
 
 .footer-bottom-inner {
@@ -1882,6 +1901,18 @@ button, input, select, textarea, a {
     align-items: center;
     text-align: center;
     gap: 0.5rem;
+    max-width: 1400px;
+    margin: 0 auto;
+    padding-left: 24px;
+    padding-right: 24px;
+    box-sizing: border-box;
+}
+
+@media (max-width: 768px) {
+    .footer-bottom-inner {
+        padding-left: 16px;
+        padding-right: 16px;
+    }
 }
 
 .footer-copy {
