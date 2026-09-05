@@ -1,8 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Link, NavLink, useLocation, useNavigate } from 'react-router-dom';
 import {
-  MessageCircle,
-  ClipboardList,
   LogIn,
   ChevronRight,
   Menu,
@@ -49,6 +47,7 @@ export const Navbar: React.FC<NavbarProps> = ({ onOpenSupport }) => {
     { path: '/how-it-works', label: 'How It Works' },
     { path: '/faqs', label: 'FAQs' },
     { path: '/support', label: 'Support' },
+    { path: '/track-loan', label: 'Track Loan' },
   ];
 
   const closeMenu = () => setMobileOpen(false);
@@ -56,15 +55,6 @@ export const Navbar: React.FC<NavbarProps> = ({ onOpenSupport }) => {
   const handleNavClick = (path: string) => {
     closeMenu();
     navigate(path);
-  };
-
-  const handleSupportClick = () => {
-    closeMenu();
-    if (onOpenSupport) {
-      onOpenSupport();
-    } else {
-      navigate('/support');
-    }
   };
 
   return (
@@ -102,23 +92,22 @@ export const Navbar: React.FC<NavbarProps> = ({ onOpenSupport }) => {
               {label}
             </NavLink>
           ))}
-          <NavLink
-            to="/track-loan"
-            className={({ isActive }) => `nav-link${isActive ? ' nav-link--active' : ''}`}
-            aria-label="Track Loan"
-          >
-            <ClipboardList size={14} strokeWidth={1.8} aria-hidden="true" />
-            Track Loan
-          </NavLink>
         </nav>
 
         {/* ── Desktop right actions ── */}
         <div className="nav-actions" role="group" aria-label="Account actions">
-          <Link to="/customer" className="btn-nav-outline">
+          <Link
+            to="/customer"
+            className={`btn-nav-outline${location.pathname === '/customer' ? ' btn-nav-outline--active' : ''}`}
+          >
             <LogIn size={14} strokeWidth={1.8} aria-hidden="true" />
             Customer Login
           </Link>
-          <Link to="/apply" className="btn-apply-cta" aria-label="Start loan application">
+          <Link
+            to="/apply"
+            className={`btn-apply-cta${location.pathname === '/apply' ? ' btn-apply-cta--active' : ''}`}
+            aria-label="Start loan application"
+          >
             Apply Now
             <ArrowRight size={14} strokeWidth={2.2} aria-hidden="true" />
           </Link>
@@ -163,39 +152,19 @@ export const Navbar: React.FC<NavbarProps> = ({ onOpenSupport }) => {
             <button
               key={path}
               type="button"
-              className={`mobile-nav-link${location.pathname === path ? ' mobile-nav-link--active' : ''}`}
+              className={`mobile-nav-link${(path === '/' ? location.pathname === '/' : location.pathname.startsWith(path)) ? ' mobile-nav-link--active' : ''}`}
               onClick={() => handleNavClick(path)}
               tabIndex={mobileOpen ? 0 : -1}
             >
               {label}
             </button>
           ))}
-          
-          <button
-            type="button"
-            className={`mobile-nav-link${location.pathname === '/support' ? ' mobile-nav-link--active' : ''}`}
-            onClick={handleSupportClick}
-            tabIndex={mobileOpen ? 0 : -1}
-          >
-            <MessageCircle size={15} strokeWidth={1.8} aria-hidden="true" />
-            Support Chat
-          </button>
 
           <hr className="mobile-nav-divider" />
 
           <button
             type="button"
-            className={`mobile-nav-link${location.pathname === '/track-loan' ? ' mobile-nav-link--active' : ''}`}
-            onClick={() => handleNavClick('/track-loan')}
-            tabIndex={mobileOpen ? 0 : -1}
-          >
-            <ClipboardList size={15} strokeWidth={1.8} aria-hidden="true" />
-            Track Loan
-          </button>
-
-          <button
-            type="button"
-            className="mobile-nav-link"
+            className={`mobile-nav-link${location.pathname === '/customer' ? ' mobile-nav-link--active' : ''}`}
             onClick={() => handleNavClick('/customer')}
             tabIndex={mobileOpen ? 0 : -1}
           >
