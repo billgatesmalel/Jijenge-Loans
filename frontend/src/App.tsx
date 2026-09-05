@@ -152,7 +152,7 @@ export const App: React.FC = () => {
 
       <main className="tab-content-wrapper" style={{ flex: 1 }}>
         {/* Tab 1: Home View */}
-        <section className={`tab-pane ${activeTab === 'home' ? 'active' : ''}`} id="tab-home">
+        <section className={`tab-pane ${activeTab === 'home' ? 'active' : ''}`} id="home">
           <Hero onTabChange={switchTab} />
 
           {/* Compliance trust strip */}
@@ -188,7 +188,7 @@ export const App: React.FC = () => {
           </div>
 
           {/* Why Business Owners Trust Us Section */}
-          <div className="container trust-section">
+          <div className="container trust-section" id="trust">
             <div className="section-title-wrap text-center">
               <span className="sub-tag">Trusted Across Kenya</span>
               <h2 className="section-heading">Why business owners trust us</h2>
@@ -252,12 +252,12 @@ export const App: React.FC = () => {
         </section>
 
         {/* Tab 2: Apply Form View */}
-        <section className={`tab-pane ${activeTab === 'apply' ? 'active' : ''}`} id="tab-apply">
+        <section className={`tab-pane ${activeTab === 'apply' ? 'active' : ''}`} id="apply">
           <ApplicationFormModal onTabChange={switchTab} />
         </section>
 
         {/* Tab 3: How It Works View */}
-        <section className={`tab-pane ${activeTab === 'how-it-works' ? 'active' : ''}`} id="tab-how-it-works">
+        <section className={`tab-pane ${activeTab === 'how-it-works' ? 'active' : ''}`} id="how-it-works">
           <div className="container">
             <div className="section-title-wrap text-center">
               <span className="sub-tag">Simple Process</span>
@@ -299,7 +299,7 @@ export const App: React.FC = () => {
         </section>
 
         {/* Tab 4: FAQs View */}
-        <section className={`tab-pane ${activeTab === 'faqs' ? 'active' : ''}`} id="tab-faqs">
+        <section className={`tab-pane ${activeTab === 'faqs' ? 'active' : ''}`} id="faqs">
           <div className="container">
             <div className="section-title-wrap text-center">
               <span className="sub-tag">Got Questions?</span>
@@ -380,7 +380,7 @@ export const App: React.FC = () => {
         </section>
 
         {/* Tab 5: Track Loan View */}
-        <section className={`tab-pane ${activeTab === 'track' ? 'active' : ''}`} id="tab-track">
+        <section className={`tab-pane ${activeTab === 'track' ? 'active' : ''}`} id="track">
           <TrackErrorBoundary>
             <TrackLoanView onTabChange={switchTab} onOpenSupport={() => setSupportOpen(true)} />
           </TrackErrorBoundary>
