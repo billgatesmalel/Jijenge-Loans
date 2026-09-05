@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+﻿import React, { useState } from 'react';
 import { Routes, Route, Navigate, useNavigate } from 'react-router-dom';
 import { PublicLayout } from './components/PublicLayout';
 import { HomePage } from './pages/HomePage';
@@ -6,7 +6,7 @@ import { HowItWorksPage } from './pages/HowItWorksPage';
 import { FaqsPage } from './pages/FaqsPage';
 import { SupportPage } from './pages/SupportPage';
 import { TrackLoanPage } from './pages/TrackLoanPage';
-import { ApplicationFormModal } from './components/ApplicationFormModal';
+import { ApplyPage } from './pages/ApplyPage';
 import { CustomerDashboardModal } from './components/CustomerDashboardModal';
 import { AdminDashboardModal } from './components/AdminDashboardModal';
 import { SupportChatModal } from './components/SupportChatModal';
@@ -15,18 +15,9 @@ export const AppContent: React.FC = () => {
   const [supportOpen, setSupportOpen] = useState(false);
   const navigate = useNavigate();
 
-  const handleTabChange = (tabId: string) => {
-    const clean = tabId.replace('#', '');
-    if (!clean || clean === 'home') {
-      navigate('/');
-    } else {
-      navigate(`/${clean}`);
-    }
-  };
-
   return (
     <Routes>
-      {/* Public Pages wrapped in PublicLayout */}
+      {/* All public pages share the same Navbar + Footer + SupportChat layout */}
       <Route
         element={
           <PublicLayout
@@ -41,18 +32,10 @@ export const AppContent: React.FC = () => {
         <Route path="/faqs" element={<FaqsPage />} />
         <Route path="/support" element={<SupportPage onOpenSupport={() => setSupportOpen(true)} />} />
         <Route path="/track-loan" element={<TrackLoanPage onOpenSupport={() => setSupportOpen(true)} />} />
+        <Route path="/apply" element={<ApplyPage />} />
       </Route>
 
-      {/* Standalone Application & Portal Routes */}
-      <Route
-        path="/apply"
-        element={
-          <div className="tab-pane active" style={{ display: 'block', minHeight: '100vh', background: 'var(--bg-page)' }}>
-            <ApplicationFormModal onTabChange={handleTabChange} />
-          </div>
-        }
-      />
-
+      {/* Standalone portal routes (no public navbar/footer) */}
       <Route
         path="/customer"
         element={
@@ -71,7 +54,7 @@ export const AppContent: React.FC = () => {
         element={<AdminDashboardModal onClose={() => navigate('/')} />}
       />
 
-      {/* Legacy admin fallback route */}
+      {/* Legacy admin fallback */}
       <Route path="/admin" element={<Navigate to="/super-admin" replace />} />
 
       {/* Catch-all fallback */}

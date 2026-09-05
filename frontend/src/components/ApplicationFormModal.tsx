@@ -27,6 +27,9 @@ const isValidNationalId = (val: string): boolean => {
 };
 
 export const ApplicationFormModal: React.FC<ApplicationFormModalProps> = ({ onTabChange }) => {
+  // Step State
+  const [currentStep, setCurrentStep] = useState(1);
+
   // Form fields
   const [fullName, setFullName] = useState('');
   const [nationalId, setNationalId] = useState('');
@@ -79,53 +82,55 @@ export const ApplicationFormModal: React.FC<ApplicationFormModalProps> = ({ onTa
   const selectedPkg = getMappedPackageDetails(monthlyIncome);
   const processingFee = calculateProcessingFee(selectedPkg.amount);
 
-  const validateForm = () => {
+  const validateStep = (step: number): boolean => {
     const errs: Record<string, string> = {};
 
-    if (!fullName.trim() || fullName.trim().length < 3) {
-      errs.fullName = 'Please enter your full official name.';
-    }
-
-    if (!isValidNationalId(nationalId)) {
-      errs.nationalId = 'Enter a valid National ID number (6 to 9 digits).';
-    }
-
-    const ageNum = parseInt(age, 10);
-    if (!age || isNaN(ageNum) || ageNum < 18 || ageNum > 90) {
-      errs.age = 'Age must be between 18 and 90 years.';
-    }
-
-    const normPhone = normalizeKenyanPhone(phoneNumber);
-    if (!phoneNumber.trim() || !normPhone) {
-      errs.phoneNumber = 'Enter a valid M-Pesa phone number (e.g. 0712345678 or 254712345678).';
-    }
-
-    if (!gender) {
-      errs.gender = 'Please select your gender.';
-    }
-
-    if (!maritalStatus) {
-      errs.maritalStatus = 'Please select your marital status.';
-    }
-
-    if (!businessType) {
-      errs.businessType = 'Please select a business category.';
-    }
-
-    if (!county.trim()) {
-      errs.county = 'County is required.';
-    }
-
-    if (!townArea.trim()) {
-      errs.townArea = 'Town or Area is required.';
-    }
-
-    if (!monthlyIncome) {
-      errs.monthlyIncome = 'Please select your monthly income range.';
+    if (step === 1) {
+      if (!fullName.trim() || fullName.trim().length < 3) {
+        errs.fullName = 'Please enter your full official name.';
+      }
+      if (!isValidNationalId(nationalId)) {
+        errs.nationalId = 'Enter a valid National ID number (6 to 9 digits).';
+      }
+      const ageNum = parseInt(age, 10);
+      if (!age || isNaN(ageNum) || ageNum < 18 || ageNum > 90) {
+        errs.age = 'Age must be between 18 and 90 years.';
+      }
+      const normPhone = normalizeKenyanPhone(phoneNumber);
+      if (!phoneNumber.trim() || !normPhone) {
+        errs.phoneNumber = 'Enter a valid M-Pesa phone number (e.g. 0712345678 or 254712345678).';
+      }
+      if (!gender) {
+        errs.gender = 'Please select your gender.';
+      }
+      if (!maritalStatus) {
+        errs.maritalStatus = 'Please select your marital status.';
+      }
+    } else if (step === 2) {
+      if (!businessType) {
+        errs.businessType = 'Please select a business category.';
+      }
+      if (!county.trim()) {
+        errs.county = 'County is required.';
+      }
+      if (!townArea.trim()) {
+        errs.townArea = 'Town or Area is required.';
+      }
+    } else if (step === 3) {
+      if (!monthlyIncome) {
+        errs.monthlyIncome = 'Please select your monthly income range.';
+      }
     }
 
     setFormErrors(errs);
     return Object.keys(errs).length === 0;
+  };
+
+  const validateForm = () => {
+    const s1 = validateStep(1);
+    const s2 = validateStep(2);
+    const s3 = validateStep(3);
+    return s1 && s2 && s3;
   };
 
   const handleFormSubmit = async (e: React.FormEvent) => {
@@ -224,7 +229,6 @@ export const ApplicationFormModal: React.FC<ApplicationFormModalProps> = ({ onTa
       clearTimeout(timeoutId);
       if (stepInterval) clearInterval(stepInterval);
       if (progressInterval) clearInterval(progressInterval);
-      // Guarantee loading state cleanup under all circumstances
       setShowAssessmentLoader(false);
       setSubmitting(false);
     }
@@ -280,7 +284,6 @@ export const ApplicationFormModal: React.FC<ApplicationFormModalProps> = ({ onTa
       }
     }, 3000);
 
-    // Timeout polling after 60 seconds
     setTimeout(() => {
       clearInterval(intervalId);
       if (stkLoading) {
@@ -291,287 +294,419 @@ export const ApplicationFormModal: React.FC<ApplicationFormModalProps> = ({ onTa
   };
 
   return (
-    <div className="container">
-      <div className="section-title-wrap text-center">
+    <>
+      <div className="apply-page-header">
         <span className="sub-tag">100% Digital Application</span>
-        <h2 className="section-heading">Fill Loan Application Details</h2>
+        <h1 className="section-heading">Apply for a Business Loan</h1>
         <p className="section-subheading">
           Complete your details below to receive instant collateral-free funding directly to your M-Pesa line.
         </p>
       </div>
 
-      <div className="application-form-wrapper">
-        {/* Step Progress Stepper */}
-        <div className="flex items-center justify-between mb-8 bg-slate-50 border border-slate-200 p-4 rounded-2xl">
-          <div className="flex items-center gap-2 text-xs sm:text-sm font-black text-[#FF6600]">
-            <span className="w-6 h-6 rounded-full bg-[#FF6600] text-white flex items-center justify-center text-xs">1</span>
-            <span>Personal</span>
-          </div>
-          <div className="flex-1 h-0.5 bg-slate-300 mx-3" />
-          <div className="flex items-center gap-2 text-xs sm:text-sm font-black text-slate-400">
-            <span className="w-6 h-6 rounded-full bg-slate-300 text-white flex items-center justify-center text-xs">2</span>
-            <span>Business</span>
-          </div>
-          <div className="flex-1 h-0.5 bg-slate-300 mx-3" />
-          <div className="flex items-center gap-2 text-xs sm:text-sm font-black text-slate-400">
-            <span className="w-6 h-6 rounded-full bg-slate-300 text-white flex items-center justify-center text-xs">3</span>
-            <span>Assessment</span>
-          </div>
+      {/* Multi-step Progress Bar */}
+      <div className="apply-progress">
+        <div className={`apply-step ${currentStep === 1 ? 'apply-step--active' : currentStep > 1 ? 'apply-step--done' : ''}`}>
+          <div className="apply-step__num">{currentStep > 1 ? '✓' : '1'}</div>
+          <span className="apply-step__label">Personal</span>
         </div>
+        <div className={`apply-progress__line ${currentStep > 1 ? 'apply-progress__line--done' : ''}`} />
+        <div className={`apply-step ${currentStep === 2 ? 'apply-step--active' : currentStep > 2 ? 'apply-step--done' : ''}`}>
+          <div className="apply-step__num">{currentStep > 2 ? '✓' : '2'}</div>
+          <span className="apply-step__label">Business</span>
+        </div>
+        <div className={`apply-progress__line ${currentStep > 2 ? 'apply-progress__line--done' : ''}`} />
+        <div className={`apply-step ${currentStep === 3 ? 'apply-step--active' : ''}`}>
+          <div className="apply-step__num">3</div>
+          <span className="apply-step__label">Assessment</span>
+        </div>
+      </div>
 
-        {submitErrorMessage && (
-          <div className="jijenge-alert jijenge-alert-error mb-6">
-            <span className="text-lg">⚠️</span>
-            <span>{submitErrorMessage}</span>
-          </div>
-        )}
+      {submitErrorMessage && (
+        <div className="jijenge-alert jijenge-alert-error" style={{ maxWidth: '860px', margin: '0 auto 1.5rem' }}>
+          <span>⚠️</span>
+          <span>{submitErrorMessage}</span>
+        </div>
+      )}
 
+      {/* Step Container Card */}
+      <div className="apply-step-card">
         <form onSubmit={handleFormSubmit} noValidate>
-          {/* Section 1: Personal Details */}
-          <div className="form-section">
-            <h3 className="form-section-title">
-              <span className="section-icon-badge">👤</span>
-              <span>1. Personal Information</span>
-            </h3>
-            <div className="form-grid">
-              <div className="form-group sm:col-span-2">
-                <label htmlFor="full-name" className="jijenge-label">Full Name (As shown on ID) *</label>
-                <input
-                  id="full-name"
-                  type="text"
-                  placeholder="Enter Full Name"
-                  value={fullName}
-                  className={`jijenge-input ${formErrors.fullName ? 'jijenge-input-error' : ''}`}
-                  onChange={(e) => {
-                    setFullName(e.target.value);
-                    if (formErrors.fullName) setFormErrors((p) => ({ ...p, fullName: '' }));
-                  }}
-                  required
-                />
-                {formErrors.fullName && <span className="form-field-error">{formErrors.fullName}</span>}
+          {/* STEP 1: Personal Details */}
+          {currentStep === 1 && (
+            <div className="form-section">
+              <h2 className="form-section-title">
+                <span className="section-icon-badge">👤</span>
+                <span>Personal Information</span>
+              </h2>
+              <div className="form-grid">
+                <div className="form-group" style={{ gridColumn: '1 / -1' }}>
+                  <label htmlFor="full-name" className="jijenge-label">
+                    Full Name (As shown on ID) <span className="required-star">*</span>
+                  </label>
+                  <input
+                    id="full-name"
+                    type="text"
+                    placeholder="Enter Full Official Name"
+                    value={fullName}
+                    className={`jijenge-input ${formErrors.fullName ? 'jijenge-input-error' : ''}`}
+                    onChange={(e) => {
+                      setFullName(e.target.value);
+                      if (formErrors.fullName) setFormErrors((p) => ({ ...p, fullName: '' }));
+                    }}
+                    required
+                  />
+                  {formErrors.fullName && <span className="form-field-error">{formErrors.fullName}</span>}
+                </div>
+
+                <div className="form-group">
+                  <label htmlFor="national-id" className="jijenge-label">
+                    National ID Number <span className="required-star">*</span>
+                  </label>
+                  <input
+                    id="national-id"
+                    type="text"
+                    placeholder="Enter National ID"
+                    value={nationalId}
+                    className={`jijenge-input ${formErrors.nationalId ? 'jijenge-input-error' : ''}`}
+                    onChange={(e) => {
+                      setNationalId(e.target.value);
+                      if (formErrors.nationalId) setFormErrors((p) => ({ ...p, nationalId: '' }));
+                    }}
+                    required
+                  />
+                  {formErrors.nationalId && <span className="form-field-error">{formErrors.nationalId}</span>}
+                </div>
+
+                <div className="form-group">
+                  <label htmlFor="applicant-age" className="jijenge-label">
+                    Age (Years) <span className="required-star">*</span>
+                  </label>
+                  <input
+                    id="applicant-age"
+                    type="number"
+                    placeholder="Age (18+)"
+                    min="18"
+                    max="90"
+                    value={age}
+                    className={`jijenge-input ${formErrors.age ? 'jijenge-input-error' : ''}`}
+                    onChange={(e) => {
+                      setAge(e.target.value);
+                      if (formErrors.age) setFormErrors((p) => ({ ...p, age: '' }));
+                    }}
+                    required
+                  />
+                  {formErrors.age && <span className="form-field-error">{formErrors.age}</span>}
+                </div>
+
+                <div className="form-group">
+                  <label htmlFor="phone-number" className="jijenge-label">
+                    Phone Number (M-Pesa Line) <span className="required-star">*</span>
+                  </label>
+                  <input
+                    id="phone-number"
+                    type="tel"
+                    placeholder="e.g. 0712345678"
+                    value={phoneNumber}
+                    className={`jijenge-input ${formErrors.phoneNumber ? 'jijenge-input-error' : ''}`}
+                    onChange={(e) => {
+                      setPhoneNumber(e.target.value);
+                      if (formErrors.phoneNumber) setFormErrors((p) => ({ ...p, phoneNumber: '' }));
+                    }}
+                    required
+                  />
+                  {formErrors.phoneNumber && <span className="form-field-error">{formErrors.phoneNumber}</span>}
+                </div>
+
+                <div className="form-group">
+                  <label htmlFor="applicant-gender" className="jijenge-label">
+                    Gender <span className="required-star">*</span>
+                  </label>
+                  <select
+                    id="applicant-gender"
+                    value={gender}
+                    className={`jijenge-select ${formErrors.gender ? 'jijenge-input-error' : ''}`}
+                    onChange={(e) => {
+                      setGender(e.target.value);
+                      if (formErrors.gender) setFormErrors((p) => ({ ...p, gender: '' }));
+                    }}
+                    required
+                  >
+                    <option value="" disabled>Select Gender</option>
+                    <option value="Male">Male</option>
+                    <option value="Female">Female</option>
+                  </select>
+                  {formErrors.gender && <span className="form-field-error">{formErrors.gender}</span>}
+                </div>
+
+                <div className="form-group">
+                  <label htmlFor="marital-status" className="jijenge-label">
+                    Marital Status <span className="required-star">*</span>
+                  </label>
+                  <select
+                    id="marital-status"
+                    value={maritalStatus}
+                    className={`jijenge-select ${formErrors.maritalStatus ? 'jijenge-input-error' : ''}`}
+                    onChange={(e) => {
+                      setMaritalStatus(e.target.value);
+                      if (formErrors.maritalStatus) setFormErrors((p) => ({ ...p, maritalStatus: '' }));
+                    }}
+                    required
+                  >
+                    <option value="" disabled>Select Marital Status</option>
+                    <option value="Single">Single</option>
+                    <option value="Married">Married</option>
+                    <option value="Divorced">Divorced</option>
+                    <option value="Widowed">Widowed</option>
+                  </select>
+                  {formErrors.maritalStatus && <span className="form-field-error">{formErrors.maritalStatus}</span>}
+                </div>
               </div>
 
-              <div className="form-group">
-                <label htmlFor="national-id" className="jijenge-label">National ID Number *</label>
-                <input
-                  id="national-id"
-                  type="text"
-                  placeholder="Enter National ID"
-                  value={nationalId}
-                  className={`jijenge-input ${formErrors.nationalId ? 'jijenge-input-error' : ''}`}
-                  onChange={(e) => {
-                    setNationalId(e.target.value);
-                    if (formErrors.nationalId) setFormErrors((p) => ({ ...p, nationalId: '' }));
-                  }}
-                  required
-                />
-                {formErrors.nationalId && <span className="form-field-error">{formErrors.nationalId}</span>}
-              </div>
-
-              <div className="form-group">
-                <label htmlFor="applicant-age" className="jijenge-label">Age (Years) *</label>
-                <input
-                  id="applicant-age"
-                  type="number"
-                  placeholder="Age (18+)"
-                  min="18"
-                  max="90"
-                  value={age}
-                  className={`jijenge-input ${formErrors.age ? 'jijenge-input-error' : ''}`}
-                  onChange={(e) => {
-                    setAge(e.target.value);
-                    if (formErrors.age) setFormErrors((p) => ({ ...p, age: '' }));
-                  }}
-                  required
-                />
-                {formErrors.age && <span className="form-field-error">{formErrors.age}</span>}
-              </div>
-
-              <div className="form-group">
-                <label htmlFor="phone-number" className="jijenge-label">Phone Number (M-Pesa Line) *</label>
-                <input
-                  id="phone-number"
-                  type="tel"
-                  placeholder="e.g. 07XXXXXXXX"
-                  value={phoneNumber}
-                  className={`jijenge-input ${formErrors.phoneNumber ? 'jijenge-input-error' : ''}`}
-                  onChange={(e) => {
-                    setPhoneNumber(e.target.value);
-                    if (formErrors.phoneNumber) setFormErrors((p) => ({ ...p, phoneNumber: '' }));
-                  }}
-                  required
-                />
-                {formErrors.phoneNumber && <span className="form-field-error">{formErrors.phoneNumber}</span>}
-              </div>
-
-              <div className="form-group">
-                <label htmlFor="applicant-gender" className="jijenge-label">Gender *</label>
-                <select
-                  id="applicant-gender"
-                  value={gender}
-                  className={`jijenge-select ${formErrors.gender ? 'jijenge-input-error' : ''}`}
-                  onChange={(e) => {
-                    setGender(e.target.value);
-                    if (formErrors.gender) setFormErrors((p) => ({ ...p, gender: '' }));
-                  }}
-                  required
-                >
-                  <option value="" disabled>Select Gender</option>
-                  <option value="Male">Male</option>
-                  <option value="Female">Female</option>
-                </select>
-                {formErrors.gender && <span className="form-field-error">{formErrors.gender}</span>}
-              </div>
-
-              <div className="form-group">
-                <label htmlFor="marital-status" className="jijenge-label">Marital Status *</label>
-                <select
-                  id="marital-status"
-                  value={maritalStatus}
-                  className={`jijenge-select ${formErrors.maritalStatus ? 'jijenge-input-error' : ''}`}
-                  onChange={(e) => {
-                    setMaritalStatus(e.target.value);
-                    if (formErrors.maritalStatus) setFormErrors((p) => ({ ...p, maritalStatus: '' }));
-                  }}
-                  required
-                >
-                  <option value="" disabled>Select Marital Status</option>
-                  <option value="Single">Single</option>
-                  <option value="Married">Married</option>
-                  <option value="Divorced">Divorced</option>
-                  <option value="Widowed">Widowed</option>
-                </select>
-                {formErrors.maritalStatus && <span className="form-field-error">{formErrors.maritalStatus}</span>}
-              </div>
-            </div>
-          </div>
-
-          {/* Section 2: Business Information */}
-          <div className="form-section">
-            <h3 className="form-section-title">
-              <span className="section-icon-badge">🏬</span>
-              <span>2. Business / Income Information</span>
-            </h3>
-            <div className="form-grid">
-              <div className="form-group">
-                <label htmlFor="business-type" className="jijenge-label">Business Category *</label>
-                <select
-                  id="business-type"
-                  value={businessType}
-                  className={`jijenge-select ${formErrors.businessType ? 'jijenge-input-error' : ''}`}
-                  onChange={(e) => {
-                    setBusinessType(e.target.value);
-                    if (formErrors.businessType) setFormErrors((p) => ({ ...p, businessType: '' }));
-                  }}
-                  required
-                >
-                  <option value="" disabled>Select Category</option>
-                  <option value="Retail & Small Shops">Retail & Small Shops</option>
-                  <option value="Agriculture & Farming">Agriculture & Farming</option>
-                  <option value="Transport Services">Transport Services</option>
-                  <option value="Salon & Beauty Services">Salon & Beauty Services</option>
-                  <option value="Wholesale & Distribution">Wholesale & Distribution</option>
-                  <option value="Food & Restaurant Vendors">Food & Restaurant Vendors</option>
-                  <option value="Other Business">Other Services</option>
-                </select>
-                {formErrors.businessType && <span className="form-field-error">{formErrors.businessType}</span>}
-              </div>
-
-              <div className="form-group">
-                <label htmlFor="county-location" className="jijenge-label">County *</label>
-                <input
-                  id="county-location"
-                  type="text"
-                  placeholder="Enter County"
-                  value={county}
-                  className={`jijenge-input ${formErrors.county ? 'jijenge-input-error' : ''}`}
-                  onChange={(e) => {
-                    setCounty(e.target.value);
-                    if (formErrors.county) setFormErrors((p) => ({ ...p, county: '' }));
-                  }}
-                  required
-                />
-                {formErrors.county && <span className="form-field-error">{formErrors.county}</span>}
-              </div>
-
-              <div className="form-group">
-                <label htmlFor="town-area" className="jijenge-label">Town / Area *</label>
-                <input
-                  id="town-area"
-                  type="text"
-                  placeholder="Enter Town or Area"
-                  value={townArea}
-                  className={`jijenge-input ${formErrors.townArea ? 'jijenge-input-error' : ''}`}
-                  onChange={(e) => {
-                    setTownArea(e.target.value);
-                    if (formErrors.townArea) setFormErrors((p) => ({ ...p, townArea: '' }));
-                  }}
-                  required
-                />
-                {formErrors.townArea && <span className="form-field-error">{formErrors.townArea}</span>}
-              </div>
-
-              <div className="form-group">
-                <label htmlFor="monthly-income" className="jijenge-label">Monthly Income (KES) *</label>
-                <select
-                  id="monthly-income"
-                  value={monthlyIncome}
-                  className={`jijenge-select ${formErrors.monthlyIncome ? 'jijenge-input-error' : ''}`}
-                  onChange={(e) => {
-                    setMonthlyIncome(e.target.value);
-                    if (formErrors.monthlyIncome) setFormErrors((p) => ({ ...p, monthlyIncome: '' }));
-                  }}
-                  required
-                >
-                  <option value="" disabled>Select Monthly Income</option>
-                  <option value="15000:30000">Below Ksh 30,000</option>
-                  <option value="30001:60000">Ksh 30,000 - Ksh 60,000</option>
-                  <option value="60001:100000">Ksh 60,000 - Ksh 100,000</option>
-                  <option value="100001:1000000">Above Ksh 100,000</option>
-                </select>
-                {formErrors.monthlyIncome && <span className="form-field-error">{formErrors.monthlyIncome}</span>}
+              <div className="form-bottom-actions">
+                <div className="form-step-nav">
+                  <button
+                    type="button"
+                    className="btn-primary"
+                    onClick={() => {
+                      if (validateStep(1)) {
+                        setCurrentStep(2);
+                        window.scrollTo({ top: 220, behavior: 'smooth' });
+                      }
+                    }}
+                  >
+                    <span>Continue to Business Details</span>
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
+                  </button>
+                </div>
               </div>
             </div>
-          </div>
+          )}
 
-          {/* Legal Disclaimer */}
-          <div className="form-bottom-actions">
-            <p className="form-disclaimer">
-              By continuing, you agree to our Terms & Conditions and Privacy Policy. All credit profiles are verified under Central Bank regulations.
-            </p>
+          {/* STEP 2: Business Details */}
+          {currentStep === 2 && (
+            <div className="form-section">
+              <h2 className="form-section-title">
+                <span className="section-icon-badge">🏬</span>
+                <span>Business / Income Information</span>
+              </h2>
+              <div className="form-grid">
+                <div className="form-group">
+                  <label htmlFor="business-type" className="jijenge-label">
+                    Business Category <span className="required-star">*</span>
+                  </label>
+                  <select
+                    id="business-type"
+                    value={businessType}
+                    className={`jijenge-select ${formErrors.businessType ? 'jijenge-input-error' : ''}`}
+                    onChange={(e) => {
+                      setBusinessType(e.target.value);
+                      if (formErrors.businessType) setFormErrors((p) => ({ ...p, businessType: '' }));
+                    }}
+                    required
+                  >
+                    <option value="" disabled>Select Business Category</option>
+                    <option value="Retail & Small Shops">Retail & Small Shops</option>
+                    <option value="Agriculture & Farming">Agriculture & Farming</option>
+                    <option value="Transport Services">Transport Services</option>
+                    <option value="Salon & Beauty Services">Salon & Beauty Services</option>
+                    <option value="Wholesale & Distribution">Wholesale & Distribution</option>
+                    <option value="Food & Restaurant Vendors">Food & Restaurant Vendors</option>
+                    <option value="Other Business">Other Services</option>
+                  </select>
+                  {formErrors.businessType && <span className="form-field-error">{formErrors.businessType}</span>}
+                </div>
 
-            <button type="submit" disabled={submitting} className="btn-primary w-full">
-              <span>{submitting ? 'Submitting Application...' : 'Submit Application for Assessment'}</span>
-              {!submitting && (
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-                  <line x1="5" y1="12" x2="19" y2="12" />
-                  <polyline points="12 5 19 12 12 19" />
-                </svg>
+                <div className="form-group">
+                  <label htmlFor="county-location" className="jijenge-label">
+                    County <span className="required-star">*</span>
+                  </label>
+                  <input
+                    id="county-location"
+                    type="text"
+                    placeholder="e.g. Nairobi, Kiambu, Nakuru"
+                    value={county}
+                    className={`jijenge-input ${formErrors.county ? 'jijenge-input-error' : ''}`}
+                    onChange={(e) => {
+                      setCounty(e.target.value);
+                      if (formErrors.county) setFormErrors((p) => ({ ...p, county: '' }));
+                    }}
+                    required
+                  />
+                  {formErrors.county && <span className="form-field-error">{formErrors.county}</span>}
+                </div>
+
+                <div className="form-group">
+                  <label htmlFor="town-area" className="jijenge-label">
+                    Town / Area <span className="required-star">*</span>
+                  </label>
+                  <input
+                    id="town-area"
+                    type="text"
+                    placeholder="e.g. Westlands, Thika Town"
+                    value={townArea}
+                    className={`jijenge-input ${formErrors.townArea ? 'jijenge-input-error' : ''}`}
+                    onChange={(e) => {
+                      setTownArea(e.target.value);
+                      if (formErrors.townArea) setFormErrors((p) => ({ ...p, townArea: '' }));
+                    }}
+                    required
+                  />
+                  {formErrors.townArea && <span className="form-field-error">{formErrors.townArea}</span>}
+                </div>
+              </div>
+
+              <div className="form-bottom-actions">
+                <div className="form-step-nav">
+                  <button
+                    type="button"
+                    className="btn-secondary"
+                    onClick={() => {
+                      setCurrentStep(1);
+                      window.scrollTo({ top: 220, behavior: 'smooth' });
+                    }}
+                  >
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></svg>
+                    <span>Back</span>
+                  </button>
+                  <button
+                    type="button"
+                    className="btn-primary"
+                    onClick={() => {
+                      if (validateStep(2)) {
+                        setCurrentStep(3);
+                        window.scrollTo({ top: 220, behavior: 'smooth' });
+                      }
+                    }}
+                  >
+                    <span>Continue to Assessment</span>
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* STEP 3: Assessment & Package Selection */}
+          {currentStep === 3 && (
+            <div className="form-section">
+              <h2 className="form-section-title">
+                <span className="section-icon-badge">📊</span>
+                <span>Loan Assessment &amp; Package</span>
+              </h2>
+              <div className="form-grid">
+                <div className="form-group" style={{ gridColumn: '1 / -1' }}>
+                  <label htmlFor="monthly-income" className="jijenge-label">
+                    Monthly Business Income (KES) <span className="required-star">*</span>
+                  </label>
+                  <select
+                    id="monthly-income"
+                    value={monthlyIncome}
+                    className={`jijenge-select ${formErrors.monthlyIncome ? 'jijenge-input-error' : ''}`}
+                    onChange={(e) => {
+                      setMonthlyIncome(e.target.value);
+                      if (formErrors.monthlyIncome) setFormErrors((p) => ({ ...p, monthlyIncome: '' }));
+                    }}
+                    required
+                  >
+                    <option value="" disabled>Select Monthly Income Range</option>
+                    <option value="15000:30000">Below Ksh 30,000</option>
+                    <option value="30001:60000">Ksh 30,000 - Ksh 60,000</option>
+                    <option value="60001:100000">Ksh 60,000 - Ksh 100,000</option>
+                    <option value="100001:1000000">Above Ksh 100,000</option>
+                  </select>
+                  {formErrors.monthlyIncome && <span className="form-field-error">{formErrors.monthlyIncome}</span>}
+                </div>
+              </div>
+
+              {monthlyIncome && (
+                <div className="loan-preview-card">
+                  <div className="loan-preview-label">Matched Package Preview</div>
+                  <div className="loan-preview-amount">KES {selectedPkg.amount.toLocaleString()}</div>
+                  <div style={{ fontSize: '0.9rem', color: '#e2e8f0', fontWeight: 600, marginBottom: '1rem' }}>
+                    {selectedPkg.name}
+                  </div>
+                  <div className="loan-preview-details">
+                    <div>
+                      <span className="loan-preview-detail-label">Est. Verification Fee</span>
+                      <span className="loan-preview-detail-value">KES {processingFee.toLocaleString()}</span>
+                    </div>
+                    <div>
+                      <span className="loan-preview-detail-label">Repayment Period</span>
+                      <span className="loan-preview-detail-value">{selectedPkg.tenure} Days</span>
+                    </div>
+                  </div>
+                </div>
               )}
-            </button>
-          </div>
+
+              <div className="form-bottom-actions">
+                <p className="form-disclaimer">
+                  By continuing, you agree to our Terms &amp; Conditions and Privacy Policy. All credit profiles are verified under Central Bank regulations.
+                </p>
+
+                <div className="form-step-nav">
+                  <button
+                    type="button"
+                    className="btn-secondary"
+                    onClick={() => {
+                      setCurrentStep(2);
+                      window.scrollTo({ top: 220, behavior: 'smooth' });
+                    }}
+                    disabled={submitting}
+                  >
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></svg>
+                    <span>Back</span>
+                  </button>
+                  <button type="submit" disabled={submitting} className="btn-primary">
+                    <span>{submitting ? 'Submitting Application...' : 'Submit Application for Assessment'}</span>
+                    {!submitting && (
+                      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                        <line x1="5" y1="12" x2="19" y2="12" />
+                        <polyline points="12 5 19 12 12 19" />
+                      </svg>
+                    )}
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
         </form>
+      </div>
+
+      {/* Security Reassurance Strip */}
+      <div className="apply-trust-strip">
+        <div className="apply-trust-item">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+          <span>256-bit SSL Encrypted</span>
+        </div>
+        <div className="apply-trust-item">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
+          <span>Under 15 Min Disbursal</span>
+        </div>
+        <div className="apply-trust-item">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+          <span>ODPC Data Protected</span>
+        </div>
       </div>
 
       {/* 5-Second Professional Loan Assessment Loader Modal */}
       {showAssessmentLoader && (
-        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center z-[99999] p-4">
-          <div className="bg-white rounded-3xl border border-slate-200 p-8 shadow-2xl max-w-[480px] w-full text-center">
+        <div style={{ position: 'fixed', inset: 0, backgroundColor: 'rgba(15, 23, 42, 0.6)', backdropFilter: 'blur(4px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 99999, padding: '1rem' }}>
+          <div style={{ background: '#ffffff', borderRadius: '24px', border: '1px solid #e2e8f0', padding: '2rem', boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25)', maxWidth: '480px', width: '100%', textAlign: 'center' }}>
             <div className="processing-box">
-              <div className="w-14 h-14 rounded-full border-4 border-slate-200 border-t-[#FF6600] animate-spin mx-auto mb-5" />
-              <h3 className="text-xl font-extrabold text-brand-navy mb-1">Assessing Application...</h3>
-              <p className="text-sm text-[#FF6600] font-bold mb-5">
+              <div style={{ width: '56px', height: '56px', borderRadius: '50%', border: '4px solid #e2e8f0', borderTopColor: '#FF6600', animation: 'spin 1s linear infinite', margin: '0 auto 1.25rem' }} />
+              <h3 style={{ fontSize: '1.25rem', fontWeight: 800, color: 'var(--brand-navy)', marginBottom: '0.25rem' }}>Assessing Application...</h3>
+              <p style={{ fontSize: '0.875rem', color: '#FF6600', fontWeight: 700, marginBottom: '1.25rem' }}>
                 Verifying your information...
               </p>
-              <div className="h-2 rounded-full bg-slate-100 overflow-hidden">
-                <div className="bg-[#FF6600] h-full transition-all duration-300" style={{ width: `${progressFill}%` }} />
+              <div style={{ height: '8px', borderRadius: '9999px', background: '#f1f5f9', overflow: 'hidden' }}>
+                <div style={{ background: '#FF6600', height: '100%', width: `${progressFill}%`, transition: 'width 300ms ease' }} />
               </div>
-              <ul className="mt-5 text-xs text-left bg-slate-50 border border-slate-100 p-4 rounded-xl list-none space-y-2">
-                <li className={assessmentStep >= 1 ? 'text-emerald-600 font-bold' : 'text-slate-400'}>{assessmentStep >= 1 ? '✓' : '⏳'} Verifying ID and Identity Records...</li>
-                <li className={assessmentStep >= 2 ? 'text-emerald-600 font-bold' : 'text-slate-400'}>{assessmentStep >= 2 ? '✓' : '⏳'} Fetching applicant financial details...</li>
-                <li className={assessmentStep >= 3 ? 'text-emerald-600 font-bold' : 'text-slate-400'}>{assessmentStep >= 3 ? '✓' : '⏳'} Assessing credit bureau history...</li>
-                <li className={assessmentStep >= 4 ? 'text-emerald-600 font-bold' : 'text-slate-400'}>{assessmentStep >= 4 ? '✓' : '⏳'} Calculating maximum loan limit...</li>
-                <li className={assessmentStep >= 5 ? 'text-emerald-600 font-bold' : 'text-slate-400'}>{assessmentStep >= 5 ? '✓' : '⏳'} Preparing customized loan package offer...</li>
+              <ul style={{ marginTop: '1.25rem', fontSize: '0.75rem', textAlign: 'left', background: '#f8fafc', border: '1px solid #f1f5f9', padding: '1rem', borderRadius: '12px', listStyle: 'none', display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                <li style={{ color: assessmentStep >= 1 ? '#059669' : '#94a3b8', fontWeight: assessmentStep >= 1 ? 700 : 400 }}>{assessmentStep >= 1 ? '✓' : '⏳'} Verifying ID and Identity Records...</li>
+                <li style={{ color: assessmentStep >= 2 ? '#059669' : '#94a3b8', fontWeight: assessmentStep >= 2 ? 700 : 400 }}>{assessmentStep >= 2 ? '✓' : '⏳'} Fetching applicant financial details...</li>
+                <li style={{ color: assessmentStep >= 3 ? '#059669' : '#94a3b8', fontWeight: assessmentStep >= 3 ? 700 : 400 }}>{assessmentStep >= 3 ? '✓' : '⏳'} Assessing credit bureau history...</li>
+                <li style={{ color: assessmentStep >= 4 ? '#059669' : '#94a3b8', fontWeight: assessmentStep >= 4 ? 700 : 400 }}>{assessmentStep >= 4 ? '✓' : '⏳'} Calculating maximum loan limit...</li>
+                <li style={{ color: assessmentStep >= 5 ? '#059669' : '#94a3b8', fontWeight: assessmentStep >= 5 ? 700 : 400 }}>{assessmentStep >= 5 ? '✓' : '⏳'} Preparing customized loan package offer...</li>
               </ul>
             </div>
           </div>
@@ -580,71 +715,72 @@ export const ApplicationFormModal: React.FC<ApplicationFormModalProps> = ({ onTa
 
       {/* Full-Screen Checkout & Verification View Modal */}
       {checkoutOpen && loanOffer && (
-        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm flex flex-col z-[999] overflow-y-auto">
+        <div style={{ position: 'fixed', inset: 0, backgroundColor: 'rgba(15, 23, 42, 0.6)', backdropFilter: 'blur(4px)', display: 'flex', flexDirection: 'column', zIndex: 9999, overflowY: 'auto' }}>
           {/* Checkout Header */}
-          <header className="bg-brand-navy px-6 py-4 text-white flex justify-between items-center w-full sticky top-0 z-10 shadow-md">
-            <div className="flex items-center gap-3">
-              <img src="/logo.png" alt="Jijenge Loans" className="w-9 h-9 object-contain" />
-              <span className="font-extrabold text-lg text-white tracking-tight">Jijenge Loans</span>
+          <header style={{ background: 'var(--brand-navy)', padding: '1rem 1.5rem', color: '#ffffff', display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%', position: 'sticky', top: 0, zIndex: 10, boxShadow: '0 4px 6px -1px rgba(0,0,0,0.1)' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+              <img src="/logo.png" alt="Jijenge Loans" style={{ width: '36px', height: '36px', objectFit: 'contain' }} />
+              <span style={{ fontWeight: 800, fontSize: '1.125rem', color: '#ffffff', letterSpacing: '-0.02em' }}>Jijenge Loans</span>
             </div>
             <button
               onClick={() => setCheckoutOpen(false)}
-              className="text-white hover:text-slate-300 text-xl font-bold bg-none border-none cursor-pointer"
+              style={{ color: '#ffffff', fontSize: '1.25rem', fontWeight: 700, background: 'none', border: 'none', cursor: 'pointer' }}
               aria-label="Close offer view"
             >
               ✕
             </button>
           </header>
 
-          <div className="flex-1 p-6 sm:p-8 w-full max-w-[680px] mx-auto flex items-center justify-center">
+          <div style={{ flex: 1, padding: '1.5rem 1rem', width: '100%', maxWidth: '680px', margin: '0 auto', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
             {/* Stage 1: Matched Offer */}
             {checkoutStage === 1 && (
-              <div className="modal-stage active w-full">
-                <div className="bg-white rounded-3xl border border-slate-200 p-6 sm:p-8 shadow-xl w-full">
-                  <div className="bg-[#FFF5ED] border border-[#FFD6B3] rounded-2xl p-6 text-center mb-6">
-                    <span className="jijenge-badge jijenge-badge-success mb-2 text-xs uppercase tracking-wider">Application Submitted Successfully</span>
-                    <h2 className="text-xl sm:text-2xl font-black text-brand-navy mt-1 mb-2 tracking-tight">Your Loan Application Assessment Result</h2>
-                    <p className="text-xs sm:text-sm text-slate-600 m-0 leading-relaxed">
+              <div style={{ width: '100%' }}>
+                <div style={{ background: '#ffffff', borderRadius: '24px', border: '1px solid #e2e8f0', padding: '1.5rem', boxShadow: '0 20px 25px -5px rgba(0,0,0,0.1)', width: '100%' }}>
+                  <div style={{ background: '#FFF5ED', border: '1px solid #FFD6B3', borderRadius: '16px', padding: '1.25rem', textAlign: 'center', marginBottom: '1.5rem' }}>
+                    <span className="jijenge-badge jijenge-badge-success" style={{ marginBottom: '0.5rem', fontSize: '0.7rem', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Application Submitted Successfully</span>
+                    <h2 style={{ fontSize: '1.25rem', fontWeight: 900, color: 'var(--brand-navy)', margin: '0.25rem 0 0.5rem', letterSpacing: '-0.02em' }}>Your Loan Application Assessment Result</h2>
+                    <p style={{ fontSize: '0.85rem', color: '#475569', margin: 0, lineHeight: 1.5 }}>
                       Your application has been received and verified against Central Bank credit scoring models. You are matched with the offer below.
                     </p>
                   </div>
 
-                  <div className="bg-gradient-to-br from-[#0F172A] to-[#1E293B] text-white rounded-2xl p-6 mb-6 relative overflow-hidden">
-                    <span className="text-[11px] font-bold tracking-widest text-slate-400 uppercase block mb-1">MATCHED LOAN OFFER</span>
-                    <h3 className="text-3xl sm:text-4xl font-black text-[#FF6600] m-0">KES {(loanOffer.amount || 0).toLocaleString()}</h3>
-                    <div className="mt-4 pt-4 border-t border-white/10 flex justify-between items-center">
+                  <div style={{ background: 'linear-gradient(135deg, #0F172A, #1E293B)', color: '#ffffff', borderRadius: '16px', padding: '1.5rem', marginBottom: '1.5rem', position: 'relative', overflow: 'hidden' }}>
+                    <span style={{ fontSize: '11px', fontWeight: 700, letterSpacing: '0.08em', color: '#94a3b8', textTransform: 'uppercase', display: 'block', marginBottom: '0.25rem' }}>MATCHED LOAN OFFER</span>
+                    <h3 style={{ fontSize: '2.25rem', fontWeight: 900, color: '#FF6600', margin: 0 }}>KES {(loanOffer.amount || 0).toLocaleString()}</h3>
+                    <div style={{ marginTop: '1rem', paddingTop: '1rem', borderTop: '1px solid rgba(255,255,255,0.1)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                       <div>
-                        <span className="text-xs text-slate-300">Assigned Package:</span>
-                        <strong className="block text-base text-white mt-0.5">{loanOffer.packageName}</strong>
+                        <span style={{ fontSize: '0.75rem', color: '#cbd5e1' }}>Assigned Package:</span>
+                        <strong style={{ display: 'block', fontSize: '1rem', color: '#ffffff', marginTop: '0.1rem' }}>{loanOffer.packageName}</strong>
                       </div>
-                      <span className="jijenge-badge jijenge-badge-warning px-3 py-1">✓ Verified</span>
+                      <span className="jijenge-badge jijenge-badge-warning" style={{ padding: '0.25rem 0.75rem' }}>✓ Verified</span>
                     </div>
                   </div>
 
-                  <div className="bg-slate-50 border border-slate-200 rounded-2xl p-5 mb-6">
-                    <div className="grid grid-cols-2 gap-4 text-sm">
+                  <div style={{ background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: '16px', padding: '1.25rem', marginBottom: '1.5rem' }}>
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', fontSize: '0.875rem' }}>
                       <div>
-                        <span className="text-xs text-slate-500 block mb-0.5">Loan Package</span>
-                        <strong className="text-slate-900 font-extrabold">{loanOffer.packageName}</strong>
+                        <span style={{ fontSize: '0.75rem', color: '#64748b', display: 'block', marginBottom: '0.1rem' }}>Loan Package</span>
+                        <strong style={{ color: '#0f172a', fontWeight: 800 }}>{loanOffer.packageName}</strong>
                       </div>
                       <div>
-                        <span className="text-xs text-slate-500 block mb-0.5">Processing Fee</span>
-                        <strong className="text-[#FF6600] font-extrabold">KES {(loanOffer.processingFee || 0).toLocaleString()}</strong>
+                        <span style={{ fontSize: '0.75rem', color: '#64748b', display: 'block', marginBottom: '0.1rem' }}>Processing Fee</span>
+                        <strong style={{ color: '#FF6600', fontWeight: 800 }}>KES {(loanOffer.processingFee || 0).toLocaleString()}</strong>
                       </div>
                       <div>
-                        <span className="text-xs text-slate-500 block mb-0.5">Repayment Period</span>
-                        <strong className="text-slate-900 font-extrabold">{loanOffer.tenureDays} Days</strong>
+                        <span style={{ fontSize: '0.75rem', color: '#64748b', display: 'block', marginBottom: '0.1rem' }}>Repayment Period</span>
+                        <strong style={{ color: '#0f172a', fontWeight: 800 }}>{loanOffer.tenureDays} Days</strong>
                       </div>
                       <div>
-                        <span className="text-xs text-slate-500 block mb-0.5">Repayment Cycle</span>
-                        <strong className="text-slate-900 font-extrabold">Weekly</strong>
+                        <span style={{ fontSize: '0.75rem', color: '#64748b', display: 'block', marginBottom: '0.1rem' }}>Repayment Cycle</span>
+                        <strong style={{ color: '#0f172a', fontWeight: 800 }}>Weekly</strong>
                       </div>
                     </div>
                   </div>
 
                   <button
                     type="button"
-                    className="btn-primary w-full"
+                    className="btn-primary"
+                    style={{ width: '100%' }}
                     onClick={() => setCheckoutStage(2)}
                   >
                     Confirm &amp; Proceed to Payment &rarr;
@@ -655,17 +791,17 @@ export const ApplicationFormModal: React.FC<ApplicationFormModalProps> = ({ onTa
 
             {/* Stage 2: Payment */}
             {checkoutStage === 2 && (
-              <div className="modal-stage active w-full">
-                <div className="bg-white rounded-3xl border border-slate-200 p-6 sm:p-8 shadow-xl w-full">
-                  <div className="text-center mb-6">
-                    <h2 className="text-xl sm:text-2xl font-black text-brand-navy m-0">M-Pesa Verification Payment</h2>
-                    <p className="text-xs sm:text-sm text-slate-600 mt-2 mb-0 leading-relaxed">
+              <div style={{ width: '100%' }}>
+                <div style={{ background: '#ffffff', borderRadius: '24px', border: '1px solid #e2e8f0', padding: '1.5rem', boxShadow: '0 20px 25px -5px rgba(0,0,0,0.1)', width: '100%' }}>
+                  <div style={{ textAlign: 'center', marginBottom: '1.5rem' }}>
+                    <h2 style={{ fontSize: '1.25rem', fontWeight: 900, color: 'var(--brand-navy)', margin: 0 }}>M-Pesa Verification Payment</h2>
+                    <p style={{ fontSize: '0.85rem', color: '#475569', marginTop: '0.5rem', marginBottom: 0, lineHeight: 1.5 }}>
                       A verification fee of <strong>KES {(loanOffer.processingFee || 0).toLocaleString()}</strong> is required to activate and disburse your matched offer of <strong>KES {(loanOffer.amount || 0).toLocaleString()}</strong>.
                     </p>
                   </div>
 
-                  <div className="bg-slate-50 border border-slate-200 rounded-2xl p-5 mb-6">
-                    <ul className="list-disc pl-5 text-xs sm:text-sm text-slate-600 space-y-2 m-0">
+                  <div style={{ background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: '16px', padding: '1.25rem', marginBottom: '1.5rem' }}>
+                    <ul style={{ listStyleType: 'disc', paddingLeft: '1.25rem', fontSize: '0.85rem', color: '#475569', margin: 0, display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
                       <li>Ensure your phone is unlocked and active.</li>
                       <li>Click the button below to receive an M-Pesa STK push prompt.</li>
                       <li>Enter your M-Pesa secret PIN to confirm payment.</li>
@@ -675,7 +811,8 @@ export const ApplicationFormModal: React.FC<ApplicationFormModalProps> = ({ onTa
 
                   <button
                     type="button"
-                    className="btn-primary w-full"
+                    className="btn-primary"
+                    style={{ width: '100%' }}
                     onClick={sendStkPush}
                     disabled={stkLoading}
                   >
@@ -683,12 +820,12 @@ export const ApplicationFormModal: React.FC<ApplicationFormModalProps> = ({ onTa
                   </button>
 
                   {stkMessage && (
-                    <p className="mt-4 text-sm font-bold text-emerald-600 text-center">
+                    <p style={{ marginTop: '1rem', fontSize: '0.875rem', fontWeight: 700, color: '#059669', textAlign: 'center' }}>
                       {stkMessage}
                     </p>
                   )}
                   {stkError && (
-                    <p className="mt-4 text-sm font-bold text-red-600 text-center">
+                    <p style={{ marginTop: '1rem', fontSize: '0.875rem', fontWeight: 700, color: '#dc2626', textAlign: 'center' }}>
                       {stkError}
                     </p>
                   )}
@@ -698,17 +835,18 @@ export const ApplicationFormModal: React.FC<ApplicationFormModalProps> = ({ onTa
 
             {/* Stage 3: Success */}
             {checkoutStage === 3 && (
-              <div className="modal-stage active w-full">
-                <div className="bg-white rounded-3xl border border-slate-200 p-8 sm:p-12 shadow-xl w-full text-center">
-                  <div className="text-5xl mb-5">🎉</div>
-                  <h2 className="text-xl sm:text-2xl font-black text-brand-navy mb-3">
+              <div style={{ width: '100%' }}>
+                <div style={{ background: '#ffffff', borderRadius: '24px', border: '1px solid #e2e8f0', padding: '2rem', boxShadow: '0 20px 25px -5px rgba(0,0,0,0.1)', width: '100%', textAlign: 'center' }}>
+                  <div style={{ fontSize: '3rem', marginBottom: '1rem' }}>🎉</div>
+                  <h2 style={{ fontSize: '1.25rem', fontWeight: 900, color: 'var(--brand-navy)', marginBottom: '0.75rem' }}>
                     Application Submitted &amp; Verified!
                   </h2>
-                  <p className="text-sm text-slate-600 leading-relaxed mb-6">
+                  <p style={{ fontSize: '0.875rem', color: '#475569', lineHeight: 1.6, marginBottom: '1.5rem' }}>
                     Your verification fee payment has been confirmed. Your loan application has moved to final review. Your allocated funds will be disbursed to your M-Pesa line <strong>{loanOffer.phoneNumber}</strong> shortly.
                   </p>
                   <button
-                    className="btn-primary w-full max-w-[280px] mx-auto block"
+                    className="btn-primary"
+                    style={{ width: '100%', maxWidth: '280px', margin: '0 auto', display: 'block' }}
                     onClick={() => {
                       setCheckoutOpen(false);
                       onTabChange('home');
@@ -723,7 +861,8 @@ export const ApplicationFormModal: React.FC<ApplicationFormModalProps> = ({ onTa
           </div>
         </div>
       )}
-    </div>
+    </>
   );
 };
 
+export default ApplicationFormModal;

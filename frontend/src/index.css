@@ -1052,7 +1052,510 @@ button, input, select, textarea, a {
     -webkit-overflow-scrolling: touch;
 }
 
-/* ─── 10. FAQs Accordion ────────────────────────────────────────────────── */
+/* ─── 10. Jijenge Loans Form Design System ──────────────────────────────── */
+
+/* Apply page wrapper */
+.apply-page {
+    padding: 2rem 0 4rem;
+    width: 100%;
+}
+
+/* Page intro header */
+.apply-page-header {
+    text-align: center;
+    margin-bottom: 2.5rem;
+}
+
+.apply-page-header .sub-tag {
+    margin-bottom: 0.5rem;
+}
+
+/* ── Multi-step Progress Indicator ── */
+.apply-progress {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0;
+    max-width: 560px;
+    margin: 0 auto 2.5rem;
+    padding: 1.25rem 1.5rem;
+    background: #f8fafc;
+    border: 1px solid var(--border-light);
+    border-radius: var(--radius-xl);
+}
+
+.apply-step {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.35rem;
+    position: relative;
+    flex: 0 0 auto;
+}
+
+.apply-step__num {
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    background: #e2e8f0;
+    color: #94a3b8;
+    font-size: 0.875rem;
+    font-weight: 800;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background var(--transition), color var(--transition);
+    flex-shrink: 0;
+}
+
+.apply-step__label {
+    font-size: 0.75rem;
+    font-weight: 700;
+    color: #94a3b8;
+    white-space: nowrap;
+    transition: color var(--transition);
+}
+
+.apply-step--active .apply-step__num {
+    background: var(--brand-orange);
+    color: #ffffff;
+    box-shadow: 0 4px 12px rgba(255, 102, 0, 0.3);
+}
+
+.apply-step--active .apply-step__label {
+    color: var(--brand-orange);
+}
+
+.apply-step--done .apply-step__num {
+    background: var(--brand-emerald);
+    color: #ffffff;
+}
+
+.apply-step--done .apply-step__label {
+    color: var(--brand-emerald);
+}
+
+.apply-progress__line {
+    flex: 1;
+    height: 2px;
+    background: #e2e8f0;
+    margin: 0 0.75rem;
+    margin-bottom: 1.2rem;
+    transition: background var(--transition);
+}
+
+.apply-progress__line--done {
+    background: var(--brand-emerald);
+}
+
+/* ── Form Card (Step Container) ── */
+.apply-step-card {
+    background: #ffffff;
+    border: 1px solid var(--border-light);
+    border-radius: var(--radius-2xl);
+    padding: 2rem;
+    box-shadow: var(--shadow-md);
+    max-width: 860px;
+    margin: 0 auto;
+}
+
+@media (min-width: 640px) {
+    .apply-step-card {
+        padding: 2.5rem;
+    }
+}
+
+/* ── Form Sections ── */
+.form-section {
+    margin-bottom: 2rem;
+}
+
+.form-section:last-child {
+    margin-bottom: 0;
+}
+
+.form-section-title {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    font-size: 1.1rem;
+    font-weight: 800;
+    color: var(--brand-navy);
+    margin-bottom: 1.25rem;
+    padding-bottom: 0.75rem;
+    border-bottom: 2px solid var(--brand-orange-light);
+}
+
+.section-icon-badge {
+    font-size: 1.2rem;
+    line-height: 1;
+}
+
+/* ── Form Group ── */
+.form-group {
+    display: flex;
+    flex-direction: column;
+    gap: 0.35rem;
+}
+
+/* ── Labels ── */
+.jijenge-label {
+    font-size: 0.85rem;
+    font-weight: 700;
+    color: var(--text-headline);
+    display: block;
+    line-height: 1.4;
+}
+
+.jijenge-label .required-star {
+    color: var(--brand-orange);
+    margin-left: 2px;
+}
+
+/* ── Inputs ── */
+.jijenge-input {
+    width: 100%;
+    height: var(--input-height);
+    padding: 0 1rem;
+    font-size: 0.95rem;
+    font-family: var(--font-family);
+    color: var(--text-headline);
+    background: #ffffff;
+    border: 1.5px solid var(--border-light);
+    border-radius: var(--radius-md);
+    outline: none;
+    transition: border-color var(--transition), box-shadow var(--transition);
+    box-sizing: border-box;
+    -webkit-appearance: none;
+    appearance: none;
+}
+
+.jijenge-input::placeholder {
+    color: #94a3b8;
+    font-weight: 400;
+}
+
+.jijenge-input:hover {
+    border-color: #cbd5e1;
+}
+
+.jijenge-input:focus {
+    border-color: var(--brand-orange);
+    box-shadow: 0 0 0 3px rgba(255, 102, 0, 0.1);
+}
+
+/* ── Select Dropdowns ── */
+.jijenge-select {
+    width: 100%;
+    height: var(--input-height);
+    padding: 0 2.5rem 0 1rem;
+    font-size: 0.95rem;
+    font-family: var(--font-family);
+    color: var(--text-headline);
+    background: #ffffff url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%2364748b' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E") no-repeat right 0.75rem center / 16px;
+    border: 1.5px solid var(--border-light);
+    border-radius: var(--radius-md);
+    outline: none;
+    cursor: pointer;
+    transition: border-color var(--transition), box-shadow var(--transition);
+    box-sizing: border-box;
+    -webkit-appearance: none;
+    appearance: none;
+}
+
+.jijenge-select:hover {
+    border-color: #cbd5e1;
+}
+
+.jijenge-select:focus {
+    border-color: var(--brand-orange);
+    box-shadow: 0 0 0 3px rgba(255, 102, 0, 0.1);
+}
+
+/* ── Error States ── */
+.jijenge-input.jijenge-input-error,
+.jijenge-select.jijenge-input-error {
+    border-color: #EF4444;
+    background: #FEF2F2;
+}
+
+.jijenge-input.jijenge-input-error:focus,
+.jijenge-select.jijenge-input-error:focus {
+    box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.12);
+}
+
+.form-field-error {
+    font-size: 0.8rem;
+    font-weight: 600;
+    color: #DC2626;
+    display: block;
+    margin-top: 0.2rem;
+}
+
+/* ── Primary Button (Orange CTA) ── */
+.btn-primary {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    padding: 0.85rem 1.75rem;
+    min-height: var(--btn-height);
+    font-size: 1rem;
+    font-weight: 700;
+    font-family: var(--font-family);
+    color: #ffffff;
+    background: var(--brand-orange);
+    border: 1.5px solid var(--brand-orange);
+    border-radius: var(--radius-md);
+    cursor: pointer;
+    box-shadow: var(--shadow-orange);
+    transition: all var(--transition);
+    text-decoration: none;
+    white-space: nowrap;
+}
+
+.btn-primary:hover:not(:disabled) {
+    background: var(--brand-orange-hover);
+    border-color: var(--brand-orange-hover);
+    transform: translateY(-1px);
+    box-shadow: 0 8px 22px rgba(255, 102, 0, 0.32);
+}
+
+.btn-primary:active:not(:disabled) {
+    transform: translateY(0);
+}
+
+.btn-primary:disabled {
+    opacity: 0.65;
+    cursor: not-allowed;
+    transform: none;
+    box-shadow: none;
+}
+
+/* ── Secondary Button (Outline) ── */
+.btn-secondary {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    padding: 0.85rem 1.5rem;
+    min-height: var(--btn-height);
+    font-size: 1rem;
+    font-weight: 700;
+    font-family: var(--font-family);
+    color: var(--brand-navy);
+    background: #ffffff;
+    border: 1.5px solid var(--border-light);
+    border-radius: var(--radius-md);
+    cursor: pointer;
+    transition: all var(--transition);
+    text-decoration: none;
+    white-space: nowrap;
+}
+
+.btn-secondary:hover:not(:disabled) {
+    background: #f8fafc;
+    border-color: #cbd5e1;
+    transform: translateY(-1px);
+}
+
+.btn-secondary:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+/* ── Form Bottom Actions ── */
+.form-bottom-actions {
+    margin-top: 2rem;
+    padding-top: 1.5rem;
+    border-top: 1px solid var(--border-light);
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+}
+
+.form-step-nav {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.75rem;
+}
+
+.form-step-nav .btn-primary,
+.form-step-nav .btn-secondary {
+    flex: 1;
+}
+
+@media (min-width: 480px) {
+    .form-step-nav .btn-primary,
+    .form-step-nav .btn-secondary {
+        flex: unset;
+        min-width: 140px;
+    }
+    .form-step-nav {
+        justify-content: flex-end;
+    }
+    .form-step-nav .btn-secondary:first-child {
+        margin-right: auto;
+    }
+}
+
+.form-disclaimer {
+    font-size: 0.8rem;
+    color: var(--text-muted);
+    line-height: 1.55;
+    text-align: center;
+}
+
+/* ── Alert Boxes ── */
+.jijenge-alert {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.75rem;
+    padding: 0.85rem 1.1rem;
+    border-radius: var(--radius-md);
+    font-size: 0.9rem;
+    font-weight: 600;
+    margin-bottom: 1.25rem;
+}
+
+.jijenge-alert-error {
+    background: #FEF2F2;
+    border: 1px solid #FECACA;
+    color: #991B1B;
+}
+
+.jijenge-alert-success {
+    background: #ECFDF5;
+    border: 1px solid #A7F3D0;
+    color: #065F46;
+}
+
+.jijenge-alert-info {
+    background: #F0F9FF;
+    border: 1px solid #BAE6FD;
+    color: #0369A1;
+}
+
+/* ── Badges ── */
+.jijenge-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.3rem;
+    padding: 0.3rem 0.75rem;
+    border-radius: 9999px;
+    font-size: 0.75rem;
+    font-weight: 700;
+    letter-spacing: 0.01em;
+}
+
+.jijenge-badge-success {
+    background: #ECFDF5;
+    color: #047857;
+    border: 1px solid #A7F3D0;
+}
+
+.jijenge-badge-warning {
+    background: #FFFBEB;
+    color: #B45309;
+    border: 1px solid #FDE68A;
+}
+
+/* ── Loan Preview Card (Step 3) ── */
+.loan-preview-card {
+    background: linear-gradient(135deg, var(--brand-navy), #1e293b);
+    border-radius: var(--radius-xl);
+    padding: 1.5rem;
+    color: #ffffff;
+    margin-top: 1.25rem;
+}
+
+.loan-preview-amount {
+    font-size: clamp(2rem, 5vw, 2.75rem);
+    font-weight: 900;
+    color: var(--brand-orange);
+    line-height: 1.1;
+    margin: 0 0 0.25rem;
+}
+
+.loan-preview-label {
+    font-size: 0.8rem;
+    font-weight: 600;
+    color: #94a3b8;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    margin-bottom: 1rem;
+}
+
+.loan-preview-details {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1rem;
+    padding-top: 1rem;
+    border-top: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.loan-preview-detail-label {
+    font-size: 0.75rem;
+    color: #94a3b8;
+    display: block;
+    margin-bottom: 0.2rem;
+}
+
+.loan-preview-detail-value {
+    font-size: 0.95rem;
+    font-weight: 700;
+    color: #ffffff;
+}
+
+/* ── Security Reassurance Strip ── */
+.apply-trust-strip {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-wrap: wrap;
+    gap: 1rem 2rem;
+    padding: 1.25rem 1.5rem;
+    background: #f8fafc;
+    border: 1px solid var(--border-light);
+    border-radius: var(--radius-xl);
+    max-width: 860px;
+    margin: 1.5rem auto 0;
+}
+
+.apply-trust-item {
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+    font-size: 0.825rem;
+    font-weight: 700;
+    color: var(--text-body);
+}
+
+.apply-trust-item svg {
+    color: var(--brand-emerald);
+    flex-shrink: 0;
+}
+
+/* Mobile: collapse to 2-column grid */
+@media (max-width: 479px) {
+    .apply-trust-strip {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 0.75rem;
+    }
+    .apply-trust-item {
+        font-size: 0.775rem;
+    }
+    .apply-step-card {
+        padding: 1.25rem;
+    }
+    .form-section-title {
+        font-size: 1rem;
+    }
+}
+
+/* ─── 11. FAQs Accordion ────────────────────────────────────────────────── */
 .faq-accordion {
     max-width: 840px;
     margin: 0 auto 3rem;
