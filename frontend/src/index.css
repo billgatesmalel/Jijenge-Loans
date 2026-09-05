@@ -104,8 +104,8 @@ button, input, select, textarea, a {
 @media (max-width: 768px) {
     .container,
     .page-container {
-        padding-left: 16px;
-        padding-right: 16px;
+        padding-left: 24px;
+        padding-right: 24px;
     }
 }
 
@@ -604,6 +604,24 @@ button, input, select, textarea, a {
 }
 
 @media (max-width: 639px) {
+    .hero-content {
+        max-width: 100%;
+        padding-left: 2px;
+        padding-right: 2px;
+    }
+    .hero-headline {
+        font-size: clamp(1.65rem, 6vw, 2.25rem);
+        line-height: 1.15;
+        letter-spacing: -0.025em;
+        word-break: normal;
+        overflow-wrap: break-word;
+        max-width: 100%;
+    }
+    .hero-subtext {
+        font-size: 0.9375rem;
+        line-height: 1.6;
+        max-width: 98%;
+    }
     .hero-cta-group {
         width: 100%;
         max-width: 480px;
@@ -2503,7 +2521,7 @@ html, body, #root {
 
 /* Hero Headline overflow safety — font-size is defined canonically above via clamp() */
 .hero-headline {
-    overflow-wrap: anywhere;
+    overflow-wrap: break-word;
     word-break: normal;
     max-width: 100%;
     box-sizing: border-box;
