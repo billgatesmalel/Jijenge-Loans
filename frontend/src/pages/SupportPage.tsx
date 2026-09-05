@@ -28,13 +28,12 @@ export const SupportPage: React.FC<{ onOpenSupport?: () => void }> = () => {
   // Form State
   const [fullName, setFullName] = useState('');
   const [phoneNumber, setPhoneNumber] = useState('');
-  const [email, setEmail] = useState('');
   const [subject, setSubject] = useState('General Loan Inquiry');
   const [message, setMessage] = useState('');
 
   // UI Flow States
   const [submitting, setSubmitting] = useState(false);
-  const [errors, setErrors] = useState<{ name?: string; phone?: string; email?: string; msg?: string }>({});
+  const [errors, setErrors] = useState<{ name?: string; phone?: string; msg?: string }>({});
   const [submitError, setSubmitError] = useState('');
   const [submittedTicket, setSubmittedTicket] = useState<any>(null);
 
@@ -42,15 +41,12 @@ export const SupportPage: React.FC<{ onOpenSupport?: () => void }> = () => {
   const whatsappUrl = whatsappCleanNumber ? `https://wa.me/${whatsappCleanNumber}` : '#';
 
   const validateForm = () => {
-    const errs: { name?: string; phone?: string; email?: string; msg?: string } = {};
+    const errs: { name?: string; phone?: string; msg?: string } = {};
     if (!fullName.trim()) errs.name = 'Full name is required';
     if (!phoneNumber.trim()) {
       errs.phone = 'Phone number is required';
     } else if (!normalizeKenyanPhone(phoneNumber)) {
       errs.phone = 'Enter a valid Kenyan phone number (e.g. 0712345678)';
-    }
-    if (email.trim() && !/\S+@\S+\.\S+/.test(email)) {
-      errs.email = 'Enter a valid email address';
     }
     if (!message.trim()) {
       errs.msg = 'Please describe your inquiry';
@@ -74,7 +70,6 @@ export const SupportPage: React.FC<{ onOpenSupport?: () => void }> = () => {
         body: JSON.stringify({
           customerPhone: normalizedPhone,
           customerName: fullName.trim(),
-          customerEmail: email.trim() || undefined,
           subject,
           message: message.trim(),
         }),
@@ -209,25 +204,6 @@ export const SupportPage: React.FC<{ onOpenSupport?: () => void }> = () => {
                       required
                     />
                     {errors.phone && <span className="form-field-error">{errors.phone}</span>}
-                  </div>
-
-                  {/* Email */}
-                  <div className="form-group">
-                    <label htmlFor="support-email" className="jijenge-label">
-                      Email Address <span style={{ color: '#94a3b8', fontWeight: 400 }}>(Optional)</span>
-                    </label>
-                    <input
-                      id="support-email"
-                      type="email"
-                      placeholder="you@example.com"
-                      value={email}
-                      onChange={(e) => {
-                        setEmail(e.target.value);
-                        if (errors.email) setErrors((p) => ({ ...p, email: undefined }));
-                      }}
-                      className={`jijenge-input ${errors.email ? 'jijenge-input-error' : ''}`}
-                    />
-                    {errors.email && <span className="form-field-error">{errors.email}</span>}
                   </div>
 
                   {/* Inquiry Subject */}
