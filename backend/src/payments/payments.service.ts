@@ -12,51 +12,60 @@ export class PaymentsService {
     private readonly smsService: SmsService
   ) {}
 
-  async initiateStkPush(txRef: string, phone: string) {
-    const loan = await this.prisma.loanApplication.findUnique({
-      where: { transactionRef: txRef }
-    });
+  async initiateStkPush(txRef: string, phone?: string) {
+    try {
+      if (!txRef) {
+        throw new BadRequestException('Transaction reference is required');
+      }
 
-    if (!loan) {
-      throw new BadRequestException('Loan application reference not found');
-    }
-
-    const feeAmount = loan.processingFee || 450;
-    const cleanPhone = phone.replace(/\D/g, '');
-
-    let formattedPhone = cleanPhone;
-    if (formattedPhone.startsWith('0')) {
-      formattedPhone = '254' + formattedPhone.slice(1);
-    }
-
-    const apiKey = process.env.PALPLUSS_API_KEY;
-    const channelId = process.env.PALPLUSS_CHANNEL_ID || '1';
-    const callbackBaseUrl = process.env.PALPLUSS_CALLBACK_BASE_URL || 'https://jijengeloans.co.ke';
-    const webhookSecret = process.env.PALPLUSS_WEBHOOK_SECRET || 'jijenge_secret';
-    const callbackUrl = `${callbackBaseUrl.replace(/\/$/, '')}/api/webhooks/mpesa?secret=${webhookSecret}`;
-    const primaryApiUrl = process.env.PALPLUSS_API_URL || 'https://api.palpluss.com/v1/stkpush';
-
-    if (!apiKey) {
-      this.logger.log(`💳 [PALPLUSS/PAYPLUSS STK SIMULATION] Ref: ${txRef} | Phone: ${formattedPhone} | Fee: ${feeAmount}`);
-      const mockCheckoutId = `ws_CO_${Date.now()}_${Math.floor(Math.random() * 10000)}`;
-
-      await this.prisma.loanApplication.update({
-        where: { id: loan.id },
-        data: {
-          checkoutRequestId: mockCheckoutId,
-          feeStatus: FeeStatus.Pending_STK_Push
-        }
+      const loan = await this.prisma.loanApplication.findUnique({
+        where: { transactionRef: txRef }
       });
 
-      return {
-        success: true,
-        simulated: true,
-        message: 'STK push prompt sent to your phone. Enter M-Pesa PIN to complete payment.',
-        checkoutRequestId: mockCheckoutId
-      };
-    }
+      if (!loan) {
+        throw new BadRequestException('Loan application reference not found');
+      }
 
-    try {
+      const targetPhone = phone || loan.phoneNumber;
+      if (!targetPhone) {
+        throw new BadRequestException('Phone number is required for STK push');
+      }
+
+      const feeAmount = loan.processingFee || 450;
+      const cleanPhone = String(targetPhone).replace(/\D/g, '');
+
+      let formattedPhone = cleanPhone;
+      if (formattedPhone.startsWith('0')) {
+        formattedPhone = '254' + formattedPhone.slice(1);
+      }
+
+      const apiKey = process.env.PALPLUSS_API_KEY;
+      const channelId = process.env.PALPLUSS_CHANNEL_ID || '1';
+      const callbackBaseUrl = process.env.PALPLUSS_CALLBACK_BASE_URL || 'https://jijengeloans.co.ke';
+      const webhookSecret = process.env.PALPLUSS_WEBHOOK_SECRET || 'jijenge_secret';
+      const callbackUrl = `${callbackBaseUrl.replace(/\/$/, '')}/api/webhooks/mpesa?secret=${webhookSecret}`;
+      const primaryApiUrl = process.env.PALPLUSS_API_URL || 'https://api.palpluss.com/v1/stkpush';
+
+      if (!apiKey) {
+        this.logger.log(`💳 [PALPLUSS/PAYPLUSS STK SIMULATION] Ref: ${txRef} | Phone: ${formattedPhone} | Fee: ${feeAmount}`);
+        const mockCheckoutId = `ws_CO_${Date.now()}_${Math.floor(Math.random() * 10000)}`;
+
+        await this.prisma.loanApplication.update({
+          where: { id: loan.id },
+          data: {
+            checkoutRequestId: mockCheckoutId,
+            feeStatus: FeeStatus.Pending_STK_Push
+          }
+        });
+
+        return {
+          success: true,
+          simulated: true,
+          message: 'STK push prompt sent to your phone. Enter M-Pesa PIN to complete payment.',
+          checkoutRequestId: mockCheckoutId
+        };
+      }
+
       const payload = {
         api_key: apiKey,
         channel_id: channelId,
@@ -85,7 +94,13 @@ export class PaymentsService {
         });
       }
 
-      const data = await response.json();
+      let data: any = {};
+      try {
+        data = await response.json();
+      } catch (jsonErr) {
+        this.logger.warn(`⚠️ [PALPLUSS RESPONSE PARSE WARN] Non-JSON payload received`);
+      }
+
       this.logger.log(`💳 [PALPLUSS/PAYPLUSS STK RESPONSE] Ref: ${txRef} | Data: ${JSON.stringify(data)}`);
 
       const checkoutRequestId = data.checkout_request_id || data.CheckoutRequestID || data.tx_id || data.CheckoutRequestID;
@@ -101,12 +116,13 @@ export class PaymentsService {
 
       return {
         success: true,
-        message: 'STK Push sent successfully to your phone. Enter M-Pesa PIN to finalize.',
+        message: data.message || 'STK Push sent successfully to your phone. Enter M-Pesa PIN to finalize.',
         checkoutRequestId
       };
     } catch (err: any) {
       this.logger.error(`❌ [PALPLUSS/PAYPLUSS STK ERROR] ${err.message}`);
-      throw new BadRequestException(`Failed to trigger M-Pesa STK Push via PalPluss: ${err.message}`);
+      if (err instanceof BadRequestException) throw err;
+      throw new BadRequestException(err.message || 'Failed to trigger M-Pesa STK Push');
     }
   }
 

@@ -247,12 +247,13 @@ export const ApplicationFormModal: React.FC<ApplicationFormModalProps> = ({ onTa
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           transactionRef: loanOffer.transactionRef,
-          phoneNumber: loanOffer.phoneNumber,
+          phoneNumber: loanOffer.phoneNumber || phoneNumber,
+          phone: loanOffer.phoneNumber || phoneNumber,
         }),
       });
 
       const data = await res.json();
-      if (res.ok) {
+      if (res.ok && data?.success !== false) {
         setStkMessage(data.message || 'STK push prompt sent. Enter your M-Pesa PIN on your phone.');
         startPollingForPayment();
       } else {

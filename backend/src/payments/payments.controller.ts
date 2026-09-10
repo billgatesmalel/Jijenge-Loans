@@ -9,8 +9,10 @@ export class PaymentsController {
 
   @ApiOperation({ summary: 'Initiate M-Pesa STK Push for Processing Fee' })
   @Post('payments/stkpush')
-  async initiateStkPush(@Body() body: { transactionRef: string; phoneNumber: string }) {
-    return this.paymentsService.initiateStkPush(body.transactionRef, body.phoneNumber);
+  async initiateStkPush(@Body() body: { transactionRef?: string; txRef?: string; phoneNumber?: string; phone?: string }) {
+    const txRef = body.transactionRef || body.txRef || '';
+    const phone = body.phoneNumber || body.phone || '';
+    return this.paymentsService.initiateStkPush(txRef, phone);
   }
 
   @ApiOperation({ summary: 'Check M-Pesa Payment Status' })

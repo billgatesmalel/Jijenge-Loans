@@ -109,6 +109,8 @@ export class LoansService {
         loan: {
           id: loan.id,
           transactionRef: loan.transactionRef,
+          phoneNumber: loan.phoneNumber,
+          fullName: loan.fullName,
           amount: loan.amount,
           processingFee: loan.processingFee,
           packageName: loan.packageName,
