@@ -16,7 +16,7 @@
       "destination": { "service": "jijenge-loans-backend" }
     },
     {
-      "source": "/(.*)",
+      "source": "/((?!api/).*)",
       "destination": { "service": "frontend" }
     }
   ]
