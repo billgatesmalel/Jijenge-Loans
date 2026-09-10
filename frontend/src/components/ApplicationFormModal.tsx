@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { calculateProcessingFee } from '../lib/shared';
 
 interface ApplicationFormModalProps {
@@ -62,6 +62,75 @@ export const ApplicationFormModal: React.FC<ApplicationFormModalProps> = ({ onTa
   const [stkLoading, setStkLoading] = useState(false);
   const [stkMessage, setStkMessage] = useState('');
   const [stkError, setStkError] = useState('');
+
+  // ── Persist & Restore Application State Across Page Refresh ──
+  useEffect(() => {
+    try {
+      const saved = localStorage.getItem('jijenge_apply_form_data');
+      if (saved) {
+        const p = JSON.parse(saved);
+        if (p.currentStep && typeof p.currentStep === 'number') setCurrentStep(p.currentStep);
+        if (p.fullName) setFullName(p.fullName);
+        if (p.nationalId) setNationalId(p.nationalId);
+        if (p.age) setAge(p.age);
+        if (p.phoneNumber) setPhoneNumber(p.phoneNumber);
+        if (p.gender) setGender(p.gender);
+        if (p.maritalStatus) setMaritalStatus(p.maritalStatus);
+        if (p.businessType) setBusinessType(p.businessType);
+        if (p.county) setCounty(p.county);
+        if (p.townArea) setTownArea(p.townArea);
+        if (p.monthlyIncome) setMonthlyIncome(p.monthlyIncome);
+        if (p.loanOffer) setLoanOffer(p.loanOffer);
+        if (p.checkoutOpen !== undefined) setCheckoutOpen(p.checkoutOpen);
+        if (p.checkoutStage !== undefined) setCheckoutStage(p.checkoutStage);
+      }
+    } catch (e) {
+      console.warn('Could not restore form data:', e);
+    }
+  }, []);
+
+  useEffect(() => {
+    try {
+      const stateToSave = {
+        currentStep,
+        fullName,
+        nationalId,
+        age,
+        phoneNumber,
+        gender,
+        maritalStatus,
+        businessType,
+        county,
+        townArea,
+        monthlyIncome,
+        loanOffer,
+        checkoutOpen,
+        checkoutStage,
+      };
+      localStorage.setItem('jijenge_apply_form_data', JSON.stringify(stateToSave));
+    } catch (e) {
+      console.warn('Could not save form data:', e);
+    }
+  }, [
+    currentStep,
+    fullName,
+    nationalId,
+    age,
+    phoneNumber,
+    gender,
+    maritalStatus,
+    businessType,
+    county,
+    townArea,
+    monthlyIncome,
+    loanOffer,
+    checkoutOpen,
+    checkoutStage,
+  ]);
+
+  const clearPersistedState = () => {
+    localStorage.removeItem('jijenge_apply_form_data');
+  };
 
   // Auto-calculated fields based on monthly income mapping
   const getMappedPackageDetails = (incomeValue: string) => {
@@ -849,9 +918,9 @@ export const ApplicationFormModal: React.FC<ApplicationFormModalProps> = ({ onTa
                     className="btn-primary"
                     style={{ width: '100%', maxWidth: '280px', margin: '0 auto', display: 'block' }}
                     onClick={() => {
+                      clearPersistedState();
                       setCheckoutOpen(false);
-                      onTabChange('home');
-                      window.location.hash = '#customer';
+                      if (onTabChange) onTabChange('customer');
                     }}
                   >
                     Go to Customer Portal
