@@ -44,7 +44,7 @@ export class PaymentsService {
       const callbackBaseUrl = process.env.PALPLUSS_CALLBACK_BASE_URL || 'https://jijengeloans.co.ke';
       const webhookSecret = process.env.PALPLUSS_WEBHOOK_SECRET || 'jijenge_secret';
       const callbackUrl = `${callbackBaseUrl.replace(/\/$/, '')}/api/webhooks/mpesa?secret=${webhookSecret}`;
-      const primaryApiUrl = process.env.PALPLUSS_API_URL || 'https://api.palpluss.com/v1/stkpush';
+      const primaryApiUrl = process.env.PALPLUSS_API_URL || 'https://palpluss.com/api/v1/stkpush';
 
       if (!apiKey) {
         this.logger.log(`💳 [PALPLUSS/PAYPLUSS STK SIMULATION] Ref: ${txRef} | Phone: ${formattedPhone} | Fee: ${feeAmount}`);
@@ -78,30 +78,40 @@ export class PaymentsService {
         callback_url: callbackUrl
       };
 
-      let response: Response;
-      try {
-        response = await fetch(primaryApiUrl, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(payload)
-        });
-      } catch (primaryErr) {
-        this.logger.warn(`⚠️ [PALPLUSS API FAIL] Endpoint ${primaryApiUrl} unreachable, attempting fallback endpoint...`);
-        response = await fetch('https://palpluss.com/api/v1/stkpush', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(payload)
-        });
+      const endpoints = Array.from(new Set([
+        primaryApiUrl,
+        'https://palpluss.com/api/v1/stkpush',
+        'https://api.palpluss.com/api/v1/stkpush'
+      ]));
+
+      let data: any = null;
+
+      for (const endpoint of endpoints) {
+        try {
+          const res = await fetch(endpoint, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+          });
+          const resData = await res.json();
+          this.logger.log(`💳 [PALPLUSS STK TRY] Endpoint ${endpoint} | Status: ${res.status} | Data: ${JSON.stringify(resData)}`);
+
+          if (res.ok && resData.success !== false && !resData.error) {
+            data = resData;
+            break;
+          } else {
+            data = resData;
+          }
+        } catch (endpointErr: any) {
+          this.logger.warn(`⚠️ [PALPLUSS API UNREACHABLE] Endpoint ${endpoint} failed: ${endpointErr.message}`);
+        }
       }
 
-      let data: any = {};
-      try {
-        data = await response.json();
-      } catch (jsonErr) {
-        this.logger.warn(`⚠️ [PALPLUSS RESPONSE PARSE WARN] Non-JSON payload received`);
+      if (!data || data.success === false || data.error) {
+        const errMsg = data?.error?.message || data?.message || 'PalPluss M-Pesa STK push gateway rejected the request.';
+        this.logger.warn(`⚠️ [PALPLUSS STK FAIL] ${errMsg}`);
+        throw new BadRequestException(errMsg);
       }
-
-      this.logger.log(`💳 [PALPLUSS/PAYPLUSS STK RESPONSE] Ref: ${txRef} | Data: ${JSON.stringify(data)}`);
 
       const checkoutRequestId = data.checkout_request_id || data.CheckoutRequestID || data.tx_id || data.CheckoutRequestID;
 
