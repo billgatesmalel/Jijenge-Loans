@@ -93,19 +93,19 @@ button, input, select, textarea, a {
 .container,
 .page-container {
     width: 100%;
-    max-width: 1400px;
+    max-width: 1240px;
     margin-left: auto;
     margin-right: auto;
-    padding-left: 24px;
-    padding-right: 24px;
+    padding-left: clamp(20px, 4vw, 48px);
+    padding-right: clamp(20px, 4vw, 48px);
     box-sizing: border-box;
 }
 
 @media (max-width: 768px) {
     .container,
     .page-container {
-        padding-left: 24px;
-        padding-right: 24px;
+        padding-left: 20px;
+        padding-right: 20px;
     }
 }
 
@@ -158,15 +158,15 @@ button, input, select, textarea, a {
     justify-content: space-between;
     height: 100%;
     width: 100%;
-    max-width: 1400px;
+    max-width: 1240px;
     margin: 0 auto;
-    padding: 0 24px;
+    padding: 0 clamp(20px, 4vw, 48px);
     box-sizing: border-box;
 }
 
 @media (max-width: 768px) {
     .nav-container {
-        padding: 0 16px;
+        padding: 0 20px;
     }
 }
 

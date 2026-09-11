@@ -1,14 +1,13 @@
 {
-  "buildCommand": "cd frontend && npm install && npm run build",
-  "outputDirectory": "frontend/dist",
+  "services": {
+    "frontend": {
+      "root": "frontend"
+    }
+  },
   "rewrites": [
     {
       "source": "/api/:path*",
       "destination": "https://jijenge-loans-backend.onrender.com/api/:path*"
-    },
-    {
-      "source": "/((?!api/).*)",
-      "destination": "/index.html"
     }
   ]
 }
