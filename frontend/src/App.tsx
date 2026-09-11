@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { Routes, Route, Navigate, useNavigate } from 'react-router-dom';
+import React, { useState, useEffect } from 'react';
+import { Routes, Route, Navigate, useNavigate, useLocation } from 'react-router-dom';
 import { PublicLayout } from './components/PublicLayout';
 import { HomePage } from './pages/HomePage';
 import { HowItWorksPage } from './pages/HowItWorksPage';
@@ -15,6 +15,21 @@ import { AdminDashboardModal } from './components/AdminDashboardModal';
 export const AppContent: React.FC = () => {
   const [supportOpen, setSupportOpen] = useState(false);
   const navigate = useNavigate();
+
+  useEffect(() => {
+    const hash = window.location.hash.replace('#', '').toLowerCase();
+    if (hash === 'customer') {
+      navigate('/customer', { replace: true });
+    } else if (hash === 'admin' || hash === 'super-admin') {
+      navigate('/super-admin', { replace: true });
+    } else if (hash === 'apply') {
+      navigate('/apply', { replace: true });
+    } else if (hash === 'support') {
+      navigate('/support', { replace: true });
+    } else if (hash === 'track-loan' || hash === 'track') {
+      navigate('/track-loan', { replace: true });
+    }
+  }, [navigate]);
 
   return (
     <Routes>

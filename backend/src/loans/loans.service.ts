@@ -142,30 +142,6 @@ export class LoansService {
       throw new NotFoundException('No loan application record found');
     }
 
-    let activeLoan = loan;
-
-    // Auto-confirm simulated payments after 4 seconds
-    if (
-      loan.feeStatus === FeeStatus.Pending_STK_Push &&
-      loan.checkoutRequestId &&
-      loan.checkoutRequestId.startsWith('ws_CO_')
-    ) {
-      const elapsed = Date.now() - new Date(loan.updatedAt).getTime();
-      if (elapsed > 4000) {
-        const mockReceipt = `MP${Date.now().toString().slice(-8)}`;
-        activeLoan = await this.prisma.loanApplication.update({
-          where: { id: loan.id },
-          data: {
-            feeStatus: FeeStatus.Paid,
-            status: LoanStatus.Application_Received,
-            amountPaid: loan.processingFee || 450,
-            mpesaReceipt: mockReceipt,
-            callbackReceivedAt: new Date()
-          }
-        });
-      }
-    }
-
     const stages = await this.prisma.workflowStage.findMany({
       where: { active: true },
       orderBy: { order: 'asc' }
@@ -173,7 +149,7 @@ export class LoansService {
 
     return {
       success: true,
-      loan: activeLoan,
+      loan,
       stages
     };
   }

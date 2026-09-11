@@ -44,29 +44,39 @@ export class PaymentsService {
       const callbackBaseUrl = process.env.PALPLUSS_CALLBACK_BASE_URL || 'https://jijengeloans.co.ke';
       const webhookSecret = process.env.PALPLUSS_WEBHOOK_SECRET || 'jijenge_secret';
       const callbackUrl = `${callbackBaseUrl.replace(/\/$/, '')}/api/webhooks/mpesa?secret=${webhookSecret}`;
-      const primaryApiUrl = process.env.PALPLUSS_API_URL || 'https://palpluss.com/api/v1/stkpush';
+      const primaryApiUrl = process.env.PALPLUSS_API_URL || 'https://api.palpluss.com/v1/payments/stk';
 
       if (!apiKey) {
         this.logger.error(`❌ [PALPLUSS STK ERROR] Missing PALPLUSS_API_KEY environment variable.`);
         throw new BadRequestException('PALPLUSS_API_KEY environment variable is not configured. Production STK push requires PalPluss API Key.');
       }
 
+      const authHeader = (apiKey.startsWith('pk_') || apiKey.startsWith('pp_'))
+        ? `Basic ${apiKey}`
+        : 'Basic ' + Buffer.from(apiKey + ':').toString('base64');
+
       const payload = {
+        apiKey: apiKey,
         api_key: apiKey,
+        channelId: channelId,
         channel_id: channelId,
-        phone_number: formattedPhone,
         phone: formattedPhone,
+        phone_number: formattedPhone,
         amount: feeAmount,
+        accountReference: txRef,
         account_reference: txRef,
         reference: txRef,
-        transaction_desc: `Jijenge Loan Processing Fee (${txRef})`,
+        transactionDesc: `Jijenge Loan Fee (${txRef})`,
+        transaction_desc: `Jijenge Loan Fee (${txRef})`,
+        callbackUrl: callbackUrl,
         callback_url: callbackUrl
       };
 
       const endpoints = Array.from(new Set([
         primaryApiUrl,
-        'https://palpluss.com/api/v1/stkpush',
-        'https://api.palpluss.com/api/v1/stkpush'
+        'https://api.palpluss.com/v1/payments/stk',
+        'https://palpluss.com/v1/payments/stk',
+        'https://palpluss.com/api/v1/stkpush'
       ]));
 
       let data: any = null;
@@ -75,10 +85,21 @@ export class PaymentsService {
         try {
           const res = await fetch(endpoint, {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': authHeader
+            },
             body: JSON.stringify(payload)
           });
-          const resData = await res.json();
+          const contentType = res.headers.get('content-type') || '';
+          let resData: any = null;
+          if (contentType.includes('application/json')) {
+            resData = await res.json();
+          } else {
+            const rawText = await res.text();
+            resData = { message: rawText };
+          }
+
           this.logger.log(`💳 [PALPLUSS STK TRY] Endpoint ${endpoint} | Status: ${res.status} | Data: ${JSON.stringify(resData)}`);
 
           if (res.ok && resData.success !== false && !resData.error) {
