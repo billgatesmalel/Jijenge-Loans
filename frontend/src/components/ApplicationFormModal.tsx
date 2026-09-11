@@ -61,6 +61,7 @@ export const ApplicationFormModal: React.FC<ApplicationFormModalProps> = ({ onTa
 
   // Payment integration
   const [stkLoading, setStkLoading] = useState(false);
+  const [stkSent, setStkSent] = useState(false);
   const [stkMessage, setStkMessage] = useState('');
   const [stkError, setStkError] = useState('');
 
@@ -312,26 +313,30 @@ export const ApplicationFormModal: React.FC<ApplicationFormModalProps> = ({ onTa
     setStkError('');
 
     try {
+      const targetPhone = loanOffer.phoneNumber || phoneNumber;
       const res = await apiFetch('/api/payments/stkpush', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           transactionRef: loanOffer.transactionRef,
-          phoneNumber: loanOffer.phoneNumber || phoneNumber,
-          phone: loanOffer.phoneNumber || phoneNumber,
+          phoneNumber: targetPhone,
+          phone: targetPhone,
         }),
       });
 
       const data = await res.json();
       if (res.ok && data?.success !== false) {
-        setStkMessage(data.message || 'STK push prompt sent. Enter your M-Pesa PIN on your phone.');
+        setStkSent(true);
+        setStkMessage(data.message || `STK push prompt sent to ${targetPhone}. Please enter your M-Pesa secret PIN.`);
         startPollingForPayment();
       } else {
-        setStkError(data.message || 'STK Push trigger failed. Please check phone number and try again.');
-        setStkLoading(false);
+        setStkError(data.message || 'Failed to trigger M-Pesa STK Push. Please verify phone number and retry.');
+        setStkSent(false);
       }
-    } catch (err) {
-      setStkError('Connection error. Failed to send STK push prompt.');
+    } catch (err: any) {
+      setStkError(err.message || 'Network connection error. Failed to send STK push prompt.');
+      setStkSent(false);
+    } finally {
       setStkLoading(false);
     }
   };
@@ -348,6 +353,11 @@ export const ApplicationFormModal: React.FC<ApplicationFormModalProps> = ({ onTa
             clearInterval(intervalId);
             setCheckoutStage(3);
             setStkLoading(false);
+          } else if (data.loan.feeStatus === 'Failed' || data.loan.status === 'Payment_Failed') {
+            clearInterval(intervalId);
+            setStkError(data.loan.feeResultDesc || data.loan.resultDesc || 'M-Pesa STK Push prompt was cancelled or failed on your phone. Please click below to retry.');
+            setStkSent(false);
+            setStkLoading(false);
           }
         }
       } catch (err) {
@@ -357,11 +367,12 @@ export const ApplicationFormModal: React.FC<ApplicationFormModalProps> = ({ onTa
 
     setTimeout(() => {
       clearInterval(intervalId);
-      if (stkLoading) {
-        setStkError('Verification payment timed out. If you have paid, please go to Track Loan to check progress.');
+      if (checkoutStage === 2 && !stkError) {
+        setStkError('Payment confirmation timed out. If you entered your PIN, check status via Track Loan or click Retry below.');
+        setStkSent(false);
         setStkLoading(false);
       }
-    }, 60000);
+    }, 90000);
   };
 
   return (
@@ -864,21 +875,64 @@ export const ApplicationFormModal: React.FC<ApplicationFormModalProps> = ({ onTa
             {checkoutStage === 2 && (
               <div style={{ width: '100%' }}>
                 <div style={{ background: '#ffffff', borderRadius: '24px', border: '1px solid #e2e8f0', padding: '1.5rem', boxShadow: '0 20px 25px -5px rgba(0,0,0,0.1)', width: '100%' }}>
-                  <div style={{ textAlign: 'center', marginBottom: '1.5rem' }}>
+                  <div style={{ textAlign: 'center', marginBottom: '1.25rem' }}>
+                    <span className="jijenge-badge jijenge-badge-success" style={{ marginBottom: '0.4rem', fontSize: '0.7rem', textTransform: 'uppercase', letterSpacing: '0.05em' }}>M-Pesa Verification Payment</span>
                     <h2 style={{ fontSize: '1.25rem', fontWeight: 900, color: 'var(--brand-navy)', margin: 0 }}>M-Pesa Verification Payment</h2>
-                    <p style={{ fontSize: '0.85rem', color: '#475569', marginTop: '0.5rem', marginBottom: 0, lineHeight: 1.5 }}>
-                      A verification fee of <strong>KES {(loanOffer.processingFee || 0).toLocaleString()}</strong> is required to activate and disburse your matched offer of <strong>KES {(loanOffer.amount || 0).toLocaleString()}</strong>.
+                    <p style={{ fontSize: '0.85rem', color: '#475569', marginTop: '0.4rem', marginBottom: 0, lineHeight: 1.5 }}>
+                      Verification fee of <strong>KES {(loanOffer.processingFee || 450).toLocaleString()}</strong> is required to activate and disburse your offer of <strong>KES {(loanOffer.amount || 0).toLocaleString()}</strong>.
                     </p>
                   </div>
 
-                  <div style={{ background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: '16px', padding: '1.25rem', marginBottom: '1.5rem' }}>
-                    <ul style={{ listStyleType: 'disc', paddingLeft: '1.25rem', fontSize: '0.85rem', color: '#475569', margin: 0, display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-                      <li>Ensure your phone is unlocked and active.</li>
-                      <li>Click the button below to receive an M-Pesa STK push prompt.</li>
-                      <li>Enter your M-Pesa secret PIN to confirm payment.</li>
-                      <li>Disbursal starts automatically once fee payment is verified.</li>
-                    </ul>
-                  </div>
+                  {stkSent ? (
+                    <div style={{ background: '#F0FDF4', border: '1.5px solid #86EFAC', borderRadius: '20px', padding: '1.25rem', marginBottom: '1.25rem', textAlign: 'center' }}>
+                      <div style={{ display: 'inline-flex', alignItems: 'center', gap: '0.5rem', background: '#DCFCE7', border: '1px solid #86EFAC', padding: '0.45rem 0.9rem', borderRadius: '9999px', fontSize: '0.85rem', fontWeight: 800, color: '#166534', marginBottom: '0.85rem' }}>
+                        <span>📲 Prompt Sent to:</span>
+                        <span>{loanOffer.phoneNumber || phoneNumber}</span>
+                      </div>
+
+                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem', marginBottom: '1rem', color: '#15803D', fontWeight: 800, fontSize: '0.9rem' }}>
+                        <span className="trust-pulse" style={{ background: '#22C55E' }} />
+                        <span>Waiting for M-Pesa PIN entry...</span>
+                      </div>
+
+                      <div style={{ background: '#ffffff', borderRadius: '14px', border: '1px solid #BBF7D0', padding: '1rem', textAlign: 'left', fontSize: '0.825rem', color: '#166534', display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                          <span style={{ background: '#DCFCE7', borderRadius: '50%', width: '22px', height: '22px', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', fontWeight: 800, fontSize: '0.75rem', color: '#15803D' }}>1</span>
+                          <span>Check your mobile screen for the M-Pesa pop-up.</span>
+                        </div>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                          <span style={{ background: '#DCFCE7', borderRadius: '50%', width: '22px', height: '22px', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', fontWeight: 800, fontSize: '0.75rem', color: '#15803D' }}>2</span>
+                          <span>Enter your secret <strong>M-Pesa PIN</strong> for KES {(loanOffer.processingFee || 450).toLocaleString()}.</span>
+                        </div>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                          <span style={{ background: '#DCFCE7', borderRadius: '50%', width: '22px', height: '22px', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', fontWeight: 800, fontSize: '0.75rem', color: '#15803D' }}>3</span>
+                          <span>Disbursal starts automatically upon PIN confirmation.</span>
+                        </div>
+                      </div>
+                    </div>
+                  ) : (
+                    <div style={{ background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: '16px', padding: '1.25rem', marginBottom: '1.25rem' }}>
+                      <div style={{ fontSize: '0.85rem', fontWeight: 700, color: '#0f172a', marginBottom: '0.5rem', display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+                        <span>M-Pesa Phone Number:</span>
+                        <span style={{ color: '#FF6600', fontWeight: 900 }}>{loanOffer.phoneNumber || phoneNumber}</span>
+                      </div>
+                      <ul style={{ listStyleType: 'disc', paddingLeft: '1.25rem', fontSize: '0.825rem', color: '#475569', margin: 0, display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
+                        <li>Ensure your phone is unlocked and active.</li>
+                        <li>Click the button below to receive an M-Pesa STK push prompt.</li>
+                        <li>Enter your M-Pesa secret PIN to confirm payment.</li>
+                      </ul>
+                    </div>
+                  )}
+
+                  {stkError && (
+                    <div style={{ background: '#FEF2F2', border: '1.5px solid #FCA5A5', borderRadius: '16px', padding: '1rem', marginBottom: '1.25rem', color: '#991B1B', fontSize: '0.85rem', fontWeight: 700, textAlign: 'center' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.4rem', marginBottom: '0.25rem', fontSize: '0.9rem' }}>
+                        <span>⚠️</span>
+                        <span>M-Pesa Prompt Notice</span>
+                      </div>
+                      <p style={{ margin: 0 }}>{stkError}</p>
+                    </div>
+                  )}
 
                   <button
                     type="button"
@@ -887,19 +941,12 @@ export const ApplicationFormModal: React.FC<ApplicationFormModalProps> = ({ onTa
                     onClick={sendStkPush}
                     disabled={stkLoading}
                   >
-                    {stkLoading ? 'Triggering STK push...' : '💳 Send M-Pesa STK Push'}
+                    {stkLoading
+                      ? '📱 Sending STK Push Prompt...'
+                      : stkSent
+                      ? '🔄 Resend M-Pesa STK Push'
+                      : '💳 Send M-Pesa STK Push'}
                   </button>
-
-                  {stkMessage && (
-                    <p style={{ marginTop: '1rem', fontSize: '0.875rem', fontWeight: 700, color: '#059669', textAlign: 'center' }}>
-                      {stkMessage}
-                    </p>
-                  )}
-                  {stkError && (
-                    <p style={{ marginTop: '1rem', fontSize: '0.875rem', fontWeight: 700, color: '#dc2626', textAlign: 'center' }}>
-                      {stkError}
-                    </p>
-                  )}
                 </div>
               </div>
             )}
