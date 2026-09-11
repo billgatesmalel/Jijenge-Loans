@@ -73,10 +73,10 @@ async function main() {
 
   // ── Eligibility Brackets ───────────────────────────────────────────────────
   const salaryBrackets = [
-    { id: 1, name: 'Entry Tier (KSh 15,000 - 30,000)', minSalary: 15000, maxSalary: 30000, assignedPackageName: 'Jijenge Micro Booster', maxLimit: 15000, active: true },
-    { id: 2, name: 'Standard Tier (KSh 30,001 - 60,000)', minSalary: 30001, maxSalary: 60000, assignedPackageName: 'Jijenge Business Flex', maxLimit: 35000, active: true },
-    { id: 3, name: 'Growth Tier (KSh 60,001 - 100,000)', minSalary: 60001, maxSalary: 100000, assignedPackageName: 'Jijenge Trade Prime', maxLimit: 60000, active: true },
-    { id: 4, name: 'Enterprise Tier (KSh 100,000+)', minSalary: 100001, maxSalary: 1000000, assignedPackageName: 'Jijenge Enterprise Express', maxLimit: 120000, active: true }
+    { id: 1, name: 'Entry Tier (KSh 15,000 - 30,000)', minSalary: 15000, maxSalary: 30000, assignedPackageName: 'Jijenge Micro Booster', maxLimit: 15000, processingFee: 250, active: true },
+    { id: 2, name: 'Standard Tier (KSh 30,001 - 60,000)', minSalary: 30001, maxSalary: 60000, assignedPackageName: 'Jijenge Business Flex', maxLimit: 35000, processingFee: 450, active: true },
+    { id: 3, name: 'Growth Tier (KSh 60,001 - 100,000)', minSalary: 60001, maxSalary: 100000, assignedPackageName: 'Jijenge Trade Prime', maxLimit: 60000, processingFee: 750, active: true },
+    { id: 4, name: 'Enterprise Tier (KSh 100,000+)', minSalary: 100001, maxSalary: 1000000, assignedPackageName: 'Jijenge Enterprise Express', maxLimit: 120000, processingFee: 1200, active: true }
   ];
 
   for (const bracket of salaryBrackets) {

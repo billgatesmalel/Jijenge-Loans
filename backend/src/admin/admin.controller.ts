@@ -82,7 +82,7 @@ export class AdminController {
   @Post('eligibility-brackets')
   async createEligibilityBracket(
     @Request() req: any,
-    @Body() body: { name: string; minSalary: number; maxSalary: number; assignedPackageName: string; maxLimit: number }
+    @Body() body: { name: string; minSalary: number; maxSalary: number; assignedPackageName: string; maxLimit: number; processingFee?: number }
   ) {
     const adminIdentifier = req.user.email || req.user.phone || req.user.userId;
     return this.adminService.createEligibilityBracket(body, adminIdentifier);
@@ -93,7 +93,7 @@ export class AdminController {
   async updateEligibilityBracket(
     @Request() req: any,
     @Param('id') id: string,
-    @Body() body: { name?: string; minSalary?: number; maxSalary?: number; assignedPackageName?: string; maxLimit?: number; active?: boolean }
+    @Body() body: { name?: string; minSalary?: number; maxSalary?: number; assignedPackageName?: string; maxLimit?: number; processingFee?: number; active?: boolean }
   ) {
     const adminIdentifier = req.user.email || req.user.phone || req.user.userId;
     return this.adminService.updateEligibilityBracket(Number(id), body, adminIdentifier);

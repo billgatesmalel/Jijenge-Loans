@@ -30,6 +30,7 @@ export class LoansService {
     amount: number;
     packageName: string;
     tenureDays?: number;
+    processingFee?: number;
   }) {
     try {
       if (!dto.fullName || !dto.nationalId || !dto.phoneNumber || !dto.amount) {
@@ -38,7 +39,18 @@ export class LoansService {
 
       const cleanPhone = dto.phoneNumber.replace(/\D/g, '');
       const cleanId = dto.nationalId.trim();
-      const processingFee = calculateProcessingFee(dto.amount);
+      let processingFee = dto.processingFee;
+      if (!processingFee) {
+        const bracket = await this.prisma.eligibilityBracket.findFirst({
+          where: {
+            OR: [
+              { assignedPackageName: dto.packageName },
+              { maxLimit: dto.amount }
+            ]
+          }
+        });
+        processingFee = bracket?.processingFee || calculateProcessingFee(dto.amount);
+      }
       const txRef = generateTransactionRef();
 
       // Find user by nationalId OR phoneNumber

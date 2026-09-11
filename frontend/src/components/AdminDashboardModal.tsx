@@ -125,6 +125,7 @@ export const AdminDashboardModal: React.FC<AdminDashboardProps> = ({ onClose }) 
   const [bracketMaxSalary, setBracketMaxSalary] = useState('');
   const [bracketPackage, setBracketPackage] = useState('');
   const [bracketLimit, setBracketLimit] = useState('');
+  const [bracketFee, setBracketFee] = useState('');
 
   // SMS Form Fields
   const [smsRecipient, setSmsRecipient] = useState('');
@@ -148,15 +149,15 @@ export const AdminDashboardModal: React.FC<AdminDashboardProps> = ({ onClose }) 
 
   /* ── Lifecycle Effects ─────────────────────────────────────── */
   useEffect(() => {
-    const customerRole = sessionStorage.getItem('bl_customer_role');
-    const customerToken = sessionStorage.getItem('bl_customer_token');
+    const customerRole = sessionStorage.getItem('bl_customer_role') || localStorage.getItem('bl_customer_role');
+    const customerToken = sessionStorage.getItem('bl_customer_token') || localStorage.getItem('bl_customer_token');
     if (customerToken && (customerRole === 'ADMIN' || customerRole === 'SUPER_ADMIN')) {
       setIsAuth(true);
       setArrivedViaSwitch(true);
       fetchAllAdminData(customerToken);
       return;
     }
-    const superToken = sessionStorage.getItem('bl_super_admin_token');
+    const superToken = sessionStorage.getItem('bl_super_admin_token') || localStorage.getItem('bl_super_admin_token');
     if (superToken) {
       setIsAuth(true);
       setArrivedViaSwitch(false);
@@ -189,10 +190,10 @@ export const AdminDashboardModal: React.FC<AdminDashboardProps> = ({ onClose }) 
 
   /* ── Business logic (preserved exactly) ──────────────────── */
   const getAdminToken = (): string | null => {
-    const ct = sessionStorage.getItem('bl_customer_token');
-    const cr = sessionStorage.getItem('bl_customer_role');
+    const ct = sessionStorage.getItem('bl_customer_token') || localStorage.getItem('bl_customer_token');
+    const cr = sessionStorage.getItem('bl_customer_role') || localStorage.getItem('bl_customer_role');
     if (ct && (cr === 'ADMIN' || cr === 'SUPER_ADMIN')) return ct;
-    return sessionStorage.getItem('bl_super_admin_token');
+    return sessionStorage.getItem('bl_super_admin_token') || localStorage.getItem('bl_super_admin_token');
   };
 
   const fetchAllAdminData = async (token: string) => {
@@ -300,6 +301,7 @@ export const AdminDashboardModal: React.FC<AdminDashboardProps> = ({ onClose }) 
 
       if (res.ok && data.accessToken) {
         sessionStorage.setItem('bl_super_admin_token', data.accessToken);
+        localStorage.setItem('bl_super_admin_token', data.accessToken);
         setIsAuth(true);
         setArrivedViaSwitch(false);
         fetchAllAdminData(data.accessToken);
@@ -315,6 +317,7 @@ export const AdminDashboardModal: React.FC<AdminDashboardProps> = ({ onClose }) 
 
   const handleLogout = () => {
     sessionStorage.removeItem('bl_super_admin_token');
+    localStorage.removeItem('bl_super_admin_token');
     localStorage.removeItem('bl_admin_active_tab');
     setIsAuth(false);
     onClose();
@@ -430,7 +433,8 @@ export const AdminDashboardModal: React.FC<AdminDashboardProps> = ({ onClose }) 
       minSalary: parseFloat(bracketMinSalary),
       maxSalary: parseFloat(bracketMaxSalary),
       assignedPackageName: bracketPackage,
-      maxLimit: parseFloat(bracketLimit)
+      maxLimit: parseFloat(bracketLimit),
+      processingFee: parseFloat(bracketFee) || 450
     };
 
     try {
@@ -490,6 +494,7 @@ export const AdminDashboardModal: React.FC<AdminDashboardProps> = ({ onClose }) 
     setBracketMaxSalary('');
     setBracketPackage('');
     setBracketLimit('');
+    setBracketFee('');
   };
 
   const handleEditBracket = (b: any) => {
@@ -499,6 +504,7 @@ export const AdminDashboardModal: React.FC<AdminDashboardProps> = ({ onClose }) 
     setBracketMaxSalary(String(b.maxSalary));
     setBracketPackage(b.assignedPackageName);
     setBracketLimit(String(b.maxLimit));
+    setBracketFee(b.processingFee !== undefined && b.processingFee !== null ? String(b.processingFee) : '450');
     setBracketModalOpen(true);
   };
 
@@ -1394,6 +1400,7 @@ export const AdminDashboardModal: React.FC<AdminDashboardProps> = ({ onClose }) 
                           <th>Max Salary</th>
                           <th>Assigned Package</th>
                           <th>Max Limit</th>
+                          <th>Package Fee</th>
                           <th>Actions</th>
                         </tr>
                       </thead>
@@ -1405,6 +1412,7 @@ export const AdminDashboardModal: React.FC<AdminDashboardProps> = ({ onClose }) 
                             <td>KES {b.maxSalary.toLocaleString()}</td>
                             <td style={{ color: '#FF6600', fontWeight: 600 }}>{b.assignedPackageName}</td>
                             <td style={{ fontWeight: 700, color: '#065f46' }}>KES {b.maxLimit.toLocaleString()}</td>
+                            <td style={{ fontWeight: 700, color: '#1e40af' }}>KES {(b.processingFee ?? 450).toLocaleString()}</td>
                             <td>
                               <div style={{ display: 'flex', gap: '0.4rem' }}>
                                 <button className="admin-btn admin-btn-secondary" style={{ height: '30px', padding: '0 0.5rem' }} onClick={() => handleEditBracket(b)}><Edit size={13} /></button>
@@ -1413,7 +1421,7 @@ export const AdminDashboardModal: React.FC<AdminDashboardProps> = ({ onClose }) 
                             </td>
                           </tr>
                         )) : (
-                          <tr><td colSpan={6} style={{ padding: '2rem', textAlign: 'center', color: '#94a3b8' }}>No eligibility rules defined.</td></tr>
+                          <tr><td colSpan={7} style={{ padding: '2rem', textAlign: 'center', color: '#94a3b8' }}>No eligibility rules defined.</td></tr>
                         )}
                       </tbody>
                     </table>
@@ -1443,6 +1451,7 @@ export const AdminDashboardModal: React.FC<AdminDashboardProps> = ({ onClose }) 
                           <div style={{ color: '#166534', fontWeight: 750, fontSize: '0.85rem', marginBottom: '0.2rem' }}>Qualified: {previewResult.packageName}</div>
                           <div style={{ fontSize: '0.75rem', color: '#475569' }}>Bracket: {previewResult.bracketName}</div>
                           <div style={{ fontSize: '0.78rem', color: '#166534', fontWeight: 700, marginTop: '0.35rem' }}>Max Limit: KES {previewResult.maxLimit.toLocaleString()}</div>
+                          <div style={{ fontSize: '0.78rem', color: '#1e40af', fontWeight: 700, marginTop: '0.15rem' }}>Package Fee: KES {previewResult.processingFee.toLocaleString()}</div>
                         </>
                       ) : (
                         <div style={{ color: '#991b1b', fontSize: '0.8rem', fontWeight: 600 }}>{previewResult.error || previewResult.message}</div>
@@ -1901,9 +1910,15 @@ export const AdminDashboardModal: React.FC<AdminDashboardProps> = ({ onClose }) 
                   style={{ width: '100%', padding: '0.55rem 0.75rem', border: '1.5px solid #e2e8f0', borderRadius: '8px', fontSize: '0.85rem', boxSizing: 'border-box' }}
                 />
               </div>
-              <div style={{ marginBottom: '1.25rem' }}>
-                <label style={{ display: 'block', fontSize: '0.78rem', fontWeight: 700, color: '#475569', marginBottom: '4px' }}>Maximum Allocated Limit</label>
+              <div style={{ marginBottom: '0.85rem' }}>
+                <label style={{ display: 'block', fontSize: '0.78rem', fontWeight: 700, color: '#475569', marginBottom: '4px' }}>Maximum Allocated Limit (KES)</label>
                 <input type="number" value={bracketLimit} onChange={e => setBracketLimit(e.target.value)} required placeholder="e.g. 35000"
+                  style={{ width: '100%', padding: '0.55rem 0.75rem', border: '1.5px solid #e2e8f0', borderRadius: '8px', fontSize: '0.85rem', boxSizing: 'border-box' }}
+                />
+              </div>
+              <div style={{ marginBottom: '1.25rem' }}>
+                <label style={{ display: 'block', fontSize: '0.78rem', fontWeight: 700, color: '#475569', marginBottom: '4px' }}>Package Processing Fee (KES)</label>
+                <input type="number" value={bracketFee} onChange={e => setBracketFee(e.target.value)} required placeholder="e.g. 450"
                   style={{ width: '100%', padding: '0.55rem 0.75rem', border: '1.5px solid #e2e8f0', borderRadius: '8px', fontSize: '0.85rem', boxSizing: 'border-box' }}
                 />
               </div>

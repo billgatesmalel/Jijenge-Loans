@@ -134,24 +134,62 @@ export const ApplicationFormModal: React.FC<ApplicationFormModalProps> = ({ onTa
     localStorage.removeItem('jijenge_apply_form_data');
   };
 
+  // Fetch backend eligibility brackets
+  const [brackets, setBrackets] = useState<any[]>([]);
+
+  useEffect(() => {
+    apiFetch('/api/loans/eligibility')
+      .then(res => res.json())
+      .then(d => {
+        if (d.success && Array.isArray(d.brackets)) {
+          setBrackets(d.brackets);
+        }
+      })
+      .catch(() => {});
+  }, []);
+
   // Auto-calculated fields based on monthly income mapping
   const getMappedPackageDetails = (incomeValue: string) => {
+    let minSal = 0;
+    let maxSal = 0;
+    if (incomeValue.includes(':')) {
+      const parts = incomeValue.split(':');
+      minSal = parseFloat(parts[0]) || 0;
+      maxSal = parseFloat(parts[1]) || 0;
+    }
+
+    if (brackets.length > 0 && minSal > 0) {
+      const matched = brackets.find((b: any) => 
+        (minSal >= b.minSalary && minSal <= b.maxSalary) || 
+        (maxSal >= b.minSalary && maxSal <= b.maxSalary) ||
+        (minSal <= b.minSalary && maxSal >= b.maxSalary)
+      );
+      if (matched) {
+        return {
+          name: matched.assignedPackageName,
+          amount: matched.maxLimit,
+          tenure: matched.maxLimit > 60000 ? 90 : matched.maxLimit > 35000 ? 60 : matched.maxLimit > 15000 ? 45 : 30,
+          processingFee: matched.processingFee ?? 450
+        };
+      }
+    }
+
     switch (incomeValue) {
       case '15000:30000':
-        return { name: 'Jijenge Micro Booster', amount: 15000, tenure: 30 };
+        return { name: 'Jijenge Micro Booster', amount: 15000, tenure: 30, processingFee: 250 };
       case '30001:60000':
-        return { name: 'Jijenge Business Flex', amount: 35000, tenure: 45 };
+        return { name: 'Jijenge Business Flex', amount: 35000, tenure: 45, processingFee: 450 };
       case '60001:100000':
-        return { name: 'Jijenge Trade Prime', amount: 60000, tenure: 60 };
+        return { name: 'Jijenge Trade Prime', amount: 60000, tenure: 60, processingFee: 750 };
       case '100001:1000000':
-        return { name: 'Jijenge Enterprise Express', amount: 120000, tenure: 90 };
+        return { name: 'Jijenge Enterprise Express', amount: 120000, tenure: 90, processingFee: 1200 };
       default:
-        return { name: 'Jijenge Micro Booster', amount: 15000, tenure: 30 };
+        return { name: 'Jijenge Micro Booster', amount: 15000, tenure: 30, processingFee: 250 };
     }
   };
 
   const selectedPkg = getMappedPackageDetails(monthlyIncome);
-  const processingFee = calculateProcessingFee(selectedPkg.amount);
+  const processingFee = selectedPkg.processingFee ?? calculateProcessingFee(selectedPkg.amount);
 
   const validateStep = (step: number): boolean => {
     const errs: Record<string, string> = {};
@@ -252,6 +290,7 @@ export const ApplicationFormModal: React.FC<ApplicationFormModalProps> = ({ onTa
         amount: selectedPkg.amount,
         packageName: selectedPkg.name,
         tenureDays: selectedPkg.tenure,
+        processingFee: selectedPkg.processingFee,
       };
 
       const res = await apiFetch('/api/loans/apply', {

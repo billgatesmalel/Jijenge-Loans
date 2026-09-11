@@ -203,14 +203,15 @@ export class AdminService {
     return { success: true, items };
   }
 
-  async createEligibilityBracket(body: { name: string; minSalary: number; maxSalary: number; assignedPackageName: string; maxLimit: number }, adminEmail: string) {
+  async createEligibilityBracket(body: { name: string; minSalary: number; maxSalary: number; assignedPackageName: string; maxLimit: number; processingFee?: number }, adminEmail: string) {
     const bracket = await this.prisma.eligibilityBracket.create({
       data: {
         name: body.name,
         minSalary: Number(body.minSalary),
         maxSalary: Number(body.maxSalary),
         assignedPackageName: body.assignedPackageName,
-        maxLimit: Number(body.maxLimit)
+        maxLimit: Number(body.maxLimit),
+        processingFee: body.processingFee !== undefined ? Number(body.processingFee) : 450
       }
     });
 
@@ -219,14 +220,14 @@ export class AdminService {
         adminEmail,
         action: 'CREATE_ELIGIBILITY_BRACKET',
         target: body.name,
-        metadata: `Max Limit: ${body.maxLimit}`
+        metadata: `Max Limit: ${body.maxLimit}, Processing Fee: ${body.processingFee || 450}`
       }
     });
 
     return { success: true, bracket };
   }
 
-  async updateEligibilityBracket(id: number, body: { name?: string; minSalary?: number; maxSalary?: number; assignedPackageName?: string; maxLimit?: number; active?: boolean }, adminEmail: string) {
+  async updateEligibilityBracket(id: number, body: { name?: string; minSalary?: number; maxSalary?: number; assignedPackageName?: string; maxLimit?: number; processingFee?: number; active?: boolean }, adminEmail: string) {
     const bracket = await this.prisma.eligibilityBracket.update({
       where: { id },
       data: {
@@ -235,6 +236,7 @@ export class AdminService {
         ...(body.maxSalary !== undefined && { maxSalary: Number(body.maxSalary) }),
         ...(body.assignedPackageName !== undefined && { assignedPackageName: body.assignedPackageName }),
         ...(body.maxLimit !== undefined && { maxLimit: Number(body.maxLimit) }),
+        ...(body.processingFee !== undefined && { processingFee: Number(body.processingFee) }),
         ...(body.active !== undefined && { active: body.active })
       }
     });
