@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { calculateProcessingFee } from '../lib/shared';
+import { apiFetch } from '../lib/api';
 
 interface ApplicationFormModalProps {
   onTabChange: (tabId: string) => void;
@@ -252,7 +253,7 @@ export const ApplicationFormModal: React.FC<ApplicationFormModalProps> = ({ onTa
         tenureDays: selectedPkg.tenure,
       };
 
-      const res = await fetch('/api/loans/apply', {
+      const res = await apiFetch('/api/loans/apply', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload),
@@ -311,7 +312,7 @@ export const ApplicationFormModal: React.FC<ApplicationFormModalProps> = ({ onTa
     setStkError('');
 
     try {
-      const res = await fetch('/api/payments/stkpush', {
+      const res = await apiFetch('/api/payments/stkpush', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -340,7 +341,7 @@ export const ApplicationFormModal: React.FC<ApplicationFormModalProps> = ({ onTa
     if (!loanOffer) return;
     const intervalId = setInterval(async () => {
       try {
-        const res = await fetch(`/api/loans/track/${loanOffer.transactionRef}`);
+        const res = await apiFetch(`/api/loans/track/${loanOffer.transactionRef}`);
         const data = await res.json();
         if (data.success && data.loan) {
           if (data.loan.feeStatus === 'Paid') {

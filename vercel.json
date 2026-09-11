@@ -1,23 +1,14 @@
 {
-  "services": {
-    "frontend": {
-      "root": "frontend",
-      "framework": "vite"
-    },
-    "jijenge-loans-backend": {
-      "root": "backend",
-      "entrypoint": "src/main.ts",
-      "buildCommand": "npm install --include=dev && npm run prisma:generate && npm run build"
-    }
-  },
+  "buildCommand": "cd frontend && npm install && npm run build",
+  "outputDirectory": "frontend/dist",
   "rewrites": [
     {
-      "source": "/api/(.*)",
-      "destination": { "service": "jijenge-loans-backend" }
+      "source": "/api/:path*",
+      "destination": "https://jijenge-loans-backend.onrender.com/api/:path*"
     },
     {
       "source": "/((?!api/).*)",
-      "destination": { "service": "frontend" }
+      "destination": "/index.html"
     }
   ]
 }

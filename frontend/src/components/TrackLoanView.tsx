@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Search, X, AlertCircle, CreditCard, ShieldCheck } from 'lucide-react';
+import { apiFetch } from '../lib/api';
 
 interface TrackLoanViewProps {
   onTabChange?: (tabId: string) => void;
@@ -25,7 +26,7 @@ export const TrackLoanView: React.FC<TrackLoanViewProps> = () => {
       intervalId = setInterval(async () => {
         try {
           if (!loan?.transactionRef) return;
-          const res = await fetch(`/api/loans/track/${loan.transactionRef}`);
+          const res = await apiFetch(`/api/loans/track/${loan.transactionRef}`);
           const data = await res.json();
           if (data?.success && data?.loan) {
             setLoan(data.loan);
@@ -52,7 +53,7 @@ export const TrackLoanView: React.FC<TrackLoanViewProps> = () => {
     setLoan(null);
 
     try {
-      const res = await fetch(`/api/loans/track/${encodeURIComponent(searchQuery.trim())}`);
+      const res = await apiFetch(`/api/loans/track/${encodeURIComponent(searchQuery.trim())}`);
       const data = await res.json();
       if (data?.success && data?.loan) {
         setLoan(data.loan);
@@ -80,7 +81,7 @@ export const TrackLoanView: React.FC<TrackLoanViewProps> = () => {
     setPaymentError('');
 
     try {
-      const res = await fetch('/api/payments/stkpush', {
+      const res = await apiFetch('/api/payments/stkpush', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -92,7 +93,7 @@ export const TrackLoanView: React.FC<TrackLoanViewProps> = () => {
       const data = await res.json();
       if (res.ok) {
         setPaymentMessage(data?.message || 'STK Push sent successfully. Please check your phone for the M-Pesa PIN prompt.');
-        const trackRes = await fetch(`/api/loans/track/${loan.transactionRef}`);
+        const trackRes = await apiFetch(`/api/loans/track/${loan.transactionRef}`);
         const trackData = await trackRes.json();
         if (trackData?.success && trackData?.loan) {
           setLoan(trackData.loan);

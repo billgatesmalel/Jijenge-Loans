@@ -4,6 +4,7 @@ import {
   ClipboardList, ArrowRight, Menu, X, Lock, AlertCircle
 } from 'lucide-react';
 import { Footer } from './Footer';
+import { apiFetch } from '../lib/api';
 
 interface CustomerDashboardProps {
   onClose: () => void;
@@ -84,7 +85,7 @@ export const CustomerDashboardModal: React.FC<CustomerDashboardProps> = ({ onClo
 
   const loadDashboardData = async (token: string) => {
     try {
-      const res = await fetch('/api/customer/dashboard', {
+      const res = await apiFetch('/api/customer/dashboard', {
         headers: { Authorization: `Bearer ${token}` },
       });
       const data = await res.json();
@@ -125,7 +126,7 @@ export const CustomerDashboardModal: React.FC<CustomerDashboardProps> = ({ onClo
 
     setLoginLoading(true);
     try {
-      const res = await fetch('/api/auth/customer/login', {
+      const res = await apiFetch('/api/auth/customer/login', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ phone: phone.trim(), pin: pin.trim() }),
@@ -165,7 +166,7 @@ export const CustomerDashboardModal: React.FC<CustomerDashboardProps> = ({ onClo
 
     setResendLoading(true);
     try {
-      const res = await fetch('/api/auth/customer/resend-pin', {
+      const res = await apiFetch('/api/auth/customer/resend-pin', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ phone: phone.trim() }),
@@ -205,7 +206,7 @@ export const CustomerDashboardModal: React.FC<CustomerDashboardProps> = ({ onClo
     setWithdrawLoading(true);
     setError('');
     try {
-      const res = await fetch('/api/customer/withdraw', {
+      const res = await apiFetch('/api/customer/withdraw', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
         body: JSON.stringify({ loanId: latestLoan.id, amount: allocatedBalance }),

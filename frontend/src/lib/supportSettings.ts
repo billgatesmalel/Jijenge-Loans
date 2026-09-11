@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { apiFetch } from './api';
 
 export interface SupportSettings {
   supportPhone: string;
@@ -30,7 +31,7 @@ export function updateLocalSupportSettings(newSettings: Partial<SupportSettings>
 
 export async function fetchSupportSettings(): Promise<SupportSettings> {
   try {
-    const res = await fetch('/api/support/settings');
+    const res = await apiFetch('/api/support/settings');
     if (res.ok) {
       const data = await res.json();
       if (data.settings) {

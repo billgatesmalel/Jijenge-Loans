@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { apiFetch } from '../lib/api';
 
 interface SupportChatModalProps {
   isOpen: boolean;
@@ -116,7 +117,7 @@ export const SupportChatModal: React.FC<SupportChatModalProps> = ({ isOpen, onCl
     if (!ticketId) return;
     const phone = localStorage.getItem('bl_chat_guestPhone') || guestPhone;
     try {
-      const res = await fetch(`/api/support/tickets?phone=${phone}`);
+      const res = await apiFetch(`/api/support/tickets?phone=${phone}`);
       const data = await res.json();
       if (res.ok && data.success && data.tickets) {
         const myTicket = data.tickets.find((t: any) => t.id === ticketId);
@@ -167,7 +168,7 @@ export const SupportChatModal: React.FC<SupportChatModalProps> = ({ isOpen, onCl
     setLoading(true);
 
     try {
-      const res = await fetch('/api/support/ticket', {
+      const res = await apiFetch('/api/support/ticket', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -204,7 +205,7 @@ export const SupportChatModal: React.FC<SupportChatModalProps> = ({ isOpen, onCl
     setReplyText('');
 
     try {
-      const res = await fetch(`/api/support/tickets/${ticketId}/message`, {
+      const res = await apiFetch(`/api/support/tickets/${ticketId}/message`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

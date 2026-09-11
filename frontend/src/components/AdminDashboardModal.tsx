@@ -9,6 +9,7 @@ import {
 } from 'lucide-react';
 
 import { updateLocalSupportSettings, getCachedSupportSettings } from '../lib/supportSettings';
+import { apiFetch } from '../lib/api';
 
 interface AdminDashboardProps {
   onClose: () => void;
@@ -198,15 +199,15 @@ export const AdminDashboardModal: React.FC<AdminDashboardProps> = ({ onClose }) 
     setDataLoading(true);
     try {
       const [appRes, anaRes, tickRes, custRes, payRes, bracRes, smsLRes, smsTRes, setRes] = await Promise.all([
-        fetch('/api/admin/applications', { headers: { Authorization: `Bearer ${token}` } }),
-        fetch('/api/admin/analytics', { headers: { Authorization: `Bearer ${token}` } }),
-        fetch('/api/support/tickets', { headers: { Authorization: `Bearer ${token}` } }),
-        fetch('/api/admin/customers', { headers: { Authorization: `Bearer ${token}` } }),
-        fetch('/api/admin/payments', { headers: { Authorization: `Bearer ${token}` } }),
-        fetch('/api/admin/eligibility-brackets', { headers: { Authorization: `Bearer ${token}` } }),
-        fetch('/api/admin/sms-logs', { headers: { Authorization: `Bearer ${token}` } }),
-        fetch('/api/admin/sms-templates', { headers: { Authorization: `Bearer ${token}` } }),
-        fetch('/api/support/settings'),
+        apiFetch('/api/admin/applications', { headers: { Authorization: `Bearer ${token}` } }),
+        apiFetch('/api/admin/analytics', { headers: { Authorization: `Bearer ${token}` } }),
+        apiFetch('/api/support/tickets', { headers: { Authorization: `Bearer ${token}` } }),
+        apiFetch('/api/admin/customers', { headers: { Authorization: `Bearer ${token}` } }),
+        apiFetch('/api/admin/payments', { headers: { Authorization: `Bearer ${token}` } }),
+        apiFetch('/api/admin/eligibility-brackets', { headers: { Authorization: `Bearer ${token}` } }),
+        apiFetch('/api/admin/sms-logs', { headers: { Authorization: `Bearer ${token}` } }),
+        apiFetch('/api/admin/sms-templates', { headers: { Authorization: `Bearer ${token}` } }),
+        apiFetch('/api/support/settings'),
       ]);
 
       if (appRes.ok) { const d = await appRes.json(); setApplications(d.items || d.applications || []); }
@@ -239,7 +240,7 @@ export const AdminDashboardModal: React.FC<AdminDashboardProps> = ({ onClose }) 
     e.preventDefault();
     setActionLoading(true);
     try {
-      const res = await fetch('/api/support/settings', {
+      const res = await apiFetch('/api/support/settings', {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -266,7 +267,7 @@ export const AdminDashboardModal: React.FC<AdminDashboardProps> = ({ onClose }) 
 
   const syncTickets = async (token: string) => {
     try {
-      const res = await fetch('/api/support/tickets', { headers: { Authorization: `Bearer ${token}` } });
+      const res = await apiFetch('/api/support/tickets', { headers: { Authorization: `Bearer ${token}` } });
       if (res.ok) {
         const d = await res.json();
         setTickets(d.tickets || []);
@@ -284,12 +285,19 @@ export const AdminDashboardModal: React.FC<AdminDashboardProps> = ({ onClose }) 
     setLoginLoading(true);
     setLoginError('');
     try {
-      const res = await fetch('/api/auth/admin/login', {
+      const res = await apiFetch('/api/auth/admin/login', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email: email.trim(), pass: password.trim() }),
       });
-      const data = await res.json();
+      const contentType = res.headers.get('content-type') || '';
+      let data: any = {};
+      if (contentType.includes('application/json')) {
+        data = await res.json();
+      } else {
+        throw new Error(`Gateway/Backend Connectivity Error (HTTP ${res.status}). Verify backend deployment.`);
+      }
+
       if (res.ok && data.accessToken) {
         sessionStorage.setItem('bl_super_admin_token', data.accessToken);
         setIsAuth(true);
@@ -298,8 +306,8 @@ export const AdminDashboardModal: React.FC<AdminDashboardProps> = ({ onClose }) 
       } else {
         setLoginError(data.message || 'Access Denied. Check credentials and try again.');
       }
-    } catch {
-      setLoginError('Gateway connectivity error. Please verify the backend status.');
+    } catch (err: any) {
+      setLoginError(err.message || 'Gateway connectivity error. Please verify the backend status.');
     } finally {
       setLoginLoading(false);
     }
@@ -320,7 +328,7 @@ export const AdminDashboardModal: React.FC<AdminDashboardProps> = ({ onClose }) 
     if (!token) return;
     setActionLoading(true);
     try {
-      const res = await fetch('/api/admin/allocate-balance', {
+      const res = await apiFetch('/api/admin/allocate-balance', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
         body: JSON.stringify({ loanId, amount: parseFloat(allocateAmount), notes: allocationNotes }),
@@ -349,7 +357,7 @@ export const AdminDashboardModal: React.FC<AdminDashboardProps> = ({ onClose }) 
     if (!token) return;
     setActionLoading(true);
     try {
-      const res = await fetch('/api/admin/update-status', {
+      const res = await apiFetch('/api/admin/update-status', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
         body: JSON.stringify({ loanId, status: targetStatus }),
@@ -376,7 +384,7 @@ export const AdminDashboardModal: React.FC<AdminDashboardProps> = ({ onClose }) 
     const token = getAdminToken();
     if (!token) return;
     try {
-      const res = await fetch(`/api/support/tickets/${selectedTicket.id}/message`, {
+      const res = await apiFetch(`/api/support/tickets/${selectedTicket.id}/message`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
         body: JSON.stringify({ sender: 'ADMIN', senderName: 'Admin Agent', text: supportReply.trim() }),
@@ -395,7 +403,7 @@ export const AdminDashboardModal: React.FC<AdminDashboardProps> = ({ onClose }) 
     const token = getAdminToken();
     if (!token) return;
     try {
-      const res = await fetch(`/api/admin/support-tickets/${ticketId}/resolve`, {
+      const res = await apiFetch(`/api/admin/support-tickets/${ticketId}/resolve`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
         body: JSON.stringify({ status: 'RESOLVED' }),
@@ -428,13 +436,13 @@ export const AdminDashboardModal: React.FC<AdminDashboardProps> = ({ onClose }) 
     try {
       let res;
       if (selectedBracket) {
-        res = await fetch(`/api/admin/eligibility-brackets/${selectedBracket.id}`, {
+        res = await apiFetch(`/api/admin/eligibility-brackets/${selectedBracket.id}`, {
           method: 'PUT',
           headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
           body: JSON.stringify(payload)
         });
       } else {
-        res = await fetch('/api/admin/eligibility-brackets', {
+        res = await apiFetch('/api/admin/eligibility-brackets', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
           body: JSON.stringify(payload)
@@ -463,7 +471,7 @@ export const AdminDashboardModal: React.FC<AdminDashboardProps> = ({ onClose }) 
     const token = getAdminToken();
     if (!token) return;
     try {
-      const res = await fetch(`/api/admin/eligibility-brackets/${bracketId}`, {
+      const res = await apiFetch(`/api/admin/eligibility-brackets/${bracketId}`, {
         method: 'DELETE',
         headers: { Authorization: `Bearer ${token}` }
       });
@@ -539,7 +547,7 @@ export const AdminDashboardModal: React.FC<AdminDashboardProps> = ({ onClose }) 
         // Broadcast send loop
         const phones = Array.from(new Set(applications.map(a => a.phoneNumber)));
         for (const phone of phones) {
-          const res = await fetch('/api/admin/send-sms', {
+          const res = await apiFetch('/api/admin/send-sms', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
             body: JSON.stringify({ phone, message: smsText.trim() })
@@ -548,7 +556,7 @@ export const AdminDashboardModal: React.FC<AdminDashboardProps> = ({ onClose }) 
         }
         showToast(`SMS Broadcast finished. Sent to ${successCount} numbers.`);
       } else {
-        const res = await fetch('/api/admin/send-sms', {
+        const res = await apiFetch('/api/admin/send-sms', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
           body: JSON.stringify({ phone: smsRecipient, message: smsText.trim() })
@@ -574,7 +582,7 @@ export const AdminDashboardModal: React.FC<AdminDashboardProps> = ({ onClose }) 
     const token = getAdminToken();
     if (!token) return;
     try {
-      const res = await fetch('/api/admin/sms-templates', {
+      const res = await apiFetch('/api/admin/sms-templates', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
         body: JSON.stringify({ key, title, body, variables: [] })
@@ -598,7 +606,7 @@ export const AdminDashboardModal: React.FC<AdminDashboardProps> = ({ onClose }) 
   const handleSimulateStkPush = async (phone: string, amount: number, reference: string) => {
     setActionLoading(true);
     try {
-      const res = await fetch('/api/payments/stkpush', {
+      const res = await apiFetch('/api/payments/stkpush', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ phone, txRef: reference })

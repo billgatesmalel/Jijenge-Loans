@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { apiFetch } from '../lib/api';
 import { useNavigate, Link } from 'react-router-dom';
 import {
   MessageCircle, MessageSquare, Phone, Mail, MapPin, Clock, HelpCircle, ShieldCheck, ArrowRight,
@@ -64,7 +65,7 @@ export const SupportPage: React.FC<{ onOpenSupport?: () => void }> = () => {
 
     try {
       const normalizedPhone = normalizeKenyanPhone(phoneNumber) || phoneNumber;
-      const res = await fetch('/api/support/ticket', {
+      const res = await apiFetch('/api/support/ticket', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
