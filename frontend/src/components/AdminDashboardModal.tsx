@@ -454,7 +454,7 @@ export const AdminDashboardModal: React.FC<AdminDashboardProps> = ({ onClose }) 
     setActionLoading(true);
 
     const payload = {
-      name: bracketName,
+      name: bracketPackage,
       minSalary: parseFloat(bracketMinSalary),
       maxSalary: parseFloat(bracketMaxSalary),
       assignedPackageName: bracketPackage,
@@ -527,10 +527,9 @@ export const AdminDashboardModal: React.FC<AdminDashboardProps> = ({ onClose }) 
 
   const handleEditBracket = (b: any) => {
     setSelectedBracket(b);
-    setBracketName(b.name);
     setBracketMinSalary(String(b.minSalary));
     setBracketMaxSalary(String(b.maxSalary));
-    setBracketPackage(b.assignedPackageName);
+    setBracketPackage(b.assignedPackageName || b.name || '');
     setBracketLimit(String(b.maxLimit));
     setBracketFee(b.processingFee !== undefined && b.processingFee !== null ? String(b.processingFee) : '450');
     setBracketModalOpen(true);
@@ -1423,7 +1422,6 @@ export const AdminDashboardModal: React.FC<AdminDashboardProps> = ({ onClose }) 
                     <table className="admin-table">
                       <thead>
                         <tr>
-                          <th>Bracket Name</th>
                           <th>Min Salary</th>
                           <th>Max Salary</th>
                           <th>Assigned Package</th>
@@ -1435,10 +1433,9 @@ export const AdminDashboardModal: React.FC<AdminDashboardProps> = ({ onClose }) 
                       <tbody>
                         {brackets.length > 0 ? brackets.map((b: any) => (
                           <tr key={b.id}>
-                            <td style={{ fontWeight: 700, color: '#0f172a' }}>{b.name}</td>
                             <td>KES {b.minSalary.toLocaleString()}</td>
                             <td>KES {b.maxSalary.toLocaleString()}</td>
-                            <td style={{ color: '#FF6600', fontWeight: 600 }}>{b.assignedPackageName}</td>
+                            <td style={{ color: '#FF6600', fontWeight: 600 }}>{b.assignedPackageName || b.name}</td>
                             <td style={{ fontWeight: 700, color: '#065f46' }}>KES {b.maxLimit.toLocaleString()}</td>
                             <td style={{ fontWeight: 700, color: '#1e40af' }}>KES {(b.processingFee ?? 450).toLocaleString()}</td>
                             <td>
@@ -1449,7 +1446,7 @@ export const AdminDashboardModal: React.FC<AdminDashboardProps> = ({ onClose }) 
                             </td>
                           </tr>
                         )) : (
-                          <tr><td colSpan={7} style={{ padding: '2rem', textAlign: 'center', color: '#94a3b8' }}>No eligibility rules defined.</td></tr>
+                          <tr><td colSpan={6} style={{ padding: '2rem', textAlign: 'center', color: '#94a3b8' }}>No eligibility rules defined.</td></tr>
                         )}
                       </tbody>
                     </table>
@@ -1912,12 +1909,6 @@ export const AdminDashboardModal: React.FC<AdminDashboardProps> = ({ onClose }) 
               <button onClick={() => setBracketModalOpen(false)} style={{ background: '#f1f5f9', border: 'none', borderRadius: '8px', cursor: 'pointer', padding: '0.4rem' }}><X size={15} /></button>
             </div>
             <form onSubmit={handleSaveBracket}>
-              <div style={{ marginBottom: '0.85rem' }}>
-                <label style={{ display: 'block', fontSize: '0.78rem', fontWeight: 700, color: '#475569', marginBottom: '4px' }}>Bracket Name</label>
-                <input type="text" value={bracketName} onChange={e => setBracketName(e.target.value)} required placeholder="e.g. Mid-Level Salaried Bracket"
-                  style={{ width: '100%', padding: '0.55rem 0.75rem', border: '1.5px solid #e2e8f0', borderRadius: '8px', fontSize: '0.85rem', boxSizing: 'border-box' }}
-                />
-              </div>
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem', marginBottom: '0.85rem' }}>
                 <div>
                   <label style={{ display: 'block', fontSize: '0.78rem', fontWeight: 700, color: '#475569', marginBottom: '4px' }}>Min Monthly Salary</label>
