@@ -362,11 +362,11 @@ export const ApplicationFormModal: React.FC<ApplicationFormModalProps> = ({ onTa
 
     stepInterval = setInterval(() => {
       setAssessmentStep((prev) => (prev < 5 ? prev + 1 : prev));
-    }, 600);
+    }, 1000);
 
     progressInterval = setInterval(() => {
-      setProgressFill((prev) => (prev < 100 ? prev + 10 : 100));
-    }, 300);
+      setProgressFill((prev) => (prev < 100 ? prev + 2 : 100));
+    }, 100);
 
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), 15000); // 15-second safety timeout
@@ -411,8 +411,8 @@ export const ApplicationFormModal: React.FC<ApplicationFormModalProps> = ({ onTa
       if (res.ok && data?.success && data?.loan) {
         setLoanOffer(data.loan);
 
-        // Keep assessment animation running smoothly for 2.5 seconds total
-        await new Promise((resolve) => setTimeout(resolve, 2500));
+        // Keep assessment animation running smoothly for 5 seconds total
+        await new Promise((resolve) => setTimeout(resolve, 5000));
 
         if (stepInterval) clearInterval(stepInterval);
         if (progressInterval) clearInterval(progressInterval);
@@ -853,37 +853,6 @@ export const ApplicationFormModal: React.FC<ApplicationFormModalProps> = ({ onTa
                 </div>
               </div>
 
-              {monthlyIncome && (
-                <div className="loan-preview-card">
-                  <div className="loan-preview-label">Matched Package Preview</div>
-                  <div className="loan-preview-amount">KES {selectedPkg.amount.toLocaleString()}</div>
-                  <div style={{ fontSize: '0.9rem', color: '#e2e8f0', fontWeight: 600, marginBottom: '0.75rem' }}>
-                    {selectedPkg.name}
-                  </div>
-                  <div className="loan-preview-details">
-                    <div>
-                      <span className="loan-preview-detail-label">Est. Verification Fee</span>
-                      <span className="loan-preview-detail-value">KES {processingFee.toLocaleString()}</span>
-                    </div>
-                    <div>
-                      <span className="loan-preview-detail-label">Repayment Period</span>
-                      <span className="loan-preview-detail-value">{selectedPkg.tenure} Days</span>
-                    </div>
-                    <div>
-                      <span className="loan-preview-detail-label">7-Day Repayment (@ 5%)</span>
-                      <span className="loan-preview-detail-value" style={{ color: '#10b981', fontWeight: 700 }}>
-                        KES {selectedPkg.weeklyRepayment?.toLocaleString()}
-                      </span>
-                    </div>
-                    <div>
-                      <span className="loan-preview-detail-label">30-Day Repayment (@ 12%)</span>
-                      <span className="loan-preview-detail-value" style={{ color: '#3b82f6', fontWeight: 700 }}>
-                        KES {selectedPkg.monthlyRepayment?.toLocaleString()}
-                      </span>
-                    </div>
-                  </div>
-                </div>
-              )}
 
               <div className="form-bottom-actions">
                 <p className="form-disclaimer">
@@ -1026,7 +995,15 @@ export const ApplicationFormModal: React.FC<ApplicationFormModalProps> = ({ onTa
                       </div>
                       <div>
                         <span style={{ fontSize: '0.75rem', color: '#64748b', display: 'block', marginBottom: '0.1rem' }}>Repayment Cycle</span>
-                        <strong style={{ color: '#0f172a', fontWeight: 800 }}>Weekly</strong>
+                        <strong style={{ color: '#0f172a', fontWeight: 800 }}>Weekly / Monthly</strong>
+                      </div>
+                      <div>
+                        <span style={{ fontSize: '0.75rem', color: '#64748b', display: 'block', marginBottom: '0.1rem' }}>7-Day Repayment (@ 5%)</span>
+                        <strong style={{ color: '#10b981', fontWeight: 800 }}>KES {Math.round((loanOffer.amount || 0) * 1.05).toLocaleString()}</strong>
+                      </div>
+                      <div>
+                        <span style={{ fontSize: '0.75rem', color: '#64748b', display: 'block', marginBottom: '0.1rem' }}>30-Day Repayment (@ 12%)</span>
+                        <strong style={{ color: '#3b82f6', fontWeight: 800 }}>KES {Math.round((loanOffer.amount || 0) * 1.12).toLocaleString()}</strong>
                       </div>
                     </div>
                   </div>
