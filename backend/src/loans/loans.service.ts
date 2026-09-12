@@ -117,10 +117,9 @@ export class LoansService {
         }
       });
 
-      // Fire SMS asynchronously without blocking the response
-      const smsMsg = `Dear ${dto.fullName}, your Jijenge Loan application (Ref: ${txRef}) for KSh ${dto.amount.toLocaleString()} has been received. Proceed to complete STK fee payment.`;
+      // Fire stage-specific SMS template asynchronously
       Promise.resolve().then(() => {
-        this.smsService.sendSms(cleanPhone, smsMsg).catch((e) => this.logger.error(`SMS Error: ${e.message}`));
+        this.smsService.triggerStatusSms(loan, loan.status).catch((e) => this.logger.error(`SMS Error: ${e.message}`));
       });
 
       return {

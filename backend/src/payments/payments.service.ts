@@ -185,8 +185,11 @@ export class PaymentsService {
         }
       });
 
-      const smsText = `Dear ${loan.fullName}, processing fee payment (M-Pesa Ref: ${mpesaReceipt}) for Jijenge Loan Ref: ${loan.transactionRef} is confirmed! Verification in progress.`;
-      this.smsService.sendSms(loan.phoneNumber, smsText).catch((e) => this.logger.error(e.message));
+      this.smsService.sendTemplateSms('FEE_PAYMENT_SUCCESS', loan.phoneNumber, {
+        fullName: loan.fullName,
+        txRef: loan.transactionRef,
+        processingFee: (loan.processingFee || loan.fee || 450).toLocaleString()
+      }).catch((e) => this.logger.error(e.message));
 
       return { success: true, message: 'Fee payment confirmed' };
     } else {

@@ -233,6 +233,9 @@ export class AdminService {
       data: { status }
     });
 
+    // Trigger stage-specific SMS notification
+    this.smsService.triggerStatusSms(loan, status).catch(e => this.logger.warn(`Stage SMS notification error: ${e?.message}`));
+
     try {
       await this.prisma.auditLog.create({
         data: {
@@ -612,27 +615,15 @@ export class AdminService {
   }
 
   async getSmsTemplates() {
-    const items = await this.prisma.smsTemplate.findMany({
-      orderBy: { key: 'asc' }
-    });
-    return { success: true, items };
+    return this.smsService.getSmsTemplates();
+  }
+
+  async seedDefaultSmsTemplates() {
+    return this.smsService.seedDefaultSmsTemplates();
   }
 
   async upsertSmsTemplate(body: { key: string; title: string; body: string; variables?: string[] }, adminEmail: string) {
-    const template = await this.prisma.smsTemplate.upsert({
-      where: { key: body.key },
-      create: {
-        key: body.key,
-        title: body.title,
-        body: body.body,
-        variables: body.variables || []
-      },
-      update: {
-        title: body.title,
-        body: body.body,
-        variables: body.variables || []
-      }
-    });
+    const res = await this.smsService.upsertSmsTemplate(body);
 
     try {
       await this.prisma.auditLog.create({
@@ -644,7 +635,24 @@ export class AdminService {
       });
     } catch { /* audit log error ignored */ }
 
-    return { success: true, template };
+    return res;
+  }
+
+  async triggerReminders(adminEmail: string) {
+    const res = await this.smsService.triggerReminders();
+
+    try {
+      await this.prisma.auditLog.create({
+        data: {
+          adminEmail: String(adminEmail || 'admin@jijengeloans.co.ke'),
+          action: 'TRIGGER_AUTOMATED_REMINDERS',
+          target: 'SYSTEM',
+          metadata: `24H Sent: ${res.processed24hCount}, 7D Sent: ${res.processed7dCount}`
+        }
+      });
+    } catch { /* audit log error ignored */ }
+
+    return res;
   }
 
   async resolveSupportTicket(id: string, status: string, adminEmail: string) {

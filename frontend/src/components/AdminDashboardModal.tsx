@@ -834,6 +834,52 @@ export const AdminDashboardModal: React.FC<AdminDashboardProps> = ({ onClose }) 
     showToast(`Loaded "${t.title}" template`);
   };
 
+  const handleTriggerRemindersEngine = async () => {
+    const token = getAdminToken();
+    if (!token) return;
+    setActionLoading(true);
+    try {
+      const res = await apiFetch('/api/admin/trigger-reminders', {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      if (handleAuthError(res)) return;
+      const data = await res.json();
+      if (res.ok && data.success) {
+        showToast(`Reminders Engine executed! 24H Sent: ${data.processed24hCount || 0}, 7D Sent: ${data.processed7dCount || 0}`);
+        fetchAllAdminData(token);
+      } else {
+        alert(data.message || 'Failed to execute reminders engine.');
+      }
+    } catch {
+      alert('Error triggering automated reminders engine.');
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
+  const handleSeedDefaultTemplates = async () => {
+    const token = getAdminToken();
+    if (!token) return;
+    setActionLoading(true);
+    try {
+      const res = await apiFetch('/api/admin/sms-templates/seed-defaults', {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      if (handleAuthError(res)) return;
+      const data = await res.json();
+      if (res.ok && data.items) {
+        setSmsTemplates(data.items);
+        showToast('Default stage templates restored & synced!');
+      }
+    } catch {
+      alert('Error resetting default templates.');
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
   const handleSimulateStkPush = async (phone: string, amount: number, reference: string) => {
     setActionLoading(true);
     try {
@@ -1847,8 +1893,32 @@ export const AdminDashboardModal: React.FC<AdminDashboardProps> = ({ onClose }) 
              ════════════════════════════════════════════════════════ */}
           {activeTab === 'sms' && (
             <div>
+              {/* Anti-Spam Banner & Reminder Engine Action Toolbar */}
+              <div style={{ background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: '14px', padding: '1.25rem', marginBottom: '1.5rem' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '1rem' }}>
+                  <div>
+                    <h3 style={{ margin: '0 0 0.35rem', fontSize: '1rem', fontWeight: 800, color: '#0f172a', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                      <Shield size={18} color="#10b981" /> Anti-Spam &amp; Automated Stage SMS Engine
+                    </h3>
+                    <p style={{ margin: 0, fontSize: '0.8rem', color: '#64748b' }}>
+                      SMS triggers automatically at every loan stage update. Anti-spam rate limiting blocks duplicate SMS within 3 mins &amp; caps at 10 SMS/day per recipient.
+                    </p>
+                  </div>
+                  <div style={{ display: 'flex', gap: '0.65rem' }}>
+                    <button onClick={handleTriggerRemindersEngine} disabled={actionLoading}
+                      style={{ padding: '0.65rem 1rem', background: '#0f172a', color: '#fff', border: 'none', borderRadius: '9px', fontSize: '0.82rem', fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+                      <Clock size={15} /> {actionLoading ? 'Processing...' : 'Run 24H & 7D Reminders Engine'}
+                    </button>
+                    <button onClick={handleSeedDefaultTemplates} disabled={actionLoading}
+                      style={{ padding: '0.65rem 1rem', background: '#f1f5f9', color: '#334155', border: '1px solid #cbd5e1', borderRadius: '9px', fontSize: '0.82rem', fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+                      <RefreshCcw size={14} /> Seed Default Stage Templates
+                    </button>
+                  </div>
+                </div>
+              </div>
+
               {/* Send SMS Console & Templates Row */}
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 280px', gap: '1.25rem', marginBottom: '1.5rem', alignItems: 'start' }}>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 340px', gap: '1.25rem', marginBottom: '1.5rem', alignItems: 'start' }}>
                 
                 {/* Send SMS Form */}
                 <div style={{ background: '#fff', border: '1px solid #e2e8f0', borderRadius: '14px', padding: '1.5rem', boxShadow: '0 1px 3px rgba(0,0,0,0.03)' }}>
@@ -1887,18 +1957,21 @@ export const AdminDashboardModal: React.FC<AdminDashboardProps> = ({ onClose }) 
                 {/* Templates Box */}
                 <div style={{ background: '#fff', border: '1px solid #e2e8f0', borderRadius: '14px', padding: '1.25rem', boxShadow: '0 1px 3px rgba(0,0,0,0.03)' }}>
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.85rem' }}>
-                    <h3 style={{ margin: 0, fontSize: '0.9rem', fontWeight: 800, color: '#0f172a' }}>SMS Templates</h3>
+                    <h3 style={{ margin: 0, fontSize: '0.9rem', fontWeight: 800, color: '#0f172a' }}>Stage SMS Templates ({smsTemplates.length})</h3>
                     <button onClick={() => setSmsTemplateModal(true)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: ORANGE, fontWeight: 700, fontSize: '0.78rem' }}>+ New</button>
                   </div>
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', maxHeight: '360px', overflowY: 'auto' }}>
                     {smsTemplates.length > 0 ? smsTemplates.map((temp: any) => (
-                      <div key={temp.id} onClick={() => handleUseTemplate(temp)}
+                      <div key={temp.id || temp.key} onClick={() => handleUseTemplate(temp)}
                         style={{ padding: '0.65rem', border: '1px solid #e2e8f0', borderRadius: '8px', cursor: 'pointer', background: selectedTemplateKey === temp.key ? '#f0f2fe' : '#f8fafc', transition: 'all 0.15s' }}>
-                        <div style={{ fontWeight: 700, fontSize: '0.8rem', color: '#334155' }}>{temp.title}</div>
-                        <div style={{ fontSize: '0.7rem', color: '#94a3b8', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{temp.body}</div>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                          <div style={{ fontWeight: 700, fontSize: '0.8rem', color: '#334155' }}>{temp.title}</div>
+                          <span style={{ fontSize: '0.65rem', color: '#64748b', background: '#e2e8f0', padding: '1px 5px', borderRadius: '4px', fontFamily: 'monospace' }}>{temp.key}</span>
+                        </div>
+                        <div style={{ fontSize: '0.7rem', color: '#94a3b8', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', marginTop: '2px' }}>{temp.body}</div>
                       </div>
                     )) : (
-                      <div style={{ color: '#94a3b8', fontSize: '0.75rem', textAlign: 'center', padding: '1rem 0' }}>No templates saved.</div>
+                      <div style={{ color: '#94a3b8', fontSize: '0.75rem', textAlign: 'center', padding: '1rem 0' }}>No templates saved. Click "Seed Default Stage Templates" to load.</div>
                     )}
                   </div>
                 </div>
@@ -1929,7 +2002,7 @@ export const AdminDashboardModal: React.FC<AdminDashboardProps> = ({ onClose }) 
                         </th>
                         <th>Recipient</th>
                         <th>Message Text</th>
-                        <th>Gateway status</th>
+                        <th>Gateway Status</th>
                         <th>Time</th>
                       </tr>
                     </thead>
@@ -1944,13 +2017,23 @@ export const AdminDashboardModal: React.FC<AdminDashboardProps> = ({ onClose }) 
                             <td style={{ fontWeight: 700, color: '#0f172a' }}>{log.recipientPhone}</td>
                             <td style={{ color: '#475569', maxWidth: '400px', overflow: 'hidden', textOverflow: 'ellipsis' }}>{log.message}</td>
                             <td>
-                              <span style={{
-                                padding: '3px 9px', borderRadius: '9999px', fontSize: '0.75rem', fontWeight: 700,
-                                color: log.simulated ? '#1e40af' : log.success ? '#065f46' : '#991b1b',
-                                background: log.simulated ? '#dbeafe' : log.success ? '#d1fae5' : '#fee2e2'
-                              }}>
-                                {log.simulated ? 'Simulated' : log.success ? 'Delivered' : 'Failed'}
-                              </span>
+                              {log.error && log.error.includes('ANTI-SPAM') ? (
+                                <span style={{ padding: '3px 9px', borderRadius: '9999px', fontSize: '0.75rem', fontWeight: 700, color: '#92400e', background: '#fef3c7' }}>
+                                  🛡️ Anti-Spam Suppressed
+                                </span>
+                              ) : log.simulated ? (
+                                <span style={{ padding: '3px 9px', borderRadius: '9999px', fontSize: '0.75rem', fontWeight: 700, color: '#1e40af', background: '#dbeafe' }}>
+                                  Simulated
+                                </span>
+                              ) : log.success ? (
+                                <span style={{ padding: '3px 9px', borderRadius: '9999px', fontSize: '0.75rem', fontWeight: 700, color: '#065f46', background: '#d1fae5' }}>
+                                  Delivered
+                                </span>
+                              ) : (
+                                <span style={{ padding: '3px 9px', borderRadius: '9999px', fontSize: '0.75rem', fontWeight: 700, color: '#991b1b', background: '#fee2e2' }}>
+                                  Failed
+                                </span>
+                              )}
                             </td>
                             <td style={{ color: '#94a3b8', fontSize: '0.78rem' }}>{new Date(log.createdAt).toLocaleString()}</td>
                           </tr>

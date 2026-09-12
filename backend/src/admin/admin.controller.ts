@@ -135,6 +135,12 @@ export class AdminController {
     return this.adminService.getSmsTemplates();
   }
 
+  @ApiOperation({ summary: 'Seed/Reset Default SMS Templates' })
+  @Post('sms-templates/seed-defaults')
+  async seedDefaultSmsTemplates() {
+    return this.adminService.seedDefaultSmsTemplates();
+  }
+
   @ApiOperation({ summary: 'Create/Update SMS Template' })
   @Post('sms-templates')
   async upsertSmsTemplate(
@@ -143,6 +149,13 @@ export class AdminController {
   ) {
     const adminIdentifier = req.user.email || req.user.phone || req.user.userId;
     return this.adminService.upsertSmsTemplate(body, adminIdentifier);
+  }
+
+  @ApiOperation({ summary: 'Trigger 24H and 7D Reminders Engine' })
+  @Post('trigger-reminders')
+  async triggerReminders(@Request() req: any) {
+    const adminIdentifier = req.user?.email || req.user?.phone || req.user?.userId || 'admin@jijengeloans.co.ke';
+    return this.adminService.triggerReminders(adminIdentifier);
   }
 
   @ApiOperation({ summary: 'Resolve Support Ticket' })
