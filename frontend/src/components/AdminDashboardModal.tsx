@@ -1071,13 +1071,13 @@ export const AdminDashboardModal: React.FC<AdminDashboardProps> = ({ onClose }) 
      2. WORKSPACE LAYOUT (Mockup themed light white layout)
      ════════════════════════════════════════════════════════════ */
   return (
-    <div style={{
+    <div className="admin-layout-root" style={{
       display: 'flex', height: '100vh', width: '100%', overflow: 'hidden',
       background: '#f8fafc', fontFamily: "'Inter', -apple-system, sans-serif"
     }}>
 
       {/* ══ SIDEBAR ══ */}
-      <aside style={{
+      <aside className="admin-sidebar-root" style={{
         width: sidebarW, minWidth: sidebarW, height: '100vh', background: '#ffffff',
         display: 'flex', flexDirection: 'column', overflow: 'hidden', flexShrink: 0,
         transition: 'width 0.22s cubic-bezier(0.4, 0, 0.2, 1), min-width 0.22s ease', zIndex: 50,
@@ -1110,7 +1110,7 @@ export const AdminDashboardModal: React.FC<AdminDashboardProps> = ({ onClose }) 
         </div>
 
         {/* Navigation */}
-        <nav style={{ flex: 1, overflowY: 'auto', padding: '0.75rem 0', scrollbarWidth: 'none' }}>
+        <nav className="admin-sidebar-nav" style={{ flex: 1, overflowY: 'auto', padding: '0.75rem 0', scrollbarWidth: 'none' }}>
           {NAV_SECTIONS.map(section => (
             <div key={section.title} style={{ marginBottom: '1.25rem' }}>
               {!sidebarCollapsed && (
@@ -2089,7 +2089,7 @@ export const AdminDashboardModal: React.FC<AdminDashboardProps> = ({ onClose }) 
       {selectedApp && (
         <>
           <div onClick={() => setSelectedApp(null)} style={{ position: 'fixed', inset: 0, background: 'rgba(15,23,42,0.3)', zIndex: 98, backdropFilter: 'blur(2px)' }} />
-          <div style={{ position: 'fixed', right: 0, top: 0, bottom: 0, width: '400px', background: '#fff', borderLeft: '1px solid #e2e8f0', boxShadow: '-8px 0 32px rgba(0,0,0,0.1)', zIndex: 99, display: 'flex', flexDirection: 'column' }}>
+          <div className="admin-drawer" style={{ position: 'fixed', right: 0, top: 0, bottom: 0, width: '400px', background: '#fff', borderLeft: '1px solid #e2e8f0', boxShadow: '-8px 0 32px rgba(0,0,0,0.1)', zIndex: 99, display: 'flex', flexDirection: 'column' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '1.25rem 1.5rem', borderBottom: '1px solid #f1f5f9', position: 'sticky', top: 0, background: '#fff' }}>
               <div>
                 <h3 style={{ margin: '0 0 0.15rem', fontSize: '1rem', fontWeight: 800, color: '#0f172a' }}>Manage Application</h3>
