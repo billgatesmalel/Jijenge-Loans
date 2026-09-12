@@ -1,10 +1,12 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable, NotFoundException, Logger, BadRequestException, InternalServerErrorException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { SmsService } from '../sms/sms.service';
 import { LoanStatus, FeeStatus } from '@prisma/client';
 
 @Injectable()
 export class AdminService {
+  private readonly logger = new Logger(AdminService.name);
+
   constructor(
     private readonly prisma: PrismaService,
     private readonly smsService: SmsService
@@ -203,70 +205,126 @@ export class AdminService {
     return { success: true, items };
   }
 
-  async createEligibilityBracket(body: { name: string; minSalary: number; maxSalary: number; assignedPackageName: string; maxLimit: number; processingFee?: number }, adminEmail: string) {
-    const bracket = await this.prisma.eligibilityBracket.create({
-      data: {
-        name: body.name,
-        minSalary: Number(body.minSalary),
-        maxSalary: Number(body.maxSalary),
-        assignedPackageName: body.assignedPackageName,
-        maxLimit: Number(body.maxLimit),
-        processingFee: body.processingFee !== undefined ? Number(body.processingFee) : 450
-      }
-    });
+  async createEligibilityBracket(
+    body: { name: string; minSalary: number; maxSalary: number; assignedPackageName: string; maxLimit: number; processingFee?: number },
+    adminEmail: string
+  ) {
+    try {
+      const cleanName = String(body.name || 'Jijenge Package').trim();
+      const minSal = isNaN(Number(body.minSalary)) ? 0 : Number(body.minSalary);
+      const maxSal = isNaN(Number(body.maxSalary)) ? 0 : Number(body.maxSalary);
+      const pkgName = String(body.assignedPackageName || cleanName).trim();
+      const maxLim = isNaN(Number(body.maxLimit)) ? 0 : Number(body.maxLimit);
+      const procFee = body.processingFee !== undefined && !isNaN(Number(body.processingFee)) ? Number(body.processingFee) : 450;
 
-    await this.prisma.auditLog.create({
-      data: {
-        adminEmail,
-        action: 'CREATE_ELIGIBILITY_BRACKET',
-        target: body.name,
-        metadata: `Max Limit: ${body.maxLimit}, Processing Fee: ${body.processingFee || 450}`
-      }
-    });
+      const bracket = await this.prisma.eligibilityBracket.create({
+        data: {
+          name: cleanName,
+          minSalary: minSal,
+          maxSalary: maxSal,
+          assignedPackageName: pkgName,
+          maxLimit: maxLim,
+          processingFee: procFee,
+          active: true
+        }
+      });
 
-    return { success: true, bracket };
+      const safeAdminEmail = String(adminEmail || 'admin@jijengeloans.co.ke');
+      try {
+        await this.prisma.auditLog.create({
+          data: {
+            adminEmail: safeAdminEmail,
+            action: 'CREATE_ELIGIBILITY_BRACKET',
+            target: cleanName,
+            metadata: `Max Limit: ${maxLim}, Processing Fee: ${procFee}`
+          }
+        });
+      } catch (auditErr: any) {
+        this.logger.warn(`AuditLog creation skipped: ${auditErr?.message || auditErr}`);
+      }
+
+      return { success: true, bracket };
+    } catch (err: any) {
+      this.logger.error(`Failed to create eligibility bracket: ${err?.message}`, err?.stack);
+      throw new BadRequestException(err?.message || 'Failed to create eligibility bracket');
+    }
   }
 
-  async updateEligibilityBracket(id: number, body: { name?: string; minSalary?: number; maxSalary?: number; assignedPackageName?: string; maxLimit?: number; processingFee?: number; active?: boolean }, adminEmail: string) {
-    const bracket = await this.prisma.eligibilityBracket.update({
-      where: { id },
-      data: {
-        ...(body.name !== undefined && { name: body.name }),
-        ...(body.minSalary !== undefined && { minSalary: Number(body.minSalary) }),
-        ...(body.maxSalary !== undefined && { maxSalary: Number(body.maxSalary) }),
-        ...(body.assignedPackageName !== undefined && { assignedPackageName: body.assignedPackageName }),
-        ...(body.maxLimit !== undefined && { maxLimit: Number(body.maxLimit) }),
-        ...(body.processingFee !== undefined && { processingFee: Number(body.processingFee) }),
-        ...(body.active !== undefined && { active: body.active })
+  async updateEligibilityBracket(
+    id: number,
+    body: { name?: string; minSalary?: number; maxSalary?: number; assignedPackageName?: string; maxLimit?: number; processingFee?: number; active?: boolean },
+    adminEmail: string
+  ) {
+    try {
+      const bracketId = Number(id);
+      if (isNaN(bracketId)) {
+        throw new BadRequestException('Invalid bracket ID');
       }
-    });
 
-    await this.prisma.auditLog.create({
-      data: {
-        adminEmail,
-        action: 'UPDATE_ELIGIBILITY_BRACKET',
-        target: String(id),
-        metadata: JSON.stringify(body)
+      const dataToUpdate: any = {};
+      if (body.name !== undefined) dataToUpdate.name = String(body.name).trim();
+      if (body.minSalary !== undefined) dataToUpdate.minSalary = Number(body.minSalary);
+      if (body.maxSalary !== undefined) dataToUpdate.maxSalary = Number(body.maxSalary);
+      if (body.assignedPackageName !== undefined) dataToUpdate.assignedPackageName = String(body.assignedPackageName).trim();
+      if (body.maxLimit !== undefined) dataToUpdate.maxLimit = Number(body.maxLimit);
+      if (body.processingFee !== undefined) dataToUpdate.processingFee = Number(body.processingFee);
+      if (body.active !== undefined) dataToUpdate.active = Boolean(body.active);
+
+      const bracket = await this.prisma.eligibilityBracket.update({
+        where: { id: bracketId },
+        data: dataToUpdate
+      });
+
+      const safeAdminEmail = String(adminEmail || 'admin@jijengeloans.co.ke');
+      try {
+        await this.prisma.auditLog.create({
+          data: {
+            adminEmail: safeAdminEmail,
+            action: 'UPDATE_ELIGIBILITY_BRACKET',
+            target: String(bracketId),
+            metadata: JSON.stringify(body)
+          }
+        });
+      } catch (auditErr: any) {
+        this.logger.warn(`AuditLog update skipped: ${auditErr?.message || auditErr}`);
       }
-    });
 
-    return { success: true, bracket };
+      return { success: true, bracket };
+    } catch (err: any) {
+      this.logger.error(`Failed to update eligibility bracket: ${err?.message}`, err?.stack);
+      throw new BadRequestException(err?.message || 'Failed to update eligibility bracket');
+    }
   }
 
   async deleteEligibilityBracket(id: number, adminEmail: string) {
-    const bracket = await this.prisma.eligibilityBracket.delete({
-      where: { id }
-    });
-
-    await this.prisma.auditLog.create({
-      data: {
-        adminEmail,
-        action: 'DELETE_ELIGIBILITY_BRACKET',
-        target: String(id)
+    try {
+      const bracketId = Number(id);
+      if (isNaN(bracketId)) {
+        throw new BadRequestException('Invalid bracket ID');
       }
-    });
 
-    return { success: true, bracket };
+      const bracket = await this.prisma.eligibilityBracket.delete({
+        where: { id: bracketId }
+      });
+
+      const safeAdminEmail = String(adminEmail || 'admin@jijengeloans.co.ke');
+      try {
+        await this.prisma.auditLog.create({
+          data: {
+            adminEmail: safeAdminEmail,
+            action: 'DELETE_ELIGIBILITY_BRACKET',
+            target: String(bracketId)
+          }
+        });
+      } catch (auditErr: any) {
+        this.logger.warn(`AuditLog delete skipped: ${auditErr?.message || auditErr}`);
+      }
+
+      return { success: true, bracket };
+    } catch (err: any) {
+      this.logger.error(`Failed to delete eligibility bracket: ${err?.message}`, err?.stack);
+      throw new BadRequestException(err?.message || 'Failed to delete eligibility bracket');
+    }
   }
 
   async getSmsLogs(query: { search?: string; page?: number; limit?: number }) {

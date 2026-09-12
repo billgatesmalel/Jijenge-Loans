@@ -84,7 +84,7 @@ export class AdminController {
     @Request() req: any,
     @Body() body: { name: string; minSalary: number; maxSalary: number; assignedPackageName: string; maxLimit: number; processingFee?: number }
   ) {
-    const adminIdentifier = req.user.email || req.user.phone || req.user.userId;
+    const adminIdentifier = req.user?.email || req.user?.phone || req.user?.userId || 'admin@jijengeloans.co.ke';
     return this.adminService.createEligibilityBracket(body, adminIdentifier);
   }
 
@@ -95,7 +95,7 @@ export class AdminController {
     @Param('id') id: string,
     @Body() body: { name?: string; minSalary?: number; maxSalary?: number; assignedPackageName?: string; maxLimit?: number; processingFee?: number; active?: boolean }
   ) {
-    const adminIdentifier = req.user.email || req.user.phone || req.user.userId;
+    const adminIdentifier = req.user?.email || req.user?.phone || req.user?.userId || 'admin@jijengeloans.co.ke';
     return this.adminService.updateEligibilityBracket(Number(id), body, adminIdentifier);
   }
 
@@ -105,7 +105,7 @@ export class AdminController {
     @Request() req: any,
     @Param('id') id: string
   ) {
-    const adminIdentifier = req.user.email || req.user.phone || req.user.userId;
+    const adminIdentifier = req.user?.email || req.user?.phone || req.user?.userId || 'admin@jijengeloans.co.ke';
     return this.adminService.deleteEligibilityBracket(Number(id), adminIdentifier);
   }
 
