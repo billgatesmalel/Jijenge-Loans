@@ -14,7 +14,25 @@ import { AdminDashboardModal } from './components/AdminDashboardModal';
 
 export const AppContent: React.FC = () => {
   const [supportOpen, setSupportOpen] = useState(false);
+  const [directToken, setDirectToken] = useState<string | null>(null);
   const navigate = useNavigate();
+  const location = useLocation();
+
+  // Check URL query parameters for chatToken or ticketToken
+  useEffect(() => {
+    const params = new URLSearchParams(location.search);
+    const token = params.get('chatToken') || params.get('ticketToken') || params.get('ticketId');
+
+    if (token) {
+      setDirectToken(token);
+      localStorage.setItem('bl_chat_conversationId', token);
+      setSupportOpen(true);
+
+      // Clean query parameter from URL without page refresh
+      const cleanUrl = location.pathname + (location.hash || '');
+      window.history.replaceState({}, '', cleanUrl);
+    }
+  }, [location.search, location.pathname, location.hash]);
 
   useEffect(() => {
     const hash = window.location.hash.replace('#', '').toLowerCase();
@@ -40,6 +58,7 @@ export const AppContent: React.FC = () => {
             supportOpen={supportOpen}
             onOpenSupport={() => setSupportOpen(true)}
             onCloseSupport={() => setSupportOpen(false)}
+            directToken={directToken}
           />
         }
       >

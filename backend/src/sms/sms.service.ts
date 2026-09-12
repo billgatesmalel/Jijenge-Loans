@@ -110,6 +110,12 @@ export const DEFAULT_SMS_TEMPLATES = [
     title: 'Withdrawal Declined & Balance Restored',
     body: 'Dear {fullName}, your withdrawal request of KSh {amount} (Ref: {txRef}) was declined due to: {rejectionReason}. KSh {amount} has been returned to your portal balance. Please log in to update your profile details and re-request withdrawal.',
     variables: ['fullName', 'amount', 'txRef', 'rejectionReason']
+  },
+  {
+    key: 'SUPPORT_REPLY',
+    title: 'Support Ticket Reply & Chat Direct Access',
+    body: 'Hello {fullName}, Jijenge Support replied to your inquiry: "{snippet}". Click to view & reply directly: {chatUrl}',
+    variables: ['fullName', 'snippet', 'chatUrl']
   }
 ];
 

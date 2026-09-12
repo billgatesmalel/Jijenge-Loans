@@ -245,4 +245,21 @@ export class AdminController {
     const adminIdentifier = req.user?.email || req.user?.phone || req.user?.userId || 'admin@jijengeloans.co.ke';
     return this.adminService.rejectWithdrawal(id, body.reason || 'Details mismatch', adminIdentifier);
   }
+
+  @ApiOperation({ summary: 'Get Support Tickets for Admin' })
+  @Get('support-tickets')
+  async getSupportTickets() {
+    return this.adminService.getSupportTickets();
+  }
+
+  @ApiOperation({ summary: 'Reply to Support Ticket & Trigger SMS with Chat Token' })
+  @Post('support-tickets/:id/reply')
+  async replySupportTicket(
+    @Request() req: any,
+    @Param('id') id: string,
+    @Body() body: { text: string }
+  ) {
+    const adminIdentifier = req.user?.email || req.user?.phone || req.user?.userId || 'admin@jijengeloans.co.ke';
+    return this.adminService.replySupportTicket(id, body.text, adminIdentifier);
+  }
 }

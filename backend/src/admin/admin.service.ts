@@ -919,4 +919,71 @@ export class AdminService {
       restoredBalance: updatedLoan.allocatedBalance
     };
   }
+
+  async getSupportTickets() {
+    const tickets = await this.prisma.supportTicket.findMany({
+      orderBy: { updatedAt: 'desc' },
+      include: {
+        messages: { orderBy: { createdAt: 'asc' } }
+      }
+    });
+    return { success: true, tickets };
+  }
+
+  async replySupportTicket(ticketId: string, text: string, adminEmail: string) {
+    const ticket = await this.prisma.supportTicket.findUnique({
+      where: { id: ticketId }
+    });
+
+    if (!ticket) {
+      throw new NotFoundException('Support ticket not found');
+    }
+
+    const cleanText = text.trim();
+    if (!cleanText) {
+      throw new BadRequestException('Reply text cannot be empty');
+    }
+
+    const message = await this.prisma.supportMessage.create({
+      data: {
+        ticketId,
+        sender: 'ADMIN',
+        senderName: 'Jijenge Customer Care',
+        text: cleanText
+      }
+    });
+
+    const updatedTicket = await this.prisma.supportTicket.update({
+      where: { id: ticketId },
+      data: {
+        status: 'REPLIED',
+        updatedAt: new Date()
+      },
+      include: { messages: { orderBy: { createdAt: 'asc' } } }
+    });
+
+    // Send SUPPORT_REPLY SMS containing chatToken URL
+    const appUrl = process.env.APP_URL || 'https://jijenge-loans.onrender.com';
+    const chatUrl = `${appUrl}/?chatToken=${ticket.id}`;
+    const snippet = cleanText.length > 55 ? cleanText.slice(0, 55) + '...' : cleanText;
+
+    this.smsService.sendTemplateSms('SUPPORT_REPLY', ticket.customerPhone, {
+      fullName: ticket.customerName,
+      snippet,
+      chatUrl
+    }).catch(() => {});
+
+    try {
+      await this.prisma.auditLog.create({
+        data: {
+          adminEmail: String(adminEmail || 'admin@jijengeloans.co.ke'),
+          action: 'REPLY_SUPPORT_TICKET',
+          target: ticket.id,
+          metadata: `Customer: ${ticket.customerName} (${ticket.customerPhone}) | Snippet: ${snippet}`
+        }
+      });
+    } catch { /* audit log error ignored */ }
+
+    return { success: true, message: 'Reply sent and customer notified via SMS with chat link.', ticket: updatedTicket };
+  }
 }

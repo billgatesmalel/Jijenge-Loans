@@ -108,5 +108,16 @@ export class SupportService {
 
     return { success: true, message };
   }
+
+  async getTicketById(ticketId: string) {
+    const ticket = await this.prisma.supportTicket.findUnique({
+      where: { id: ticketId },
+      include: { messages: { orderBy: { createdAt: 'asc' } } }
+    });
+    if (!ticket) {
+      throw new NotFoundException('Support ticket not found');
+    }
+    return { success: true, ticket };
+  }
 }
 

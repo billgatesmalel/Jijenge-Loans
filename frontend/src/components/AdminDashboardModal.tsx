@@ -95,6 +95,8 @@ export const AdminDashboardModal: React.FC<AdminDashboardProps> = ({ onClose }) 
   const [selectedWithdrawalForReject, setSelectedWithdrawalForReject] = useState<any>(null);
   const [selectedRejectionReason, setSelectedRejectionReason] = useState('Mismatch between National ID, Full Name and M-Pesa Phone Number');
   const [customRejectionNotes, setCustomRejectionNotes] = useState('');
+  const [selectedTicketForReply, setSelectedTicketForReply] = useState<any>(null);
+  const [adminTicketReplyText, setAdminTicketReplyText] = useState('');
 
   // Filtering / Loading States
   const [searchQuery, setSearchQuery] = useState('');
@@ -233,7 +235,7 @@ export const AdminDashboardModal: React.FC<AdminDashboardProps> = ({ onClose }) 
       const [appRes, anaRes, tickRes, custRes, payRes, bracRes, smsLRes, smsTRes, setRes, withdRes] = await Promise.all([
         apiFetch('/api/admin/applications', { headers: { Authorization: `Bearer ${token}` } }),
         apiFetch('/api/admin/analytics', { headers: { Authorization: `Bearer ${token}` } }),
-        apiFetch('/api/support/tickets', { headers: { Authorization: `Bearer ${token}` } }),
+        apiFetch('/api/admin/support-tickets', { headers: { Authorization: `Bearer ${token}` } }),
         apiFetch('/api/admin/customers', { headers: { Authorization: `Bearer ${token}` } }),
         apiFetch('/api/admin/payments', { headers: { Authorization: `Bearer ${token}` } }),
         apiFetch('/api/admin/eligibility-brackets', { headers: { Authorization: `Bearer ${token}` } }),
@@ -942,6 +944,37 @@ export const AdminDashboardModal: React.FC<AdminDashboardProps> = ({ onClose }) 
       }
     } catch {
       alert('Network error rejecting withdrawal.');
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
+  const handleReplySupportTicket = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!selectedTicketForReply || !adminTicketReplyText.trim()) return;
+    const token = getAdminToken();
+    if (!token) return;
+    setActionLoading(true);
+    try {
+      const res = await apiFetch(`/api/admin/support-tickets/${selectedTicketForReply.id}/reply`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ text: adminTicketReplyText.trim() })
+      });
+      if (handleAuthError(res)) return;
+      const data = await res.json();
+      if (res.ok) {
+        showToast('Reply sent & SMS with direct chat token link triggered!');
+        setAdminTicketReplyText('');
+        if (data.ticket) {
+          setSelectedTicketForReply(data.ticket);
+        }
+        fetchAllAdminData(token);
+      } else {
+        alert(data.message || 'Failed to send reply');
+      }
+    } catch {
+      alert('Network error replying to support ticket');
     } finally {
       setActionLoading(false);
     }
@@ -2193,6 +2226,80 @@ export const AdminDashboardModal: React.FC<AdminDashboardProps> = ({ onClose }) 
             </div>
           )}
 
+          {/* TAB: Support Centre */}
+          {activeTab === 'support' && (
+            <div>
+              <div style={{ background: '#fff', border: '1px solid #e2e8f0', borderRadius: '16px', padding: '1.25rem', marginBottom: '1.25rem', boxShadow: '0 1px 3px rgba(0,0,0,0.03)' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '1rem' }}>
+                  <div>
+                    <h2 style={{ margin: '0 0 0.25rem', fontSize: '1.15rem', fontWeight: 800, color: '#0f172a' }}>
+                      💬 Support Centre & Live Tickets ({tickets.length})
+                    </h2>
+                    <p style={{ margin: 0, fontSize: '0.8rem', color: '#64748b' }}>
+                      Reply to customer inquiries. Sending a reply dispatches an SMS with a direct WhatsApp chat token link directly to the customer's phone!
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Support Tickets Table */}
+              <div className="admin-table-container">
+                <div className="admin-table-scroll">
+                  <table className="admin-table">
+                    <thead>
+                      <tr>
+                        <th>Customer</th>
+                        <th>Phone</th>
+                        <th>Topic / Subject</th>
+                        <th>Status</th>
+                        <th>Messages</th>
+                        <th>Last Updated</th>
+                        <th>Action</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {tickets.length > 0 ? tickets.map((t: any) => (
+                        <tr key={t.id}>
+                          <td style={{ fontWeight: 700, color: '#0f172a' }}>{t.customerName}</td>
+                          <td style={{ color: '#334155' }}>{t.customerPhone}</td>
+                          <td style={{ color: '#0f172a', fontWeight: 600 }}>{t.subject}</td>
+                          <td>
+                            {t.status === 'REPLIED' ? (
+                              <span style={{ padding: '3px 9px', borderRadius: '9999px', fontSize: '0.72rem', fontWeight: 700, color: '#166534', background: '#dcfce7', border: '1px solid #bbf7d0' }}>
+                                REPLIED
+                              </span>
+                            ) : t.status === 'CLOSED' ? (
+                              <span style={{ padding: '3px 9px', borderRadius: '9999px', fontSize: '0.72rem', fontWeight: 700, color: '#374151', background: '#f3f4f6', border: '1px solid #e5e7eb' }}>
+                                CLOSED
+                              </span>
+                            ) : (
+                              <span style={{ padding: '3px 9px', borderRadius: '9999px', fontSize: '0.72rem', fontWeight: 700, color: '#92400e', background: '#fef3c7', border: '1px solid #fde68a' }}>
+                                OPEN
+                              </span>
+                            )}
+                          </td>
+                          <td style={{ color: '#475569', fontSize: '0.8rem' }}>{(t.messages || []).length} message(s)</td>
+                          <td style={{ color: '#94a3b8', fontSize: '0.75rem' }}>{new Date(t.updatedAt || t.createdAt).toLocaleString()}</td>
+                          <td>
+                            <button
+                              className="admin-btn admin-btn-secondary"
+                              style={{ padding: '4px 10px', fontSize: '0.78rem' }}
+                              onClick={() => setSelectedTicketForReply(t)}
+                            >
+                              Open &amp; Reply
+                            </button>
+                          </td>
+                        </tr>
+                      )) : (
+                        <tr><td colSpan={7} style={{ padding: '2rem', textAlign: 'center', color: '#94a3b8' }}>No support tickets received yet.</td></tr>
+                      )}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </div>
+          )}
+
           {/* TAB 8: Platform & Contact Settings */}
           {activeTab === 'settings' && (
             <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem', maxWidth: '720px' }}>
@@ -2669,6 +2776,79 @@ export const AdminDashboardModal: React.FC<AdminDashboardProps> = ({ onClose }) 
                 style={{ width: '100%', padding: '0.75rem', background: '#991b1b', color: '#fff', border: 'none', borderRadius: '9px', cursor: 'pointer', fontSize: '0.9rem', fontWeight: 800 }}>
                 {actionLoading ? 'Processing Rejection...' : 'Confirm Rejection & Restore Customer Funds'}
               </button>
+            </form>
+          </div>
+        </>
+      )}
+
+      {/* ══ MODAL: ADMIN SUPPORT TICKET REPLY ══ */}
+      {selectedTicketForReply && (
+        <>
+          <div onClick={() => setSelectedTicketForReply(null)} style={{ position: 'fixed', inset: 0, background: 'rgba(15,23,42,0.4)', zIndex: 100, backdropFilter: 'blur(3px)' }} />
+          <div style={{ position: 'fixed', left: '50%', top: '50%', transform: 'translate(-50%, -50%)', width: '92%', maxWidth: '560px', maxHeight: '90vh', background: '#fff', borderRadius: '16px', border: '1px solid #e2e8f0', boxShadow: '0 20px 50px rgba(0,0,0,0.2)', zIndex: 101, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+            <div style={{ padding: '1rem 1.25rem', borderBottom: '1px solid #f1f5f9', display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: '#f8fafc' }}>
+              <div>
+                <h3 style={{ margin: 0, fontSize: '1rem', fontWeight: 800, color: '#0f172a' }}>
+                  Support Ticket: {selectedTicketForReply.customerName}
+                </h3>
+                <span style={{ fontSize: '0.75rem', color: '#64748b' }}>
+                  Phone: {selectedTicketForReply.customerPhone} • Topic: {selectedTicketForReply.subject}
+                </span>
+              </div>
+              <button onClick={() => setSelectedTicketForReply(null)} style={{ background: '#f1f5f9', border: 'none', borderRadius: '8px', cursor: 'pointer', padding: '0.4rem', color: '#64748b' }}>
+                <X size={16} />
+              </button>
+            </div>
+
+            {/* Conversation History */}
+            <div style={{ padding: '1rem', flex: 1, overflowY: 'auto', background: '#f8fafc', display: 'flex', flexDirection: 'column', gap: '0.65rem', minHeight: '180px' }}>
+              {(selectedTicketForReply.messages || []).map((m: any) => {
+                const isAdmin = m.sender === 'ADMIN';
+                return (
+                  <div key={m.id} style={{
+                    maxWidth: '82%', padding: '0.65rem 0.85rem', borderRadius: '12px', fontSize: '0.82rem',
+                    alignSelf: isAdmin ? 'flex-end' : 'flex-start',
+                    background: isAdmin ? '#0f172a' : '#ffffff',
+                    color: isAdmin ? '#ffffff' : '#0f172a',
+                    border: isAdmin ? 'none' : '1px solid #e2e8f0',
+                    boxShadow: '0 1px 2px rgba(0,0,0,0.04)'
+                  }}>
+                    <div style={{ fontSize: '0.68rem', opacity: 0.8, marginBottom: '2px', fontWeight: 700 }}>
+                      {m.senderName || (isAdmin ? 'Admin' : 'Customer')}
+                    </div>
+                    <div>{m.text}</div>
+                    <div style={{ fontSize: '0.65rem', opacity: 0.7, textAlign: 'right', marginTop: '3px' }}>
+                      {new Date(m.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+
+            {/* Reply Form */}
+            <form onSubmit={handleReplySupportTicket} style={{ padding: '1rem', borderTop: '1px solid #f1f5f9', background: '#fff' }}>
+              <div style={{ marginBottom: '0.75rem' }}>
+                <label style={{ display: 'block', fontSize: '0.78rem', fontWeight: 700, color: '#475569', marginBottom: '4px' }}>
+                  Admin Reply (Sends SMS with direct chat token link)
+                </label>
+                <textarea
+                  value={adminTicketReplyText}
+                  onChange={(e) => setAdminTicketReplyText(e.target.value)}
+                  placeholder="Type your response to the customer..."
+                  required
+                  rows={3}
+                  style={{ width: '100%', padding: '0.65rem 0.75rem', border: '1.5px solid #cbd5e1', borderRadius: '8px', fontSize: '0.85rem', outline: 'none', boxSizing: 'border-box', fontFamily: 'inherit' }}
+                />
+              </div>
+
+              <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.5rem' }}>
+                <button type="button" onClick={() => setSelectedTicketForReply(null)} style={{ padding: '0.55rem 1rem', background: '#f1f5f9', border: '1px solid #e2e8f0', borderRadius: '8px', fontSize: '0.82rem', fontWeight: 700, color: '#475569', cursor: 'pointer' }}>
+                  Cancel
+                </button>
+                <button type="submit" disabled={actionLoading} style={{ padding: '0.55rem 1.25rem', background: ORANGE, border: 'none', borderRadius: '8px', fontSize: '0.82rem', fontWeight: 800, color: '#fff', cursor: 'pointer' }}>
+                  {actionLoading ? 'Sending Reply...' : 'Send Reply & Dispatch SMS Link'}
+                </button>
+              </div>
             </form>
           </div>
         </>

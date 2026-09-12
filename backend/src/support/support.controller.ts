@@ -39,5 +39,11 @@ export class SupportController {
   ) {
     return this.supportService.addMessage(ticketId, body.sender, body.senderName, body.text);
   }
+
+  @ApiOperation({ summary: 'Get Support Ticket By ID / Token' })
+  @Get('tickets/:id')
+  async getTicketById(@Param('id') ticketId: string) {
+    return this.supportService.getTicketById(ticketId);
+  }
 }
 
