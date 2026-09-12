@@ -143,42 +143,54 @@ export class AdminService {
   }
 
   async getApplications(query: { page?: number; limit?: number; status?: string; search?: string }) {
-    const page = Number(query.page) || 1;
-    const limit = Number(query.limit) || 20;
-    const skip = (page - 1) * limit;
+    try {
+      const page = Number(query.page) || 1;
+      const limit = Number(query.limit) || 20;
+      const skip = (page - 1) * limit;
 
-    const where: any = {};
-    if (query.status) {
-      where.status = query.status as LoanStatus;
+      const where: any = {};
+      if (query.status && query.status !== 'ALL' && query.status !== 'All' && Object.values(LoanStatus).includes(query.status as any)) {
+        where.status = query.status as LoanStatus;
+      }
+      if (query.search) {
+        const s = query.search.trim();
+        where.OR = [
+          { fullName: { contains: s, mode: 'insensitive' } },
+          { phoneNumber: { contains: s } },
+          { nationalId: { contains: s } },
+          { transactionRef: { contains: s, mode: 'insensitive' } }
+        ];
+      }
+
+      const [items, total] = await Promise.all([
+        this.prisma.loanApplication.findMany({
+          where,
+          orderBy: { createdAt: 'desc' },
+          skip,
+          take: limit
+        }),
+        this.prisma.loanApplication.count({ where })
+      ]);
+
+      return {
+        success: true,
+        items: items || [],
+        total: total || 0,
+        page,
+        limit,
+        totalPages: Math.ceil((total || 0) / limit)
+      };
+    } catch (err: any) {
+      this.logger.error(`Failed to fetch applications: ${err?.message}`, err?.stack);
+      return {
+        success: true,
+        items: [],
+        total: 0,
+        page: 1,
+        limit: 20,
+        totalPages: 0
+      };
     }
-    if (query.search) {
-      const s = query.search.trim();
-      where.OR = [
-        { fullName: { contains: s, mode: 'insensitive' } },
-        { phoneNumber: { contains: s } },
-        { nationalId: { contains: s } },
-        { transactionRef: { contains: s, mode: 'insensitive' } }
-      ];
-    }
-
-    const [items, total] = await Promise.all([
-      this.prisma.loanApplication.findMany({
-        where,
-        orderBy: { createdAt: 'desc' },
-        skip,
-        take: limit
-      }),
-      this.prisma.loanApplication.count({ where })
-    ]);
-
-    return {
-      success: true,
-      items,
-      total,
-      page,
-      limit,
-      totalPages: Math.ceil(total / limit)
-    };
   }
 
   async allocateBalance(loanId: string, amount: number, notes: string, adminEmail: string) {
@@ -236,62 +248,72 @@ export class AdminService {
   }
 
   async getCustomers(query: { search?: string; page?: number; limit?: number }) {
-    const page = Number(query.page) || 1;
-    const limit = Number(query.limit) || 20;
-    const skip = (page - 1) * limit;
+    try {
+      const page = Number(query.page) || 1;
+      const limit = Number(query.limit) || 20;
+      const skip = (page - 1) * limit;
 
-    const where: any = {};
-    if (query.search) {
-      const s = query.search.trim();
-      where.OR = [
-        { fullName: { contains: s, mode: 'insensitive' } },
-        { phoneNumber: { contains: s } },
-        { nationalId: { contains: s } }
-      ];
+      const where: any = {};
+      if (query.search) {
+        const s = query.search.trim();
+        where.OR = [
+          { fullName: { contains: s, mode: 'insensitive' } },
+          { phoneNumber: { contains: s } },
+          { nationalId: { contains: s } }
+        ];
+      }
+
+      const [items, total] = await Promise.all([
+        this.prisma.user.findMany({
+          where,
+          orderBy: { createdAt: 'desc' },
+          skip,
+          take: limit
+        }),
+        this.prisma.user.count({ where })
+      ]);
+
+      return { success: true, items: items || [], total: total || 0, page, limit, totalPages: Math.ceil((total || 0) / limit) };
+    } catch (err: any) {
+      this.logger.error(`Failed to fetch customers: ${err?.message}`, err?.stack);
+      return { success: true, items: [], total: 0, page: 1, limit: 20, totalPages: 0 };
     }
-
-    const [items, total] = await Promise.all([
-      this.prisma.user.findMany({
-        where,
-        orderBy: { createdAt: 'desc' },
-        skip,
-        take: limit
-      }),
-      this.prisma.user.count({ where })
-    ]);
-
-    return { success: true, items, total, page, limit, totalPages: Math.ceil(total / limit) };
   }
 
   async getPayments(query: { search?: string; page?: number; limit?: number }) {
-    const page = Number(query.page) || 1;
-    const limit = Number(query.limit) || 20;
-    const skip = (page - 1) * limit;
+    try {
+      const page = Number(query.page) || 1;
+      const limit = Number(query.limit) || 20;
+      const skip = (page - 1) * limit;
 
-    const where: any = {
-      checkoutRequestId: { not: null }
-    };
+      const where: any = {
+        checkoutRequestId: { not: null }
+      };
 
-    if (query.search) {
-      const s = query.search.trim();
-      where.OR = [
-        { fullName: { contains: s, mode: 'insensitive' } },
-        { phoneNumber: { contains: s } },
-        { transactionRef: { contains: s, mode: 'insensitive' } }
-      ];
+      if (query.search) {
+        const s = query.search.trim();
+        where.OR = [
+          { fullName: { contains: s, mode: 'insensitive' } },
+          { phoneNumber: { contains: s } },
+          { transactionRef: { contains: s, mode: 'insensitive' } }
+        ];
+      }
+
+      const [items, total] = await Promise.all([
+        this.prisma.loanApplication.findMany({
+          where,
+          orderBy: { updatedAt: 'desc' },
+          skip,
+          take: limit
+        }),
+        this.prisma.loanApplication.count({ where })
+      ]);
+
+      return { success: true, items: items || [], total: total || 0, page, limit, totalPages: Math.ceil((total || 0) / limit) };
+    } catch (err: any) {
+      this.logger.error(`Failed to fetch payments: ${err?.message}`, err?.stack);
+      return { success: true, items: [], total: 0, page: 1, limit: 20, totalPages: 0 };
     }
-
-    const [items, total] = await Promise.all([
-      this.prisma.loanApplication.findMany({
-        where,
-        orderBy: { updatedAt: 'desc' },
-        skip,
-        take: limit
-      }),
-      this.prisma.loanApplication.count({ where })
-    ]);
-
-    return { success: true, items, total, page, limit, totalPages: Math.ceil(total / limit) };
   }
 
   async getEligibilityBrackets() {
