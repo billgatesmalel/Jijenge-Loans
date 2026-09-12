@@ -176,11 +176,32 @@ export class LoansService {
 
   async getEligibilityBrackets() {
     try {
-      const rawBrackets = await this.prisma.eligibilityBracket.findMany({
+      let rawBrackets = await this.prisma.eligibilityBracket.findMany({
         where: { active: true },
         orderBy: { minSalary: 'asc' }
       });
-      const brackets = rawBrackets.map((b: any) => {
+
+      if (!rawBrackets || rawBrackets.length === 0) {
+        const DEFAULT_BRACKETS = [
+          { name: 'Jijenge Micro Booster', minSalary: 0, maxSalary: 30000, assignedPackageName: 'Jijenge Micro Booster', maxLimit: 15000, processingFee: 250, weeklyInstallment: 3938, numWeeks: 4, monthlyInstallment: 16800, numMonths: 1, active: true },
+          { name: 'Jijenge Business Flex', minSalary: 30001, maxSalary: 60000, assignedPackageName: 'Jijenge Business Flex', maxLimit: 35000, processingFee: 450, weeklyInstallment: 9188, numWeeks: 4, monthlyInstallment: 39200, numMonths: 1, active: true },
+          { name: 'Jijenge Trade Prime', minSalary: 60001, maxSalary: 100000, assignedPackageName: 'Jijenge Trade Prime', maxLimit: 60000, processingFee: 750, weeklyInstallment: 15750, numWeeks: 4, monthlyInstallment: 67200, numMonths: 1, active: true },
+          { name: 'Jijenge Enterprise Express', minSalary: 100001, maxSalary: 1000000, assignedPackageName: 'Jijenge Enterprise Express', maxLimit: 100000, processingFee: 1200, weeklyInstallment: 26250, numWeeks: 4, monthlyInstallment: 112000, numMonths: 1, active: true }
+        ];
+        for (const seed of DEFAULT_BRACKETS) {
+          try {
+            await this.prisma.eligibilityBracket.create({ data: seed });
+          } catch (seedErr: any) {
+            this.logger.warn(`Failed to seed bracket ${seed.name}: ${seedErr?.message}`);
+          }
+        }
+        rawBrackets = await this.prisma.eligibilityBracket.findMany({
+          where: { active: true },
+          orderBy: { minSalary: 'asc' }
+        });
+      }
+
+      const brackets = (rawBrackets || []).map((b: any) => {
         const limit = b.maxLimit || 0;
         const numWeeks = b.numWeeks && b.numWeeks > 0 ? b.numWeeks : 4;
         const weeklyInstallment = b.weeklyInstallment && b.weeklyInstallment > 0

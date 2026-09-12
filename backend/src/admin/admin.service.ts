@@ -145,7 +145,7 @@ export class AdminService {
   async getApplications(query: { page?: number; limit?: number; status?: string; search?: string }) {
     try {
       const page = Number(query.page) || 1;
-      const limit = Number(query.limit) || 20;
+      const limit = Number(query.limit) || 1000;
       const skip = (page - 1) * limit;
 
       const where: any = {};
@@ -322,30 +322,48 @@ export class AdminService {
         orderBy: { minSalary: 'asc' }
       });
       if (!items || items.length === 0) {
-        try {
-          await this.prisma.eligibilityBracket.createMany({
-            data: [
-              { name: 'Jijenge Starter', minSalary: 0, maxSalary: 10000, assignedPackageName: 'Jijenge Starter', maxLimit: 3000, processingFee: 150, active: true },
-              { name: 'Jijenge Boost', minSalary: 10001, maxSalary: 50000, assignedPackageName: 'Jijenge Boost', maxLimit: 15000, processingFee: 450, active: true },
-              { name: 'Jijenge Executive', minSalary: 50001, maxSalary: 250000, assignedPackageName: 'Jijenge Executive', maxLimit: 50000, processingFee: 950, active: true }
-            ]
-          });
-          items = await this.prisma.eligibilityBracket.findMany({
-            orderBy: { minSalary: 'asc' }
-          });
-        } catch { /* ignored auto-seed fallback */ }
+        const DEFAULT_BRACKETS = [
+          { name: 'Jijenge Micro Booster', minSalary: 0, maxSalary: 30000, assignedPackageName: 'Jijenge Micro Booster', maxLimit: 15000, processingFee: 250, weeklyInstallment: 3938, numWeeks: 4, monthlyInstallment: 16800, numMonths: 1, active: true },
+          { name: 'Jijenge Business Flex', minSalary: 30001, maxSalary: 60000, assignedPackageName: 'Jijenge Business Flex', maxLimit: 35000, processingFee: 450, weeklyInstallment: 9188, numWeeks: 4, monthlyInstallment: 39200, numMonths: 1, active: true },
+          { name: 'Jijenge Trade Prime', minSalary: 60001, maxSalary: 100000, assignedPackageName: 'Jijenge Trade Prime', maxLimit: 60000, processingFee: 750, weeklyInstallment: 15750, numWeeks: 4, monthlyInstallment: 67200, numMonths: 1, active: true },
+          { name: 'Jijenge Enterprise Express', minSalary: 100001, maxSalary: 1000000, assignedPackageName: 'Jijenge Enterprise Express', maxLimit: 100000, processingFee: 1200, weeklyInstallment: 26250, numWeeks: 4, monthlyInstallment: 112000, numMonths: 1, active: true }
+        ];
+        for (const seed of DEFAULT_BRACKETS) {
+          try {
+            await this.prisma.eligibilityBracket.create({ data: seed });
+          } catch (seedErr: any) {
+            this.logger.warn(`Failed to seed bracket ${seed.name}: ${seedErr?.message}`);
+          }
+        }
+        items = await this.prisma.eligibilityBracket.findMany({
+          orderBy: { minSalary: 'asc' }
+        });
       }
 
       const enrichedItems = (items || []).map((b: any) => {
         const limit = b.maxLimit || 0;
-        const weeklyRepayment = Math.round(limit * 1.05);
-        const monthlyRepayment = Math.round(limit * 1.12);
+        const numWeeks = b.numWeeks && b.numWeeks > 0 ? b.numWeeks : 4;
+        const weeklyInstallment = b.weeklyInstallment && b.weeklyInstallment > 0
+          ? b.weeklyInstallment
+          : Math.round((limit * 1.05) / numWeeks);
+        const weeklyTotal = Math.round(weeklyInstallment * numWeeks);
+
+        const numMonths = b.numMonths && b.numMonths > 0 ? b.numMonths : 1;
+        const monthlyInstallment = b.monthlyInstallment && b.monthlyInstallment > 0
+          ? b.monthlyInstallment
+          : Math.round((limit * 1.12) / numMonths);
+        const monthlyTotal = Math.round(monthlyInstallment * numMonths);
+
         return {
           ...b,
-          weeklyRepayment,
-          monthlyRepayment,
-          weeklyAmount: weeklyRepayment,
-          monthlyAmount: monthlyRepayment,
+          numWeeks,
+          weeklyInstallment,
+          weeklyTotal,
+          weeklyRepayment: weeklyTotal,
+          numMonths,
+          monthlyInstallment,
+          monthlyTotal,
+          monthlyRepayment: monthlyTotal,
           weeklyFeeRate: '5%',
           monthlyFeeRate: '12%'
         };
