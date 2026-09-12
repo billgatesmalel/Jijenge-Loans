@@ -240,17 +240,35 @@ export class AdminService {
       const maxLim = isNaN(Number(body.maxLimit)) ? 0 : Number(body.maxLimit);
       const procFee = body.processingFee !== undefined && !isNaN(Number(body.processingFee)) ? Number(body.processingFee) : 450;
 
-      const bracket = await this.prisma.eligibilityBracket.create({
-        data: {
-          name: cleanName,
-          minSalary: minSal,
-          maxSalary: maxSal,
-          assignedPackageName: pkgName,
-          maxLimit: maxLim,
-          processingFee: procFee,
-          active: true
+      let bracket;
+      try {
+        bracket = await this.prisma.eligibilityBracket.create({
+          data: {
+            name: cleanName,
+            minSalary: minSal,
+            maxSalary: maxSal,
+            assignedPackageName: pkgName,
+            maxLimit: maxLim,
+            processingFee: procFee,
+            active: true
+          }
+        });
+      } catch (dbErr: any) {
+        if (dbErr?.message?.includes('processingFee')) {
+          bracket = await this.prisma.eligibilityBracket.create({
+            data: {
+              name: cleanName,
+              minSalary: minSal,
+              maxSalary: maxSal,
+              assignedPackageName: pkgName,
+              maxLimit: maxLim,
+              active: true
+            }
+          });
+        } else {
+          throw dbErr;
         }
-      });
+      }
 
       const safeAdminEmail = String(adminEmail || 'admin@jijengeloans.co.ke');
       try {
@@ -293,10 +311,23 @@ export class AdminService {
       if (body.processingFee !== undefined) dataToUpdate.processingFee = Number(body.processingFee);
       if (body.active !== undefined) dataToUpdate.active = Boolean(body.active);
 
-      const bracket = await this.prisma.eligibilityBracket.update({
-        where: { id: bracketId },
-        data: dataToUpdate
-      });
+      let bracket;
+      try {
+        bracket = await this.prisma.eligibilityBracket.update({
+          where: { id: bracketId },
+          data: dataToUpdate
+        });
+      } catch (dbErr: any) {
+        if (dbErr?.message?.includes('processingFee')) {
+          delete dataToUpdate.processingFee;
+          bracket = await this.prisma.eligibilityBracket.update({
+            where: { id: bracketId },
+            data: dataToUpdate
+          });
+        } else {
+          throw dbErr;
+        }
+      }
 
       const safeAdminEmail = String(adminEmail || 'admin@jijengeloans.co.ke');
       try {
