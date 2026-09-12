@@ -10,9 +10,9 @@ export interface SupportSettings {
 }
 
 export const DEFAULT_SUPPORT_SETTINGS: SupportSettings = {
-  supportPhone: '+254 700 123 456',
-  supportEmail: 'support@jijengeloans.co.ke',
-  supportWhatsapp: '+254 700 123 456',
+  supportPhone: '+254 781746850',
+  supportEmail: 'jijengeloanssupport@smartsystems.top',
+  supportWhatsapp: '+254 781746850',
   supportHours: '24/7 Customer Support',
   headquartersAddress: 'Nairobi, Kenya',
 };
