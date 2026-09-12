@@ -827,16 +827,22 @@ export const ApplicationFormModal: React.FC<ApplicationFormModalProps> = ({ onTa
                   >
                     <option value="" disabled>Select Monthly Income Range</option>
                     {brackets.length > 0 ? (
-                      brackets.map((b: any) => (
-                        <option key={b.id || `${b.minSalary}-${b.maxSalary}`} value={`${b.minSalary}:${b.maxSalary}`}>
-                          {b.maxSalary >= 1000000
-                            ? `Above Ksh ${b.minSalary.toLocaleString()}`
-                            : `Ksh ${b.minSalary.toLocaleString()} – Ksh ${b.maxSalary.toLocaleString()}`}
-                        </option>
-                      ))
+                      brackets.map((b: any, idx: number) => {
+                        let label = `Ksh ${b.minSalary.toLocaleString()} – Ksh ${b.maxSalary.toLocaleString()}`;
+                        if (idx === 0) {
+                          label = `Below Ksh ${b.maxSalary.toLocaleString()}`;
+                        } else if (idx === brackets.length - 1) {
+                          label = `Above Ksh ${b.minSalary.toLocaleString()}`;
+                        }
+                        return (
+                          <option key={b.id || `${b.minSalary}-${b.maxSalary}`} value={`${b.minSalary}:${b.maxSalary}`}>
+                            {label}
+                          </option>
+                        );
+                      })
                     ) : (
                       <>
-                        <option value="15000:30000">Ksh 15,000 – Ksh 30,000</option>
+                        <option value="15000:30000">Below Ksh 30,000</option>
                         <option value="30001:60000">Ksh 30,001 – Ksh 60,000</option>
                         <option value="60001:100000">Ksh 60,001 – Ksh 100,000</option>
                         <option value="100001:1000000">Above Ksh 100,000</option>
