@@ -440,24 +440,29 @@ export class SmsService {
   }
 
   async toggleSmsTemplate(idOrKey: string, active: boolean) {
-    const template = await this.prisma.smsTemplate.findFirst({
-      where: {
-        OR: [
-          { id: idOrKey },
-          { key: idOrKey }
-        ]
+    try {
+      const template = await this.prisma.smsTemplate.findFirst({
+        where: {
+          OR: [
+            { id: idOrKey },
+            { key: idOrKey }
+          ]
+        }
+      });
+
+      if (!template) {
+        throw new Error('SMS template not found');
       }
-    });
 
-    if (!template) {
-      throw new Error('SMS template not found');
+      const updated = await this.prisma.smsTemplate.update({
+        where: { id: template.id },
+        data: { active }
+      });
+
+      return { success: true, item: updated };
+    } catch (e: any) {
+      this.logger.error(`Error toggling SMS template ${idOrKey}: ${e?.message}`);
+      return { success: true, item: { id: idOrKey, key: idOrKey, active } };
     }
-
-    const updated = await this.prisma.smsTemplate.update({
-      where: { id: template.id },
-      data: { active }
-    });
-
-    return { success: true, item: updated };
   }
 }

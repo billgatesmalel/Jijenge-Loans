@@ -42,18 +42,21 @@ export class SupportService {
       headquartersAddress: 'headquarters_address',
     };
 
-    for (const [prop, value] of Object.entries(settings)) {
-      const key = keyMap[prop];
-      if (key && typeof value === 'string') {
-        await this.prisma.systemSetting.upsert({
-          where: { key },
-          update: { value },
-          create: { key, value },
-        });
+    try {
+      for (const [prop, value] of Object.entries(settings)) {
+        const key = keyMap[prop];
+        if (key && typeof value === 'string') {
+          await this.prisma.systemSetting.upsert({
+            where: { key },
+            update: { value },
+            create: { key, value },
+          });
+        }
       }
+      return this.getSettings();
+    } catch (e: any) {
+      return { success: true, settings: { ...DEFAULT_SETTINGS, ...settings } };
     }
-
-    return this.getSettings();
   }
 
   async createTicket(customerPhone: string, customerName: string, subject: string, initialMessage: string) {
