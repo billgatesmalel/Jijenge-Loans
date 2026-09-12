@@ -151,12 +151,12 @@ export const AdminDashboardModal: React.FC<AdminDashboardProps> = ({ onClose }) 
   const [smsTemplateModal, setSmsTemplateModal] = useState(false);
   const [selectedTemplateKey, setSelectedTemplateKey] = useState('');
 
-  // System & Contact Settings Form Fields
-  const [settingsPhone, setSettingsPhone] = useState('+254 700 123 456');
-  const [settingsEmail, setSettingsEmail] = useState('support@jijengeloans.co.ke');
-  const [settingsWhatsapp, setSettingsWhatsapp] = useState('+254 700 123 456');
-  const [settingsHours, setSettingsHours] = useState('24/7 Customer Support');
-  const [settingsAddress, setSettingsAddress] = useState('Nairobi, Kenya');
+  // System & Contact Settings Form Fields (initialized from live cache/localStorage)
+  const [settingsPhone, setSettingsPhone] = useState(() => getCachedSupportSettings().supportPhone);
+  const [settingsEmail, setSettingsEmail] = useState(() => getCachedSupportSettings().supportEmail);
+  const [settingsWhatsapp, setSettingsWhatsapp] = useState(() => getCachedSupportSettings().supportWhatsapp);
+  const [settingsHours, setSettingsHours] = useState(() => getCachedSupportSettings().supportHours);
+  const [settingsAddress, setSettingsAddress] = useState(() => getCachedSupportSettings().headquartersAddress);
 
   // Layout UI
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);

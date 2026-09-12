@@ -17,7 +17,20 @@ export const DEFAULT_SUPPORT_SETTINGS: SupportSettings = {
   headquartersAddress: 'Nairobi, Kenya',
 };
 
-let cachedSettings: SupportSettings = { ...DEFAULT_SUPPORT_SETTINGS };
+// Initialize cachedSettings from localStorage if available
+const getInitialSettings = (): SupportSettings => {
+  try {
+    const saved = localStorage.getItem('bl_support_settings');
+    if (saved) {
+      return { ...DEFAULT_SUPPORT_SETTINGS, ...JSON.parse(saved) };
+    }
+  } catch {
+    /* ignore parsing errors */
+  }
+  return { ...DEFAULT_SUPPORT_SETTINGS };
+};
+
+let cachedSettings: SupportSettings = getInitialSettings();
 const listeners = new Set<(settings: SupportSettings) => void>();
 
 export function getCachedSupportSettings(): SupportSettings {
@@ -26,6 +39,11 @@ export function getCachedSupportSettings(): SupportSettings {
 
 export function updateLocalSupportSettings(newSettings: Partial<SupportSettings>) {
   cachedSettings = { ...cachedSettings, ...newSettings };
+  try {
+    localStorage.setItem('bl_support_settings', JSON.stringify(cachedSettings));
+  } catch {
+    /* ignore storage errors */
+  }
   listeners.forEach((l) => l(cachedSettings));
 }
 
@@ -36,6 +54,9 @@ export async function fetchSupportSettings(): Promise<SupportSettings> {
       const data = await res.json();
       if (data.settings) {
         cachedSettings = { ...DEFAULT_SUPPORT_SETTINGS, ...data.settings };
+        try {
+          localStorage.setItem('bl_support_settings', JSON.stringify(cachedSettings));
+        } catch {}
         listeners.forEach((l) => l(cachedSettings));
         return cachedSettings;
       }

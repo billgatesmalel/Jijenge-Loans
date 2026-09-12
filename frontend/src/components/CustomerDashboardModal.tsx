@@ -41,8 +41,8 @@ export const CustomerDashboardModal: React.FC<CustomerDashboardProps> = ({ onClo
   };
 
   useEffect(() => {
-    const token = sessionStorage.getItem('bl_customer_token');
-    const storedRole = sessionStorage.getItem('bl_customer_role') || 'CUSTOMER';
+    const token = sessionStorage.getItem('bl_customer_token') || localStorage.getItem('bl_customer_token');
+    const storedRole = sessionStorage.getItem('bl_customer_role') || localStorage.getItem('bl_customer_role') || 'CUSTOMER';
     if (token) {
       setIsLoggedIn(true);
       setUserRole(storedRole);
