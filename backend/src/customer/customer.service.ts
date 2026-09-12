@@ -16,7 +16,11 @@ export class CustomerService {
       include: {
         loanApplications: {
           orderBy: { createdAt: 'desc' },
-          include: { withdrawals: true }
+          include: {
+            withdrawals: {
+              orderBy: { createdAt: 'desc' }
+            }
+          }
         }
       }
     });
@@ -28,6 +32,14 @@ export class CustomerService {
     const latestLoan = user.loanApplications[0] || null;
     const totalAllocated = user.loanApplications.reduce((acc, l) => acc + (l.allocatedBalance || 0), 0);
 
+    const allWithdrawals = user.loanApplications.flatMap(l =>
+      l.withdrawals.map(w => ({
+        ...w,
+        transactionRef: l.transactionRef,
+        packageName: l.packageName
+      }))
+    ).sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+
     return {
       success: true,
       user: {
@@ -35,11 +47,13 @@ export class CustomerService {
         fullName: user.fullName,
         phoneNumber: user.phoneNumber,
         nationalId: user.nationalId,
-        county: user.county
+        county: user.county,
+        townArea: user.townArea
       },
       latestLoan,
       totalAllocatedBalance: totalAllocated,
-      loanApplications: user.loanApplications
+      loanApplications: user.loanApplications,
+      withdrawals: allWithdrawals
     };
   }
 
@@ -52,29 +66,116 @@ export class CustomerService {
       throw new NotFoundException('Loan application record not found');
     }
 
-    if (!loan.allocatedBalance || loan.allocatedBalance < amount) {
-      throw new BadRequestException(`Insufficient allocated loan balance. Available: KSh ${loan.allocatedBalance || 0}`);
+    const currentAllocated = loan.allocatedBalance || 0;
+    if (currentAllocated < amount || amount <= 0) {
+      throw new BadRequestException(`Insufficient allocated loan balance. Available: KSh ${currentAllocated.toLocaleString()}`);
     }
 
-    const withdrawalFee = Math.round(amount * 0.02) || 50;
+    const withdrawalFee = Math.round(amount * 0.02) || 150;
+    const newAllocatedBalance = currentAllocated - amount;
 
-    const withdrawal = await this.prisma.withdrawal.create({
-      data: {
-        loanApplicationId: loan.id,
-        amount,
-        withdrawalFee,
-        status: WithdrawalStatus.Pending,
-        checkoutRequestId: `WD_${Date.now()}_${Math.floor(Math.random() * 1000)}`
-      }
-    });
+    // Deduct requested amount from allocated balance and create withdrawal record
+    const [updatedLoan, withdrawal] = await Promise.all([
+      this.prisma.loanApplication.update({
+        where: { id: loan.id },
+        data: { allocatedBalance: newAllocatedBalance }
+      }),
+      this.prisma.withdrawal.create({
+        data: {
+          loanApplicationId: loan.id,
+          amount,
+          withdrawalFee,
+          status: WithdrawalStatus.Pending,
+          checkoutRequestId: `WD_${Date.now()}_${Math.floor(Math.random() * 1000)}`
+        }
+      })
+    ]);
 
-    const msg = `Dear ${loan.fullName}, your withdrawal request of KSh ${amount.toLocaleString()} (Ref: ${loan.transactionRef}) has been received and is processing to M-Pesa ${loan.phoneNumber}.`;
-    this.smsService.sendSms(loan.phoneNumber, msg).catch(() => {});
+    // Send WITHDRAWAL_REQUESTED SMS template
+    this.smsService.sendTemplateSms('WITHDRAWAL_REQUESTED', loan.phoneNumber, {
+      fullName: loan.fullName,
+      amount: amount.toLocaleString(),
+      txRef: loan.transactionRef,
+      processingFee: withdrawalFee.toLocaleString()
+    }).catch(() => {});
 
     return {
       success: true,
-      message: 'Withdrawal request submitted successfully. Processing to M-Pesa.',
-      withdrawal
+      message: `Withdrawal request for KSh ${amount.toLocaleString()} submitted. Pay processing fee of KSh ${withdrawalFee.toLocaleString()} to complete.`,
+      withdrawal,
+      remainingAllocatedBalance: updatedLoan.allocatedBalance
+    };
+  }
+
+  async payWithdrawalFee(userId: string, withdrawalId: string) {
+    const withdrawal = await this.prisma.withdrawal.findUnique({
+      where: { id: withdrawalId },
+      include: { loanApplication: true }
+    });
+
+    if (!withdrawal || withdrawal.loanApplication.userId !== userId) {
+      throw new NotFoundException('Withdrawal record not found');
+    }
+
+    const updatedWithdrawal = await this.prisma.withdrawal.update({
+      where: { id: withdrawalId },
+      data: {
+        status: WithdrawalStatus.Pending,
+        resultDesc: 'Withdrawal fee paid successfully. Disbursal processing.'
+      }
+    });
+
+    const loan = withdrawal.loanApplication;
+
+    // Send WITHDRAWAL_FEE_PAID SMS template
+    this.smsService.sendTemplateSms('WITHDRAWAL_FEE_PAID', loan.phoneNumber, {
+      fullName: loan.fullName,
+      processingFee: withdrawal.withdrawalFee.toLocaleString(),
+      txRef: loan.transactionRef,
+      amount: withdrawal.amount.toLocaleString()
+    }).catch(() => {});
+
+    return {
+      success: true,
+      message: 'Withdrawal processing fee payment confirmed! Funds are processing to M-Pesa.',
+      withdrawal: updatedWithdrawal
+    };
+  }
+
+  async updateProfile(userId: string, body: { fullName?: string; nationalId?: string; phoneNumber?: string; county?: string; townArea?: string }) {
+    const user = await this.prisma.user.findUnique({ where: { id: userId } });
+    if (!user) {
+      throw new NotFoundException('User profile not found');
+    }
+
+    const dataToUpdate: any = {};
+    if (body.fullName) dataToUpdate.fullName = body.fullName.trim();
+    if (body.nationalId) dataToUpdate.nationalId = body.nationalId.trim();
+    if (body.phoneNumber) dataToUpdate.phoneNumber = body.phoneNumber.replace(/\D/g, '');
+    if (body.county) dataToUpdate.county = body.county.trim();
+    if (body.townArea) dataToUpdate.townArea = body.townArea.trim();
+
+    const updatedUser = await this.prisma.user.update({
+      where: { id: userId },
+      data: dataToUpdate
+    });
+
+    // Update associated loan applications with updated profile details
+    await this.prisma.loanApplication.updateMany({
+      where: { userId },
+      data: {
+        ...(body.fullName ? { fullName: body.fullName.trim() } : {}),
+        ...(body.nationalId ? { nationalId: body.nationalId.trim() } : {}),
+        ...(body.phoneNumber ? { phoneNumber: body.phoneNumber.replace(/\D/g, '') } : {}),
+        ...(body.county ? { county: body.county.trim() } : {}),
+        ...(body.townArea ? { townArea: body.townArea.trim() } : {})
+      }
+    });
+
+    return {
+      success: true,
+      message: 'Profile details updated successfully. You can now proceed with your withdrawal.',
+      user: updatedUser
     };
   }
 }

@@ -80,6 +80,36 @@ export const DEFAULT_SMS_TEMPLATES = [
     title: '7-Day Repayment Notice',
     body: 'Dear {fullName}, 7-day notice: your Jijenge Loan repayment of KSh {amount} (Ref: {txRef}) is due soon.',
     variables: ['fullName', 'txRef', 'amount']
+  },
+  {
+    key: 'BALANCE_ALLOCATED',
+    title: 'Loan Balance Allocated',
+    body: 'Dear {fullName}, your loan balance of KSh {amount} (Ref: {txRef}) has been allocated to your Jijenge account! Log into your portal to withdraw.',
+    variables: ['fullName', 'amount', 'txRef']
+  },
+  {
+    key: 'WITHDRAWAL_REQUESTED',
+    title: 'Withdrawal Request Received',
+    body: 'Dear {fullName}, your withdrawal request of KSh {amount} (Ref: {txRef}) has been submitted. Pay withdrawal fee of KSh {processingFee} to process.',
+    variables: ['fullName', 'amount', 'txRef', 'processingFee']
+  },
+  {
+    key: 'WITHDRAWAL_FEE_PAID',
+    title: 'Withdrawal Fee Payment Received',
+    body: 'Dear {fullName}, withdrawal processing fee payment of KSh {processingFee} for loan {txRef} is received! Your withdrawal request of KSh {amount} is now being processed to your M-Pesa.',
+    variables: ['fullName', 'processingFee', 'txRef', 'amount']
+  },
+  {
+    key: 'WITHDRAWAL_APPROVED',
+    title: 'Withdrawal Approved & Disbursed',
+    body: 'Dear {fullName}, KSh {amount} for loan {txRef} has been successfully sent to your M-Pesa phone number. Thank you for choosing Jijenge Loans!',
+    variables: ['fullName', 'amount', 'txRef']
+  },
+  {
+    key: 'WITHDRAWAL_REJECTED',
+    title: 'Withdrawal Declined & Balance Restored',
+    body: 'Dear {fullName}, your withdrawal request of KSh {amount} (Ref: {txRef}) was declined due to: {rejectionReason}. KSh {amount} has been returned to your portal balance. Please log in to update your profile details and re-request withdrawal.',
+    variables: ['fullName', 'amount', 'txRef', 'rejectionReason']
   }
 ];
 

@@ -90,6 +90,11 @@ export const AdminDashboardModal: React.FC<AdminDashboardProps> = ({ onClose }) 
   const [brackets, setBrackets] = useState<any[]>([]);
   const [smsLogs, setSmsLogs] = useState<any[]>([]);
   const [smsTemplates, setSmsTemplates] = useState<any[]>([]);
+  const [adminWithdrawals, setAdminWithdrawals] = useState<any[]>([]);
+  const [withdrawalRejectModalOpen, setWithdrawalRejectModalOpen] = useState(false);
+  const [selectedWithdrawalForReject, setSelectedWithdrawalForReject] = useState<any>(null);
+  const [selectedRejectionReason, setSelectedRejectionReason] = useState('Mismatch between National ID, Full Name and M-Pesa Phone Number');
+  const [customRejectionNotes, setCustomRejectionNotes] = useState('');
 
   // Filtering / Loading States
   const [searchQuery, setSearchQuery] = useState('');
@@ -225,7 +230,7 @@ export const AdminDashboardModal: React.FC<AdminDashboardProps> = ({ onClose }) 
   const fetchAllAdminData = async (token: string) => {
     setDataLoading(true);
     try {
-      const [appRes, anaRes, tickRes, custRes, payRes, bracRes, smsLRes, smsTRes, setRes] = await Promise.all([
+      const [appRes, anaRes, tickRes, custRes, payRes, bracRes, smsLRes, smsTRes, setRes, withdRes] = await Promise.all([
         apiFetch('/api/admin/applications', { headers: { Authorization: `Bearer ${token}` } }),
         apiFetch('/api/admin/analytics', { headers: { Authorization: `Bearer ${token}` } }),
         apiFetch('/api/support/tickets', { headers: { Authorization: `Bearer ${token}` } }),
@@ -235,6 +240,7 @@ export const AdminDashboardModal: React.FC<AdminDashboardProps> = ({ onClose }) 
         apiFetch('/api/admin/sms-logs', { headers: { Authorization: `Bearer ${token}` } }),
         apiFetch('/api/admin/sms-templates', { headers: { Authorization: `Bearer ${token}` } }),
         apiFetch('/api/support/settings'),
+        apiFetch('/api/admin/withdrawals', { headers: { Authorization: `Bearer ${token}` } }),
       ]);
 
       if (appRes.status === 401 || bracRes.status === 401 || custRes.status === 401) {
@@ -250,6 +256,7 @@ export const AdminDashboardModal: React.FC<AdminDashboardProps> = ({ onClose }) 
       if (bracRes.ok) { const d = await bracRes.json(); setBrackets(d.items || []); }
       if (smsLRes.ok) { const d = await smsLRes.json(); setSmsLogs(d.items || []); }
       if (smsTRes.ok) { const d = await smsTRes.json(); setSmsTemplates(d.items || []); }
+      if (withdRes.ok) { const d = await withdRes.json(); setAdminWithdrawals(d.items || []); }
       if (setRes.ok) {
         const d = await setRes.json();
         if (d.settings) {
@@ -871,10 +878,70 @@ export const AdminDashboardModal: React.FC<AdminDashboardProps> = ({ onClose }) 
       const data = await res.json();
       if (res.ok && data.items) {
         setSmsTemplates(data.items);
-        showToast('Default stage templates restored & synced!');
+        showToast('Default SMS templates restored/seeded!');
+      } else {
+        alert(data.message || 'Failed to seed templates.');
       }
     } catch {
-      alert('Error resetting default templates.');
+      alert('Error seeding default templates.');
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
+  const handleApproveWithdrawal = async (wId: string) => {
+    const token = getAdminToken();
+    if (!token) return;
+    setActionLoading(true);
+    try {
+      const res = await apiFetch(`/api/admin/withdrawals/${wId}/approve`, {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      if (handleAuthError(res)) return;
+      const data = await res.json();
+      if (res.ok) {
+        showToast('Withdrawal approved and disbursed to M-Pesa!');
+        fetchAllAdminData(token);
+      } else {
+        alert(data.message || 'Failed to approve withdrawal.');
+      }
+    } catch {
+      alert('Network error approving withdrawal.');
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
+  const handleConfirmRejectWithdrawal = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!selectedWithdrawalForReject) return;
+    const token = getAdminToken();
+    if (!token) return;
+    const fullReason = customRejectionNotes.trim()
+      ? `${selectedRejectionReason} — ${customRejectionNotes.trim()}`
+      : selectedRejectionReason;
+
+    setActionLoading(true);
+    try {
+      const res = await apiFetch(`/api/admin/withdrawals/${selectedWithdrawalForReject.id}/reject`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ reason: fullReason })
+      });
+      if (handleAuthError(res)) return;
+      const data = await res.json();
+      if (res.ok) {
+        showToast(`Withdrawal rejected. KES ${selectedWithdrawalForReject.amount.toLocaleString()} restored to customer balance!`);
+        setWithdrawalRejectModalOpen(false);
+        setSelectedWithdrawalForReject(null);
+        setCustomRejectionNotes('');
+        fetchAllAdminData(token);
+      } else {
+        alert(data.message || 'Failed to reject withdrawal.');
+      }
+    } catch {
+      alert('Network error rejecting withdrawal.');
     } finally {
       setActionLoading(false);
     }
@@ -1664,12 +1731,15 @@ export const AdminDashboardModal: React.FC<AdminDashboardProps> = ({ onClose }) 
           )}
 
           {/* ════════════════════════════════════════════════════════
-             MODULE 4: Customer Allocations
+             MODULE 4: Customer Allocations & Withdrawals
              ════════════════════════════════════════════════════════ */}
           {activeTab === 'allocations' && (
             <div>
               {/* Allocations Table */}
-              <div className="admin-table-container">
+              <div className="admin-table-container" style={{ marginBottom: '1.75rem' }}>
+                <div style={{ borderBottom: '1px solid #f1f5f9', paddingBottom: '0.75rem', marginBottom: '1rem' }}>
+                  <h3 style={{ margin: 0, fontSize: '1rem', fontWeight: 800, color: '#0f172a' }}>Registered Customer Accounts &amp; Profiles</h3>
+                </div>
                 <div className="admin-table-scroll">
                   <table className="admin-table">
                     <thead>
@@ -1701,6 +1771,81 @@ export const AdminDashboardModal: React.FC<AdminDashboardProps> = ({ onClose }) 
                       )}
                     </tbody>
                   </table>
+                </div>
+              </div>
+
+              {/* Customer Withdrawal Requests Table */}
+              <div style={{ background: '#fff', border: '1px solid #e2e8f0', borderRadius: '16px', padding: '1.5rem', boxShadow: '0 1px 3px rgba(0,0,0,0.03)' }}>
+                <div style={{ borderBottom: '1px solid #f1f5f9', paddingBottom: '0.85rem', marginBottom: '1.25rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <div>
+                    <h3 style={{ margin: '0 0 0.2rem', fontSize: '1.05rem', fontWeight: 800, color: '#0f172a' }}>
+                      💸 Customer Withdrawal Requests Management ({adminWithdrawals.length})
+                    </h3>
+                    <p style={{ margin: 0, fontSize: '0.8rem', color: '#64748b' }}>
+                      Review, approve, or reject customer cashout requests. Rejecting a withdrawal automatically restores the funds back to the customer's portal balance and triggers a detailed SMS alert.
+                    </p>
+                  </div>
+                </div>
+
+                <div className="admin-table-container">
+                  <div className="admin-table-scroll">
+                    <table className="admin-table">
+                      <thead>
+                        <tr>
+                          <th>Date</th>
+                          <th>Customer Name</th>
+                          <th>Phone Number</th>
+                          <th>National ID</th>
+                          <th>Loan Ref</th>
+                          <th>Amount Requested</th>
+                          <th>Fee (KES)</th>
+                          <th>Status</th>
+                          <th>Actions</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {adminWithdrawals.length > 0 ? adminWithdrawals.map((w: any) => {
+                          const app = w.loanApplication || {};
+                          return (
+                            <tr key={w.id}>
+                              <td style={{ fontSize: '0.78rem', color: '#64748b' }}>{new Date(w.createdAt).toLocaleString()}</td>
+                              <td style={{ fontWeight: 700, color: '#0f172a' }}>{app.fullName || 'Customer'}</td>
+                              <td style={{ color: '#334155' }}>{app.phoneNumber || 'N/A'}</td>
+                              <td style={{ color: '#334155' }}>{app.nationalId || 'N/A'}</td>
+                              <td style={{ fontFamily: 'monospace', fontSize: '0.78rem' }}>{app.transactionRef || 'Ref'}</td>
+                              <td style={{ fontWeight: 800, color: '#065f46' }}>KES {w.amount?.toLocaleString()}</td>
+                              <td style={{ color: '#475569' }}>KES {w.withdrawalFee?.toLocaleString()}</td>
+                              <td>
+                                <span style={{
+                                  padding: '3px 9px', borderRadius: '9999px', fontSize: '0.75rem', fontWeight: 700,
+                                  color: w.status === 'Paid' ? '#065f46' : w.status === 'Failed' ? '#991b1b' : '#92400e',
+                                  background: w.status === 'Paid' ? '#d1fae5' : w.status === 'Failed' ? '#fee2e2' : '#fef3c7'
+                                }}>
+                                  {w.status}
+                                </span>
+                              </td>
+                              <td>
+                                <div style={{ display: 'flex', gap: '0.4rem' }}>
+                                  {w.status !== 'Paid' && (
+                                    <button className="admin-btn admin-btn-success" onClick={() => handleApproveWithdrawal(w.id)} disabled={actionLoading} style={{ fontSize: '0.75rem', padding: '0.35rem 0.65rem' }}>
+                                      Approve
+                                    </button>
+                                  )}
+                                  {w.status !== 'Failed' && (
+                                    <button className="admin-btn admin-btn-danger" onClick={() => { setSelectedWithdrawalForReject(w); setWithdrawalRejectModalOpen(true); }} disabled={actionLoading} style={{ fontSize: '0.75rem', padding: '0.35rem 0.65rem' }}>
+                                      Reject &amp; Return Funds
+                                    </button>
+                                  )}
+                                </div>
+                              </td>
+                            </tr>
+                          );
+                        }) : (
+                          <tr><td colSpan={9} style={{ padding: '2rem', textAlign: 'center', color: '#94a3b8' }}>No withdrawal requests submitted yet.</td></tr>
+                        )}
+                      </tbody>
+                    </table>
+                  </div>
                 </div>
               </div>
             </div>
@@ -2485,6 +2630,45 @@ export const AdminDashboardModal: React.FC<AdminDashboardProps> = ({ onClose }) 
                   {actionLoading ? 'Sending Broadcast...' : '🚀 Send Broadcast SMS'}
                 </button>
               </div>
+            </form>
+          </div>
+        </>
+      )}
+
+      {/* ══ MODAL: WITHDRAWAL REJECTION & FUND REVERSION ══ */}
+      {withdrawalRejectModalOpen && selectedWithdrawalForReject && (
+        <>
+          <div onClick={() => setWithdrawalRejectModalOpen(false)} style={{ position: 'fixed', inset: 0, background: 'rgba(15,23,42,0.4)', zIndex: 100, backdropFilter: 'blur(3px)' }} />
+          <div style={{ position: 'fixed', left: '50%', top: '50%', transform: 'translate(-50%, -50%)', width: '92%', maxWidth: '480px', background: '#fff', borderRadius: '16px', padding: '1.5rem', boxShadow: '0 20px 50px rgba(0,0,0,0.2)', zIndex: 101 }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid #f1f5f9', paddingBottom: '0.75rem', marginBottom: '1.25rem' }}>
+              <div>
+                <h3 style={{ margin: 0, fontSize: '1.05rem', fontWeight: 800, color: '#991b1b' }}>Reject Withdrawal Request</h3>
+                <p style={{ margin: '2px 0 0', fontSize: '0.75rem', color: '#64748b' }}>KES {selectedWithdrawalForReject.amount?.toLocaleString()} will be restored to customer balance</p>
+              </div>
+              <button onClick={() => setWithdrawalRejectModalOpen(false)} style={{ background: '#f1f5f9', border: 'none', borderRadius: '8px', cursor: 'pointer', padding: '0.4rem' }}><X size={15} /></button>
+            </div>
+            <form onSubmit={handleConfirmRejectWithdrawal}>
+              <div style={{ marginBottom: '1rem' }}>
+                <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 700, color: '#475569', marginBottom: '6px' }}>Select Pre-set Rejection Reason</label>
+                <select value={selectedRejectionReason} onChange={e => setSelectedRejectionReason(e.target.value)}
+                  style={{ width: '100%', padding: '0.65rem 0.75rem', border: '1.5px solid #e2e8f0', borderRadius: '8px', fontSize: '0.85rem', boxSizing: 'border-box', outline: 'none', background: '#fff' }}>
+                  <option value="Mismatch between National ID, Full Name and M-Pesa Phone Number">Mismatch between National ID, Full Name and M-Pesa Phone Number</option>
+                  <option value="Incorrect M-Pesa Phone Number or Unregistered M-Pesa Account">Incorrect M-Pesa Phone Number or Unregistered M-Pesa Account</option>
+                  <option value="M-Pesa Account Name does not match Applicant National ID Registration">M-Pesa Account Name does not match Applicant National ID Registration</option>
+                  <option value="Invalid County or Town Area Registration Details">Invalid County or Town Area Registration Details</option>
+                  <option value="System Network Timeout / M-Pesa B2C Gateway Transaction Failure">System Network Timeout / M-Pesa B2C Gateway Transaction Failure</option>
+                </select>
+              </div>
+              <div style={{ marginBottom: '1.25rem' }}>
+                <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 700, color: '#475569', marginBottom: '6px' }}>Additional Rejection Notes / Instructions for Customer</label>
+                <textarea rows={3} value={customRejectionNotes} onChange={e => setCustomRejectionNotes(e.target.value)} placeholder="Provide specific guidance on what customer should edit..."
+                  style={{ width: '100%', padding: '0.65rem 0.75rem', border: '1.5px solid #e2e8f0', borderRadius: '8px', fontSize: '0.85rem', boxSizing: 'border-box', outline: 'none', resize: 'none' }}
+                />
+              </div>
+              <button type="submit" disabled={actionLoading}
+                style={{ width: '100%', padding: '0.75rem', background: '#991b1b', color: '#fff', border: 'none', borderRadius: '9px', cursor: 'pointer', fontSize: '0.9rem', fontWeight: 800 }}>
+                {actionLoading ? 'Processing Rejection...' : 'Confirm Rejection & Restore Customer Funds'}
+              </button>
             </form>
           </div>
         </>

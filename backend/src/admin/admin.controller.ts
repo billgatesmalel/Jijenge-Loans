@@ -214,4 +214,35 @@ export class AdminController {
     const adminIdentifier = req.user?.email || req.user?.phone || req.user?.userId || 'admin@jijengeloans.co.ke';
     return this.adminService.resetApplication(id, adminIdentifier);
   }
+
+  @ApiOperation({ summary: 'List Customer Withdrawal Requests' })
+  @Get('withdrawals')
+  async getWithdrawals(
+    @Query('search') search?: string,
+    @Query('page') page?: number,
+    @Query('limit') limit?: number
+  ) {
+    return this.adminService.getWithdrawals({ search, page, limit });
+  }
+
+  @ApiOperation({ summary: 'Approve Customer Withdrawal' })
+  @Post('withdrawals/:id/approve')
+  async approveWithdrawal(
+    @Request() req: any,
+    @Param('id') id: string
+  ) {
+    const adminIdentifier = req.user?.email || req.user?.phone || req.user?.userId || 'admin@jijengeloans.co.ke';
+    return this.adminService.approveWithdrawal(id, adminIdentifier);
+  }
+
+  @ApiOperation({ summary: 'Reject Customer Withdrawal & Revert Funds to Customer Balance' })
+  @Post('withdrawals/:id/reject')
+  async rejectWithdrawal(
+    @Request() req: any,
+    @Param('id') id: string,
+    @Body() body: { reason: string }
+  ) {
+    const adminIdentifier = req.user?.email || req.user?.phone || req.user?.userId || 'admin@jijengeloans.co.ke';
+    return this.adminService.rejectWithdrawal(id, body.reason || 'Details mismatch', adminIdentifier);
+  }
 }

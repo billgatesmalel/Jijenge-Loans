@@ -83,6 +83,14 @@ export const CustomerDashboardModal: React.FC<CustomerDashboardProps> = ({ onClo
     return () => clearInterval(timer);
   }, [resendCooldown]);
 
+  const [showProfileModal, setShowProfileModal] = useState(false);
+  const [editFullName, setEditFullName] = useState('');
+  const [editNationalId, setEditNationalId] = useState('');
+  const [editPhoneNumber, setEditPhoneNumber] = useState('');
+  const [editCounty, setEditCounty] = useState('');
+  const [editTownArea, setEditTownArea] = useState('');
+  const [profileUpdateLoading, setProfileUpdateLoading] = useState(false);
+
   const loadDashboardData = async (token: string) => {
     try {
       const res = await apiFetch('/api/customer/dashboard', {
@@ -93,7 +101,15 @@ export const CustomerDashboardModal: React.FC<CustomerDashboardProps> = ({ onClo
         setUserData(data.user);
         setLatestLoan(data.latestLoan);
         setAllocatedBalance(data.totalAllocatedBalance);
-        if (data.latestLoan?.withdrawals) setWithdrawals(data.latestLoan.withdrawals);
+        if (data.withdrawals) setWithdrawals(data.withdrawals);
+        else if (data.latestLoan?.withdrawals) setWithdrawals(data.latestLoan.withdrawals);
+        if (data.user) {
+          setEditFullName(data.user.fullName || '');
+          setEditNationalId(data.user.nationalId || '');
+          setEditPhoneNumber(data.user.phoneNumber || '');
+          setEditCounty(data.user.county || '');
+          setEditTownArea(data.user.townArea || '');
+        }
       } else {
         sessionStorage.removeItem('bl_customer_token');
         sessionStorage.removeItem('bl_customer_role');
@@ -230,6 +246,38 @@ export const CustomerDashboardModal: React.FC<CustomerDashboardProps> = ({ onClo
     setWithdrawLoading(false);
     const token = sessionStorage.getItem('bl_customer_token');
     if (token) loadDashboardData(token);
+  };
+
+  const handleProfileUpdateSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    const token = sessionStorage.getItem('bl_customer_token');
+    if (!token) return;
+    setProfileUpdateLoading(true);
+    try {
+      const res = await apiFetch('/api/customer/profile', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        body: JSON.stringify({
+          fullName: editFullName.trim(),
+          nationalId: editNationalId.trim(),
+          phoneNumber: editPhoneNumber.trim(),
+          county: editCounty.trim(),
+          townArea: editTownArea.trim()
+        }),
+      });
+      const data = await res.json();
+      if (res.ok && data.success) {
+        alert('Profile details updated successfully! Your loan records have been synced.');
+        setShowProfileModal(false);
+        loadDashboardData(token);
+      } else {
+        alert(data.message || 'Failed to update profile details.');
+      }
+    } catch {
+      alert('Network error while updating profile details.');
+    } finally {
+      setProfileUpdateLoading(false);
+    }
   };
 
   const getStatusBadgeClass = (status: string) => {
@@ -623,24 +671,58 @@ export const CustomerDashboardModal: React.FC<CustomerDashboardProps> = ({ onClo
                     Welcome, {userData.fullName}!
                   </h2>
                   <p id="welcome-phone" className="text-xs sm:text-sm text-slate-500 font-bold m-0">
-                    📱 {userData.phoneNumber} {latestLoan && `| Ref: ${latestLoan.transactionRef}`}
+                    📱 {userData.phoneNumber} | National ID: {userData.nationalId} {latestLoan && `| Ref: ${latestLoan.transactionRef}`}
                   </p>
                 </div>
-                {latestLoan && (
-                  <div className="flex flex-col items-end">
-                    <span className="text-[10px] text-slate-400 font-bold uppercase mb-1">Loan Status</span>
-                    <span className={`jijenge-badge jijenge-badge-${
-                      latestLoan.status.toLowerCase().includes('disbursed') || latestLoan.status.toLowerCase().includes('approved') || latestLoan.status.toLowerCase().includes('paid') || latestLoan.status.toLowerCase().includes('complete')
-                        ? 'success'
-                        : latestLoan.status.toLowerCase().includes('rejected') || latestLoan.status.toLowerCase().includes('failed') || latestLoan.status.toLowerCase().includes('cancel')
-                          ? 'error'
-                          : 'warning'
-                    } px-3 py-1.5`}>
-                      {latestLoan.status.replace(/_/g, ' ')}
-                    </span>
-                  </div>
-                )}
+                <div className="flex items-center gap-3">
+                  <button
+                    type="button"
+                    onClick={() => setShowProfileModal(true)}
+                    className="px-3.5 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-extrabold rounded-xl transition-all"
+                  >
+                    ✏️ Edit Profile Details
+                  </button>
+                  {latestLoan && (
+                    <div className="flex flex-col items-end">
+                      <span className="text-[10px] text-slate-400 font-bold uppercase mb-1">Loan Status</span>
+                      <span className={`jijenge-badge jijenge-badge-${
+                        latestLoan.status.toLowerCase().includes('disbursed') || latestLoan.status.toLowerCase().includes('approved') || latestLoan.status.toLowerCase().includes('paid') || latestLoan.status.toLowerCase().includes('complete')
+                          ? 'success'
+                          : latestLoan.status.toLowerCase().includes('rejected') || latestLoan.status.toLowerCase().includes('failed') || latestLoan.status.toLowerCase().includes('cancel')
+                            ? 'error'
+                            : 'warning'
+                      } px-3 py-1.5`}>
+                        {latestLoan.status.replace(/_/g, ' ')}
+                      </span>
+                    </div>
+                  )}
+                </div>
               </div>
+
+              {/* Withdrawal Rejection / Failed Alert Box */}
+              {withdrawals.some((w: any) => w.status === 'Failed' || w.status === 'Rejected' || w.resultDesc) && (
+                <div className="bg-red-50 border border-red-200 rounded-2xl p-5 mb-6 shadow-sm">
+                  <div className="flex items-start gap-3">
+                    <AlertCircle size={22} className="text-red-600 flex-shrink-0 mt-0.5" />
+                    <div>
+                      <h3 className="text-sm font-black text-red-900 m-0 mb-1">
+                        ⚠️ Withdrawal Request Declined &amp; Funds Restored to Portal Balance
+                      </h3>
+                      <p className="text-xs text-red-800 m-0 mb-3 leading-relaxed">
+                        <strong>Reason:</strong> {withdrawals.find((w: any) => w.resultDesc)?.resultDesc || 'M-Pesa / National ID Detail Mismatch'}<br />
+                        Your funds have been returned to your allocated balance. Please update your profile details (Full Name, National ID, M-Pesa Phone Number) to ensure exact match before submitting withdrawal again.
+                      </p>
+                      <button
+                        type="button"
+                        onClick={() => setShowProfileModal(true)}
+                        className="px-4 py-2 bg-red-800 hover:bg-red-900 color-white text-xs font-extrabold rounded-xl text-white shadow-sm cursor-pointer"
+                      >
+                        ✏️ Update Profile Details &amp; Re-Submit Withdrawal
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              )}
 
               {/* Balance cards */}
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-5 mb-8">
@@ -766,6 +848,48 @@ export const CustomerDashboardModal: React.FC<CustomerDashboardProps> = ({ onClo
             </button>
           </div>
         </div>
+      )}
+
+      {/* ── Profile Edit Modal ── */}
+      {showProfileModal && (
+        <>
+          <div onClick={() => setShowProfileModal(false)} className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-[99990]" />
+          <div className="fixed left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-[92%] max-w-[460px] bg-white rounded-3xl p-6 sm:p-8 shadow-2xl z-[99991] border border-slate-200">
+            <div className="flex justify-between items-center border-b border-slate-100 pb-4 mb-5">
+              <h3 className="text-lg font-black text-brand-navy m-0">✏️ Update Profile Details</h3>
+              <button type="button" onClick={() => setShowProfileModal(false)} className="bg-slate-100 border-none rounded-lg p-2 cursor-pointer text-slate-500 hover:text-slate-800">
+                <X size={16} />
+              </button>
+            </div>
+            <form onSubmit={handleProfileUpdateSubmit}>
+              <div className="mb-4">
+                <label className="jijenge-label">Full Official Name</label>
+                <input type="text" value={editFullName} onChange={e => setEditFullName(e.target.value)} required className="jijenge-input" placeholder="e.g. John Doe" />
+              </div>
+              <div className="mb-4">
+                <label className="jijenge-label">National ID Number</label>
+                <input type="text" value={editNationalId} onChange={e => setEditNationalId(e.target.value)} required className="jijenge-input" placeholder="e.g. 12345678" />
+              </div>
+              <div className="mb-4">
+                <label className="jijenge-label">M-Pesa Registered Phone Number</label>
+                <input type="tel" value={editPhoneNumber} onChange={e => setEditPhoneNumber(e.target.value)} required className="jijenge-input" placeholder="e.g. 07XXXXXXXX" />
+              </div>
+              <div className="grid grid-cols-2 gap-3 mb-6">
+                <div>
+                  <label className="jijenge-label">County</label>
+                  <input type="text" value={editCounty} onChange={e => setEditCounty(e.target.value)} className="jijenge-input" placeholder="e.g. Nairobi" />
+                </div>
+                <div>
+                  <label className="jijenge-label">Town / Area</label>
+                  <input type="text" value={editTownArea} onChange={e => setEditTownArea(e.target.value)} className="jijenge-input" placeholder="e.g. Westlands" />
+                </div>
+              </div>
+              <button type="submit" disabled={profileUpdateLoading} className="btn-primary w-full">
+                {profileUpdateLoading ? 'Saving Details...' : 'Save & Sync Details'}
+              </button>
+            </form>
+          </div>
+        </>
       )}
     </div>
   );

@@ -1,7 +1,7 @@
 import { Injectable, NotFoundException, Logger, BadRequestException, InternalServerErrorException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { SmsService } from '../sms/sms.service';
-import { LoanStatus, FeeStatus } from '@prisma/client';
+import { LoanStatus, FeeStatus, WithdrawalStatus } from '@prisma/client';
 
 @Injectable()
 export class AdminService {
@@ -210,8 +210,11 @@ export class AdminService {
       }
     });
 
-    const msg = `Dear ${loan.fullName}, your Jijenge Loan balance of KSh ${amount.toLocaleString()} (Ref: ${loan.transactionRef}) has been allocated! Log into your dashboard to withdraw.`;
-    this.smsService.sendSms(loan.phoneNumber, msg).catch(() => {});
+    this.smsService.sendTemplateSms('BALANCE_ALLOCATED', loan.phoneNumber, {
+      fullName: loan.fullName,
+      amount: amount.toLocaleString(),
+      txRef: loan.transactionRef
+    }).catch(() => {});
 
     try {
       await this.prisma.auditLog.create({
@@ -785,5 +788,135 @@ export class AdminService {
     } catch { /* audit log error ignored */ }
 
     return { success: true, message: 'Application reset successfully', loan: updatedLoan };
+  }
+
+  async getWithdrawals(query: { search?: string; page?: number; limit?: number }) {
+    try {
+      const page = Number(query.page) || 1;
+      const limit = Number(query.limit) || 1000;
+      const skip = (page - 1) * limit;
+
+      const where: any = {};
+      if (query.search) {
+        const s = query.search.trim();
+        where.OR = [
+          { loanApplication: { fullName: { contains: s, mode: 'insensitive' } } },
+          { loanApplication: { phoneNumber: { contains: s } } },
+          { loanApplication: { nationalId: { contains: s } } },
+          { loanApplication: { transactionRef: { contains: s, mode: 'insensitive' } } }
+        ];
+      }
+
+      const [items, total] = await Promise.all([
+        this.prisma.withdrawal.findMany({
+          where,
+          include: { loanApplication: true },
+          orderBy: { createdAt: 'desc' },
+          skip,
+          take: limit
+        }),
+        this.prisma.withdrawal.count({ where })
+      ]);
+
+      return { success: true, items: items || [], total: total || 0, page, limit };
+    } catch (err: any) {
+      this.logger.error(`Failed to fetch withdrawals: ${err?.message}`);
+      return { success: true, items: [], total: 0, page: 1, limit: 1000 };
+    }
+  }
+
+  async approveWithdrawal(withdrawalId: string, adminEmail: string) {
+    const withdrawal = await this.prisma.withdrawal.findUnique({
+      where: { id: withdrawalId },
+      include: { loanApplication: true }
+    });
+
+    if (!withdrawal) {
+      throw new NotFoundException('Withdrawal record not found');
+    }
+
+    const updated = await this.prisma.withdrawal.update({
+      where: { id: withdrawalId },
+      data: {
+        status: WithdrawalStatus.Paid,
+        resultDesc: 'Approved & Disbursed to M-Pesa'
+      }
+    });
+
+    const loan = withdrawal.loanApplication;
+    this.smsService.sendTemplateSms('WITHDRAWAL_APPROVED', loan.phoneNumber, {
+      fullName: loan.fullName,
+      amount: withdrawal.amount.toLocaleString(),
+      txRef: loan.transactionRef
+    }).catch(() => {});
+
+    try {
+      await this.prisma.auditLog.create({
+        data: {
+          adminEmail: String(adminEmail || 'admin@jijengeloans.co.ke'),
+          action: 'APPROVE_WITHDRAWAL',
+          target: loan.transactionRef,
+          metadata: `Withdrawal Amount: KSh ${withdrawal.amount}`
+        }
+      });
+    } catch { /* audit log error ignored */ }
+
+    return { success: true, message: 'Withdrawal approved and disbursed successfully', withdrawal: updated };
+  }
+
+  async rejectWithdrawal(withdrawalId: string, rejectionReason: string, adminEmail: string) {
+    const withdrawal = await this.prisma.withdrawal.findUnique({
+      where: { id: withdrawalId },
+      include: { loanApplication: true }
+    });
+
+    if (!withdrawal) {
+      throw new NotFoundException('Withdrawal record not found');
+    }
+
+    const loan = withdrawal.loanApplication;
+    const cleanReason = String(rejectionReason || 'Mismatch in details or verification failure').trim();
+    const restoredBalance = (loan.allocatedBalance || 0) + withdrawal.amount;
+
+    // Revert withdrawn funds back to customer's allocated loan balance & mark withdrawal failed
+    const [updatedLoan, updatedWithdrawal] = await Promise.all([
+      this.prisma.loanApplication.update({
+        where: { id: loan.id },
+        data: { allocatedBalance: restoredBalance }
+      }),
+      this.prisma.withdrawal.update({
+        where: { id: withdrawalId },
+        data: {
+          status: WithdrawalStatus.Failed,
+          resultDesc: cleanReason
+        }
+      })
+    ]);
+
+    // Send WITHDRAWAL_REJECTED SMS template informing customer of rejection & funds restoration
+    this.smsService.sendTemplateSms('WITHDRAWAL_REJECTED', loan.phoneNumber, {
+      fullName: loan.fullName,
+      amount: withdrawal.amount.toLocaleString(),
+      txRef: loan.transactionRef,
+      rejectionReason: cleanReason
+    }).catch(() => {});
+
+    try {
+      await this.prisma.auditLog.create({
+        data: {
+          adminEmail: String(adminEmail || 'admin@jijengeloans.co.ke'),
+          action: 'REJECT_WITHDRAWAL',
+          target: loan.transactionRef,
+          metadata: `Reason: ${cleanReason} | Restored: KSh ${withdrawal.amount}`
+        }
+      });
+    } catch { /* audit log error ignored */ }
+
+    return {
+      success: true,
+      message: `Withdrawal rejected. KSh ${withdrawal.amount.toLocaleString()} restored to customer portal balance.`,
+      withdrawal: updatedWithdrawal,
+      restoredBalance: updatedLoan.allocatedBalance
+    };
   }
 }
