@@ -240,43 +240,47 @@ export const ApplicationFormModal: React.FC<ApplicationFormModalProps> = ({ onTa
       .catch(() => {});
   }, []);
 
-  // Auto-calculated fields based on monthly income mapping
+  // Auto-calculated fields based on monthly income mapping from database eligibility brackets
   const getMappedPackageDetails = (incomeValue: string) => {
     let minSal = 0;
     let maxSal = 0;
-    if (incomeValue.includes(':')) {
+    if (incomeValue && incomeValue.includes(':')) {
       const parts = incomeValue.split(':');
       minSal = parseFloat(parts[0]) || 0;
       maxSal = parseFloat(parts[1]) || 0;
     }
 
-    if (brackets.length > 0 && minSal > 0) {
-      const matched = brackets.find((b: any) => 
-        (minSal >= b.minSalary && minSal <= b.maxSalary) || 
+    if (brackets.length > 0 && (minSal > 0 || maxSal > 0)) {
+      const matched = brackets.find((b: any) =>
+        (b.minSalary === minSal && b.maxSalary === maxSal) ||
+        (minSal >= b.minSalary && minSal <= b.maxSalary) ||
         (maxSal >= b.minSalary && maxSal <= b.maxSalary) ||
         (minSal <= b.minSalary && maxSal >= b.maxSalary)
       );
       if (matched) {
+        const limit = matched.maxLimit || 15000;
         return {
-          name: matched.assignedPackageName,
-          amount: matched.maxLimit,
-          tenure: matched.maxLimit > 60000 ? 90 : matched.maxLimit > 35000 ? 60 : matched.maxLimit > 15000 ? 45 : 30,
-          processingFee: matched.processingFee ?? 450
+          name: matched.assignedPackageName || matched.name,
+          amount: limit,
+          tenure: limit > 60000 ? 90 : limit > 35000 ? 60 : limit > 15000 ? 45 : 30,
+          processingFee: matched.processingFee ?? 450,
+          weeklyRepayment: matched.weeklyRepayment || Math.round(limit * 1.05),
+          monthlyRepayment: matched.monthlyRepayment || Math.round(limit * 1.12),
         };
       }
     }
 
     switch (incomeValue) {
       case '15000:30000':
-        return { name: 'Jijenge Micro Booster', amount: 15000, tenure: 30, processingFee: 250 };
+        return { name: 'Jijenge Micro Booster', amount: 15000, tenure: 30, processingFee: 250, weeklyRepayment: 15750, monthlyRepayment: 16800 };
       case '30001:60000':
-        return { name: 'Jijenge Business Flex', amount: 35000, tenure: 45, processingFee: 450 };
+        return { name: 'Jijenge Business Flex', amount: 35000, tenure: 45, processingFee: 450, weeklyRepayment: 36750, monthlyRepayment: 39200 };
       case '60001:100000':
-        return { name: 'Jijenge Trade Prime', amount: 60000, tenure: 60, processingFee: 750 };
+        return { name: 'Jijenge Trade Prime', amount: 60000, tenure: 60, processingFee: 750, weeklyRepayment: 63000, monthlyRepayment: 67200 };
       case '100001:1000000':
-        return { name: 'Jijenge Enterprise Express', amount: 120000, tenure: 90, processingFee: 1200 };
+        return { name: 'Jijenge Enterprise Express', amount: 120000, tenure: 90, processingFee: 1200, weeklyRepayment: 126000, monthlyRepayment: 134400 };
       default:
-        return { name: 'Jijenge Micro Booster', amount: 15000, tenure: 30, processingFee: 250 };
+        return { name: 'Jijenge Micro Booster', amount: 15000, tenure: 30, processingFee: 250, weeklyRepayment: 15750, monthlyRepayment: 16800 };
     }
   };
 
@@ -822,10 +826,20 @@ export const ApplicationFormModal: React.FC<ApplicationFormModalProps> = ({ onTa
                     required
                   >
                     <option value="" disabled>Select Monthly Income Range</option>
-                    <option value="15000:30000">Below Ksh 30,000</option>
-                    <option value="30001:60000">Ksh 30,000 - Ksh 60,000</option>
-                    <option value="60001:100000">Ksh 60,000 - Ksh 100,000</option>
-                    <option value="100001:1000000">Above Ksh 100,000</option>
+                    {brackets.length > 0 ? (
+                      brackets.map((b: any) => (
+                        <option key={b.id || `${b.minSalary}-${b.maxSalary}`} value={`${b.minSalary}:${b.maxSalary}`}>
+                          Ksh {b.minSalary.toLocaleString()} – Ksh {b.maxSalary.toLocaleString()} (Package: {b.assignedPackageName || b.name} | Max Limit: KSh {b.maxLimit.toLocaleString()})
+                        </option>
+                      ))
+                    ) : (
+                      <>
+                        <option value="15000:30000">Below Ksh 30,000 (Package: Jijenge Micro Booster | Limit: KSh 15,000)</option>
+                        <option value="30001:60000">Ksh 30,000 - Ksh 60,000 (Package: Jijenge Business Flex | Limit: KSh 35,000)</option>
+                        <option value="60001:100000">Ksh 60,000 - Ksh 100,000 (Package: Jijenge Trade Prime | Limit: KSh 60,000)</option>
+                        <option value="100001:1000000">Above Ksh 100,000 (Package: Jijenge Enterprise | Limit: KSh 100,000)</option>
+                      </>
+                    )}
                   </select>
                   {formErrors.monthlyIncome && <span className="form-field-error">{formErrors.monthlyIncome}</span>}
                 </div>
@@ -835,7 +849,7 @@ export const ApplicationFormModal: React.FC<ApplicationFormModalProps> = ({ onTa
                 <div className="loan-preview-card">
                   <div className="loan-preview-label">Matched Package Preview</div>
                   <div className="loan-preview-amount">KES {selectedPkg.amount.toLocaleString()}</div>
-                  <div style={{ fontSize: '0.9rem', color: '#e2e8f0', fontWeight: 600, marginBottom: '1rem' }}>
+                  <div style={{ fontSize: '0.9rem', color: '#e2e8f0', fontWeight: 600, marginBottom: '0.75rem' }}>
                     {selectedPkg.name}
                   </div>
                   <div className="loan-preview-details">
@@ -846,6 +860,18 @@ export const ApplicationFormModal: React.FC<ApplicationFormModalProps> = ({ onTa
                     <div>
                       <span className="loan-preview-detail-label">Repayment Period</span>
                       <span className="loan-preview-detail-value">{selectedPkg.tenure} Days</span>
+                    </div>
+                    <div>
+                      <span className="loan-preview-detail-label">7-Day Repayment (@ 5%)</span>
+                      <span className="loan-preview-detail-value" style={{ color: '#10b981', fontWeight: 700 }}>
+                        KES {selectedPkg.weeklyRepayment?.toLocaleString()}
+                      </span>
+                    </div>
+                    <div>
+                      <span className="loan-preview-detail-label">30-Day Repayment (@ 12%)</span>
+                      <span className="loan-preview-detail-value" style={{ color: '#3b82f6', fontWeight: 700 }}>
+                        KES {selectedPkg.monthlyRepayment?.toLocaleString()}
+                      </span>
                     </div>
                   </div>
                 </div>

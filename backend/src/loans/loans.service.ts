@@ -170,7 +170,7 @@ export class LoansService {
     try {
       const rawBrackets = await this.prisma.eligibilityBracket.findMany({
         where: { active: true },
-        orderBy: { id: 'asc' }
+        orderBy: { minSalary: 'asc' }
       });
       const brackets = rawBrackets.map((b: any) => {
         const limit = b.maxLimit || 0;
