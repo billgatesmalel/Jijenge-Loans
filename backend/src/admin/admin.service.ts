@@ -13,41 +13,133 @@ export class AdminService {
   ) {}
 
   async getAnalytics() {
-    const totalApplications = await this.prisma.loanApplication.count();
-    const paidApplications = await this.prisma.loanApplication.count({
-      where: { feeStatus: FeeStatus.Paid }
-    });
-    const approvedApplications = await this.prisma.loanApplication.count({
-      where: { status: LoanStatus.Approved }
-    });
-    const disbursedApplications = await this.prisma.loanApplication.count({
-      where: { status: LoanStatus.Disbursed }
-    });
+    try {
+      const totalApplications = await this.prisma.loanApplication.count();
+      const paidApplications = await this.prisma.loanApplication.count({
+        where: { feeStatus: FeeStatus.Paid }
+      });
+      const approvedApplications = await this.prisma.loanApplication.count({
+        where: { status: LoanStatus.Approved }
+      });
+      const disbursedApplications = await this.prisma.loanApplication.count({
+        where: { status: LoanStatus.Disbursed }
+      });
 
-    const revenueResult = await this.prisma.loanApplication.aggregate({
-      _sum: { amountPaid: true }
-    });
+      const revenueResult = await this.prisma.loanApplication.aggregate({
+        _sum: { amountPaid: true }
+      });
 
-    const totalAllocatedResult = await this.prisma.loanApplication.aggregate({
-      _sum: { allocatedBalance: true }
-    });
+      const totalAllocatedResult = await this.prisma.loanApplication.aggregate({
+        _sum: { allocatedBalance: true }
+      });
 
-    const totalRevenue = revenueResult._sum.amountPaid || 0;
-    const totalAllocated = totalAllocatedResult._sum.allocatedBalance || 0;
-    const conversionRate = totalApplications > 0 ? Math.round((paidApplications / totalApplications) * 100) : 0;
+      const totalRevenue = revenueResult._sum.amountPaid || 0;
+      const totalAllocated = totalAllocatedResult._sum.allocatedBalance || 0;
+      const conversionRate = totalApplications > 0 ? Math.round((paidApplications / totalApplications) * 100) : 0;
 
-    return {
-      success: true,
-      metrics: {
-        totalApplications,
-        paidApplications,
-        approvedApplications,
-        disbursedApplications,
-        totalRevenue,
-        totalAllocated,
-        conversionRate
-      }
-    };
+      // ── Package Analytics ──────────────────────────────────────
+      const brackets = await this.prisma.eligibilityBracket.findMany({
+        where: { active: true },
+        orderBy: { minSalary: 'asc' }
+      });
+
+      const allApps = await this.prisma.loanApplication.findMany({
+        select: {
+          packageName: true,
+          amount: true,
+          allocatedBalance: true,
+          amountPaid: true,
+          status: true,
+          county: true
+        }
+      });
+
+      const packageAnalytics = brackets.map(b => {
+        const pkgName = b.assignedPackageName || b.name;
+        const pkgApps = allApps.filter(a =>
+          a.packageName?.toLowerCase().trim() === pkgName.toLowerCase().trim() ||
+          a.packageName?.toLowerCase().trim() === b.name?.toLowerCase().trim()
+        );
+        const count = pkgApps.length;
+        const allocated = pkgApps.reduce((acc, a) => acc + (a.allocatedBalance || 0), 0);
+        const fees = pkgApps.reduce((acc, a) => acc + (a.amountPaid || 0), 0);
+        const approvedCount = pkgApps.filter(a => (a.status as string) === 'Approved' || (a.status as string) === 'APPROVED' || (a.status as string) === 'Disbursed' || (a.status as string) === 'DISBURSED').length;
+        const approvalRate = count > 0 ? Math.round((approvedCount / count) * 100) : 0;
+        const maxLimit = b.maxLimit || 0;
+        const weeklyRepayment = Math.round(maxLimit * 1.05);
+        const monthlyRepayment = Math.round(maxLimit * 1.12);
+
+        return {
+          id: b.id,
+          packageName: pkgName,
+          minSalary: b.minSalary,
+          maxSalary: b.maxSalary,
+          maxLimit,
+          processingFee: b.processingFee || 450,
+          applicationCount: count,
+          totalAllocated: allocated,
+          totalFeesCollected: fees,
+          approvalRate,
+          weeklyRepayment,
+          monthlyRepayment,
+          weeklyAmount: weeklyRepayment,
+          monthlyAmount: monthlyRepayment
+        };
+      });
+
+      // ── County Analytics ───────────────────────────────────────
+      const countyMap: Record<string, { count: number; totalAmount: number; totalFees: number }> = {};
+      allApps.forEach(a => {
+        const cName = (a.county || 'Nairobi').trim();
+        if (!countyMap[cName]) {
+          countyMap[cName] = { count: 0, totalAmount: 0, totalFees: 0 };
+        }
+        countyMap[cName].count += 1;
+        countyMap[cName].totalAmount += (a.allocatedBalance || a.amount || 0);
+        countyMap[cName].totalFees += (a.amountPaid || 0);
+      });
+
+      const countyAnalytics = Object.entries(countyMap)
+        .map(([county, data]) => ({
+          county,
+          count: data.count,
+          totalAmount: data.totalAmount,
+          totalFees: data.totalFees,
+          percentage: totalApplications > 0 ? Math.round((data.count / totalApplications) * 100) : 0
+        }))
+        .sort((a, b) => b.count - a.count);
+
+      return {
+        success: true,
+        metrics: {
+          totalApplications,
+          paidApplications,
+          approvedApplications,
+          disbursedApplications,
+          totalRevenue,
+          totalAllocated,
+          conversionRate,
+          packageAnalytics,
+          countyAnalytics
+        }
+      };
+    } catch (err: any) {
+      this.logger.error(`Failed to generate analytics: ${err?.message}`, err?.stack);
+      return {
+        success: true,
+        metrics: {
+          totalApplications: 0,
+          paidApplications: 0,
+          approvedApplications: 0,
+          disbursedApplications: 0,
+          totalRevenue: 0,
+          totalAllocated: 0,
+          conversionRate: 0,
+          packageAnalytics: [],
+          countyAnalytics: []
+        }
+      };
+    }
   }
 
   async getApplications(query: { page?: number; limit?: number; status?: string; search?: string }) {
@@ -221,7 +313,23 @@ export class AdminService {
           });
         } catch { /* ignored auto-seed fallback */ }
       }
-      return { success: true, items: items || [] };
+
+      const enrichedItems = (items || []).map((b: any) => {
+        const limit = b.maxLimit || 0;
+        const weeklyRepayment = Math.round(limit * 1.05);
+        const monthlyRepayment = Math.round(limit * 1.12);
+        return {
+          ...b,
+          weeklyRepayment,
+          monthlyRepayment,
+          weeklyAmount: weeklyRepayment,
+          monthlyAmount: monthlyRepayment,
+          weeklyFeeRate: '5%',
+          monthlyFeeRate: '12%'
+        };
+      });
+
+      return { success: true, items: enrichedItems };
     } catch (err: any) {
       this.logger.error(`Failed to fetch eligibility brackets: ${err?.message}`, err?.stack);
       return { success: true, items: [] };
@@ -478,5 +586,55 @@ export class AdminService {
     } catch { /* audit log error ignored */ }
 
     return { success: true, ticket };
+  }
+
+  async deleteSmsLogsBulk(ids: string[]) {
+    try {
+      if (!ids || ids.length === 0) return { success: true, count: 0 };
+      await this.prisma.smsLog.deleteMany({
+        where: { id: { in: ids } }
+      });
+      return { success: true, count: ids.length };
+    } catch (e: any) {
+      throw new BadRequestException('Failed to delete SMS logs');
+    }
+  }
+
+  async deleteApplicationsBulk(ids: string[]) {
+    try {
+      if (!ids || ids.length === 0) return { success: true, count: 0 };
+      await this.prisma.loanApplication.deleteMany({
+        where: { id: { in: ids } }
+      });
+      return { success: true, count: ids.length };
+    } catch (e: any) {
+      throw new BadRequestException('Failed to delete selected loan applications');
+    }
+  }
+
+  async sendBulkSms(phones: string[], message: string, adminEmail: string) {
+    const uniquePhones = Array.from(new Set((phones || []).map(p => p.trim()).filter(Boolean)));
+    if (uniquePhones.length === 0) return { success: true, count: 0, total: 0 };
+
+    let successCount = 0;
+    for (const phone of uniquePhones) {
+      try {
+        const res = await this.smsService.sendSms(phone, message);
+        if (res.success) successCount++;
+      } catch { /* ignored */ }
+    }
+
+    try {
+      await this.prisma.auditLog.create({
+        data: {
+          adminEmail: String(adminEmail || 'admin@jijengeloans.co.ke'),
+          action: 'SEND_BULK_SMS',
+          target: `${uniquePhones.length} recipients`,
+          metadata: message.substring(0, 100)
+        }
+      });
+    } catch { /* audit log error ignored */ }
+
+    return { success: true, count: successCount, total: uniquePhones.length };
   }
 }

@@ -167,10 +167,28 @@ export class LoansService {
   }
 
   async getEligibilityBrackets() {
-    const brackets = await this.prisma.eligibilityBracket.findMany({
-      where: { active: true },
-      orderBy: { id: 'asc' }
-    });
-    return { success: true, brackets };
+    try {
+      const rawBrackets = await this.prisma.eligibilityBracket.findMany({
+        where: { active: true },
+        orderBy: { id: 'asc' }
+      });
+      const brackets = rawBrackets.map((b: any) => {
+        const limit = b.maxLimit || 0;
+        const weeklyRepayment = Math.round(limit * 1.05);
+        const monthlyRepayment = Math.round(limit * 1.12);
+        return {
+          ...b,
+          weeklyRepayment,
+          monthlyRepayment,
+          weeklyAmount: weeklyRepayment,
+          monthlyAmount: monthlyRepayment,
+          weeklyFeeRate: '5%',
+          monthlyFeeRate: '12%'
+        };
+      });
+      return { success: true, brackets };
+    } catch {
+      return { success: true, brackets: [] };
+    }
   }
 }

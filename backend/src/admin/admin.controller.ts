@@ -152,7 +152,33 @@ export class AdminController {
     @Param('id') id: string,
     @Body() body: { status: string }
   ) {
-    const adminIdentifier = req.user.email || req.user.phone || req.user.userId;
+    const adminIdentifier = req.user?.email || req.user?.phone || req.user?.userId || 'admin@jijengeloans.co.ke';
     return this.adminService.resolveSupportTicket(id, body.status || 'RESOLVED', adminIdentifier);
+  }
+
+  @ApiOperation({ summary: 'Send Bulk SMS to Selected Recipients' })
+  @Post('send-sms-bulk')
+  async sendBulkSms(
+    @Request() req: any,
+    @Body() body: { phones: string[]; message: string }
+  ) {
+    const adminIdentifier = req.user?.email || req.user?.phone || req.user?.userId || 'admin@jijengeloans.co.ke';
+    return this.adminService.sendBulkSms(body.phones || [], body.message || '', adminIdentifier);
+  }
+
+  @ApiOperation({ summary: 'Bulk Delete Applications' })
+  @Post('applications/delete-bulk')
+  async deleteApplicationsBulk(
+    @Body() body: { ids: string[] }
+  ) {
+    return this.adminService.deleteApplicationsBulk(body.ids || []);
+  }
+
+  @ApiOperation({ summary: 'Bulk Delete SMS Logs' })
+  @Post('sms-logs/delete-bulk')
+  async deleteSmsLogsBulk(
+    @Body() body: { ids: string[] }
+  ) {
+    return this.adminService.deleteSmsLogsBulk(body.ids || []);
   }
 }
