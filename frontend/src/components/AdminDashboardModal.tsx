@@ -188,6 +188,22 @@ export const AdminDashboardModal: React.FC<AdminDashboardProps> = ({ onClose }) 
     return () => document.removeEventListener('mousedown', handler);
   }, []);
 
+  /* ── Auth session error helper ──────────────────────────── */
+  const handleAuthError = (res: Response, message?: string): boolean => {
+    if (res.status === 401) {
+      sessionStorage.removeItem('bl_super_admin_token');
+      localStorage.removeItem('bl_super_admin_token');
+      sessionStorage.removeItem('bl_customer_token');
+      localStorage.removeItem('bl_customer_token');
+      sessionStorage.removeItem('bl_customer_role');
+      localStorage.removeItem('bl_customer_role');
+      setIsAuth(false);
+      setLoginError(message || 'Your admin session has expired. Please sign in again.');
+      return true;
+    }
+    return false;
+  };
+
   /* ── Business logic (preserved exactly) ──────────────────── */
   const getAdminToken = (): string | null => {
     const ct = sessionStorage.getItem('bl_customer_token') || localStorage.getItem('bl_customer_token');
@@ -210,6 +226,11 @@ export const AdminDashboardModal: React.FC<AdminDashboardProps> = ({ onClose }) 
         apiFetch('/api/admin/sms-templates', { headers: { Authorization: `Bearer ${token}` } }),
         apiFetch('/api/support/settings'),
       ]);
+
+      if (appRes.status === 401 || bracRes.status === 401 || custRes.status === 401) {
+        handleAuthError(appRes.status === 401 ? appRes : bracRes);
+        return;
+      }
 
       if (appRes.ok) { const d = await appRes.json(); setApplications(d.items || d.applications || []); }
       if (anaRes.ok) { const d = await anaRes.json(); setAnalytics(d.metrics || d.analytics || d || null); }
@@ -336,6 +357,7 @@ export const AdminDashboardModal: React.FC<AdminDashboardProps> = ({ onClose }) 
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
         body: JSON.stringify({ loanId, amount: parseFloat(allocateAmount), notes: allocationNotes }),
       });
+      if (handleAuthError(res)) return;
       const data = await res.json();
       if (res.ok) {
         showToast('Balance allocated successfully!');
@@ -365,6 +387,7 @@ export const AdminDashboardModal: React.FC<AdminDashboardProps> = ({ onClose }) 
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
         body: JSON.stringify({ loanId, status: targetStatus }),
       });
+      if (handleAuthError(res)) return;
       const data = await res.json();
       if (res.ok) {
         showToast(`Status updated to ${targetStatus}`);
@@ -392,6 +415,7 @@ export const AdminDashboardModal: React.FC<AdminDashboardProps> = ({ onClose }) 
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
         body: JSON.stringify({ sender: 'ADMIN', senderName: 'Admin Agent', text: supportReply.trim() }),
       });
+      if (handleAuthError(res)) return;
       const data = await res.json();
       if (res.ok && data.success) {
         setSupportReply('');
@@ -411,6 +435,7 @@ export const AdminDashboardModal: React.FC<AdminDashboardProps> = ({ onClose }) 
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
         body: JSON.stringify({ status: 'RESOLVED' }),
       });
+      if (handleAuthError(res)) return;
       if (res.ok) {
         showToast('Ticket marked as resolved');
         setSelectedTicket(null);
@@ -453,6 +478,8 @@ export const AdminDashboardModal: React.FC<AdminDashboardProps> = ({ onClose }) 
         });
       }
 
+      if (handleAuthError(res)) return;
+
       if (res.ok) {
         showToast(selectedBracket ? 'Bracket updated successfully!' : 'New bracket created!');
         setBracketModalOpen(false);
@@ -479,6 +506,7 @@ export const AdminDashboardModal: React.FC<AdminDashboardProps> = ({ onClose }) 
         method: 'DELETE',
         headers: { Authorization: `Bearer ${token}` }
       });
+      if (handleAuthError(res)) return;
       if (res.ok) {
         showToast('Bracket deleted');
         fetchAllAdminData(token);

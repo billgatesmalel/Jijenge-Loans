@@ -91,7 +91,7 @@ export class AuthService implements OnModuleInit {
     }
 
     const payload = { sub: admin.id, email: admin.email, role: admin.role, type: 'ADMIN' };
-    const accessToken = this.jwtService.sign(payload, { expiresIn: '15m' });
+    const accessToken = this.jwtService.sign(payload, { expiresIn: '7d' });
     const refreshToken = this.jwtService.sign(payload, { expiresIn: '7d' });
 
     await this.prisma.refreshToken.create({
@@ -155,7 +155,7 @@ export class AuthService implements OnModuleInit {
 
     const userRole = (user as any).role || Role.CUSTOMER;
     const payload = { sub: user.id, phone: user.phoneNumber, role: userRole, type: 'CUSTOMER' };
-    const accessToken = this.jwtService.sign(payload, { expiresIn: '1h' });
+    const accessToken = this.jwtService.sign(payload, { expiresIn: '7d' });
     const refreshToken = this.jwtService.sign(payload, { expiresIn: '7d' });
 
     await this.prisma.refreshToken.create({
@@ -259,7 +259,7 @@ export class AuthService implements OnModuleInit {
       });
 
       const newPayload = { sub: payload.sub, email: payload.email, phone: payload.phone, role: payload.role, type: payload.type };
-      const newAccessToken = this.jwtService.sign(newPayload, { expiresIn: payload.type === 'ADMIN' ? '15m' : '1h' });
+      const newAccessToken = this.jwtService.sign(newPayload, { expiresIn: '7d' });
       const newRefreshToken = this.jwtService.sign(newPayload, { expiresIn: '7d' });
 
       await this.prisma.refreshToken.create({
