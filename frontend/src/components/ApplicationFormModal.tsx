@@ -146,6 +146,21 @@ export const ApplicationFormModal: React.FC<ApplicationFormModalProps> = ({ onTa
     }
   };
 
+  const handleCloseCheckout = () => {
+    setCheckoutOpen(false);
+    setCheckoutStage(1);
+    setStkSent(false);
+    try {
+      const saved = localStorage.getItem('jijenge_apply_form_data');
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        delete parsed.checkoutOpen;
+        delete parsed.checkoutStage;
+        localStorage.setItem('jijenge_apply_form_data', JSON.stringify(parsed));
+      }
+    } catch { /* ignored */ }
+  };
+
   // ── Persist & Restore Application State Across Page Refresh ──
   useEffect(() => {
     try {
@@ -164,8 +179,6 @@ export const ApplicationFormModal: React.FC<ApplicationFormModalProps> = ({ onTa
         if (p.townArea) setTownArea(p.townArea);
         if (p.monthlyIncome) setMonthlyIncome(p.monthlyIncome);
         if (p.loanOffer) setLoanOffer(p.loanOffer);
-        if (p.checkoutOpen !== undefined) setCheckoutOpen(p.checkoutOpen);
-        if (p.checkoutStage !== undefined) setCheckoutStage(p.checkoutStage);
       }
     } catch (e) {
       console.warn('Could not restore form data:', e);
@@ -187,8 +200,6 @@ export const ApplicationFormModal: React.FC<ApplicationFormModalProps> = ({ onTa
         townArea,
         monthlyIncome,
         loanOffer,
-        checkoutOpen,
-        checkoutStage,
       };
       localStorage.setItem('jijenge_apply_form_data', JSON.stringify(stateToSave));
     } catch (e) {
@@ -923,10 +934,17 @@ export const ApplicationFormModal: React.FC<ApplicationFormModalProps> = ({ onTa
             <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
               <img src="/logo.png" alt="Jijenge Loans" style={{ width: '36px', height: '36px', objectFit: 'contain' }} />
               <span style={{ fontWeight: 800, fontSize: '1.125rem', color: '#ffffff', letterSpacing: '-0.02em' }}>Jijenge Loans</span>
+              <button
+                type="button"
+                onClick={handleCloseCheckout}
+                style={{ marginLeft: '1rem', background: 'rgba(255,255,255,0.15)', color: '#ffffff', border: '1px solid rgba(255,255,255,0.25)', borderRadius: '8px', padding: '0.35rem 0.75rem', fontSize: '0.8rem', fontWeight: 700, cursor: 'pointer' }}
+              >
+                ← Back to Home
+              </button>
             </div>
             <button
-              onClick={() => setCheckoutOpen(false)}
-              style={{ color: '#ffffff', fontSize: '1.25rem', fontWeight: 700, background: 'none', border: 'none', cursor: 'pointer' }}
+              onClick={handleCloseCheckout}
+              style={{ color: '#ffffff', fontSize: '1.4rem', fontWeight: 800, background: 'rgba(255,255,255,0.1)', border: 'none', borderRadius: '8px', width: '36px', height: '36px', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}
               aria-label="Close offer view"
             >
               ✕
@@ -1067,6 +1085,27 @@ export const ApplicationFormModal: React.FC<ApplicationFormModalProps> = ({ onTa
                       ? '🔄 Resend M-Pesa STK Push'
                       : '💳 Send M-Pesa STK Push'}
                   </button>
+
+                  <div style={{ display: 'flex', gap: '0.75rem', marginTop: '0.85rem' }}>
+                    <button
+                      type="button"
+                      style={{ flex: 1, padding: '0.65rem', background: '#f1f5f9', color: '#475569', border: '1px solid #cbd5e1', borderRadius: '12px', fontSize: '0.825rem', fontWeight: 700, cursor: 'pointer' }}
+                      onClick={handleCloseCheckout}
+                    >
+                      ✕ Close &amp; Return Home
+                    </button>
+                    <button
+                      type="button"
+                      style={{ flex: 1, padding: '0.65rem', background: '#fef2f2', color: '#991b1b', border: '1px solid #fecaca', borderRadius: '12px', fontSize: '0.825rem', fontWeight: 700, cursor: 'pointer' }}
+                      onClick={() => {
+                        clearPersistedState();
+                        handleCloseCheckout();
+                        setCurrentStep(1);
+                      }}
+                    >
+                      🔄 Start Fresh Form
+                    </button>
+                  </div>
                 </div>
               </div>
             )}
