@@ -829,15 +829,17 @@ export const ApplicationFormModal: React.FC<ApplicationFormModalProps> = ({ onTa
                     {brackets.length > 0 ? (
                       brackets.map((b: any) => (
                         <option key={b.id || `${b.minSalary}-${b.maxSalary}`} value={`${b.minSalary}:${b.maxSalary}`}>
-                          Ksh {b.minSalary.toLocaleString()} – Ksh {b.maxSalary.toLocaleString()} (Package: {b.assignedPackageName || b.name} | Max Limit: KSh {b.maxLimit.toLocaleString()})
+                          {b.maxSalary >= 1000000
+                            ? `Above Ksh ${b.minSalary.toLocaleString()}`
+                            : `Ksh ${b.minSalary.toLocaleString()} – Ksh ${b.maxSalary.toLocaleString()}`}
                         </option>
                       ))
                     ) : (
                       <>
-                        <option value="15000:30000">Below Ksh 30,000 (Package: Jijenge Micro Booster | Limit: KSh 15,000)</option>
-                        <option value="30001:60000">Ksh 30,000 - Ksh 60,000 (Package: Jijenge Business Flex | Limit: KSh 35,000)</option>
-                        <option value="60001:100000">Ksh 60,000 - Ksh 100,000 (Package: Jijenge Trade Prime | Limit: KSh 60,000)</option>
-                        <option value="100001:1000000">Above Ksh 100,000 (Package: Jijenge Enterprise | Limit: KSh 100,000)</option>
+                        <option value="15000:30000">Ksh 15,000 – Ksh 30,000</option>
+                        <option value="30001:60000">Ksh 30,001 – Ksh 60,000</option>
+                        <option value="60001:100000">Ksh 60,001 – Ksh 100,000</option>
+                        <option value="100001:1000000">Above Ksh 100,000</option>
                       </>
                     )}
                   </select>
