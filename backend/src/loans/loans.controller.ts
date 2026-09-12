@@ -24,4 +24,22 @@ export class LoansController {
   async getEligibilityBrackets() {
     return this.loansService.getEligibilityBrackets();
   }
+
+  @ApiOperation({ summary: 'Check Unfinished Loan Application' })
+  @Post('check-unfinished')
+  async checkUnfinished(@Body() body: { phoneNumber?: string; nationalId?: string }) {
+    return this.loansService.checkUnfinished(body);
+  }
+
+  @ApiOperation({ summary: 'Resume STK Push for Existing Unfinished Loan Application' })
+  @Post('resume-stk')
+  async resumeStk(@Body() body: { loanId: string }) {
+    return this.loansService.resumeStk(body.loanId);
+  }
+
+  @ApiOperation({ summary: 'Cancel Incomplete Loan Application & Allow Restart' })
+  @Post('cancel-and-restart')
+  async cancelAndRestart(@Body() body: { loanId: string }) {
+    return this.loansService.cancelAndRestart(body.loanId);
+  }
 }

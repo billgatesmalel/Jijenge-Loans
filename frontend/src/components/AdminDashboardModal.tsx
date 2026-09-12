@@ -691,6 +691,57 @@ export const AdminDashboardModal: React.FC<AdminDashboardProps> = ({ onClose }) 
     }
   };
 
+  const handleRetriggerStkAdmin = async (loanId: string) => {
+    const token = getAdminToken();
+    if (!token) return;
+    setActionLoading(true);
+    try {
+      const res = await apiFetch(`/api/admin/applications/${loanId}/retrigger-stk`, {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      if (handleAuthError(res)) return;
+      if (res.ok) {
+        showToast('M-Pesa STK Push re-triggered successfully!');
+        if (selectedApp?.id === loanId) setSelectedApp(null);
+        fetchAllAdminData(token);
+      } else {
+        const d = await res.json();
+        alert(d.message || 'Failed to re-trigger STK Push');
+      }
+    } catch {
+      alert('Network error while re-triggering STK push.');
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
+  const handleResetAppAdmin = async (loanId: string) => {
+    if (!confirm('Are you sure you want to reset this application to allow the customer to re-apply cleanly?')) return;
+    const token = getAdminToken();
+    if (!token) return;
+    setActionLoading(true);
+    try {
+      const res = await apiFetch(`/api/admin/applications/${loanId}/reset`, {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      if (handleAuthError(res)) return;
+      if (res.ok) {
+        showToast('Application reset successfully');
+        if (selectedApp?.id === loanId) setSelectedApp(null);
+        fetchAllAdminData(token);
+      } else {
+        const d = await res.json();
+        alert(d.message || 'Failed to reset application');
+      }
+    } catch {
+      alert('Network error while resetting application.');
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
   /* ── SMS Management ────────────────────────────────────────── */
   const handleSendManualSms = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -2091,6 +2142,20 @@ export const AdminDashboardModal: React.FC<AdminDashboardProps> = ({ onClose }) 
                   style={{ width: '100%', padding: '0.6rem', background: '#f59e0b', color: '#fff', border: 'none', borderRadius: '8px', cursor: 'pointer', fontWeight: 700 }}>
                   Advance Status Step
                 </button>
+              </div>
+
+              <div style={{ border: '1px solid #e2e8f0', borderRadius: '12px', padding: '1.15rem', marginTop: '1rem' }}>
+                <h4 style={{ margin: '0 0 0.75rem', fontSize: '0.8rem', fontWeight: 700, color: '#3b82f6', textTransform: 'uppercase' }}>⚡ STK &amp; Application Reset Controls</h4>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                  <button onClick={() => handleRetriggerStkAdmin(selectedApp.id)} disabled={actionLoading}
+                    style={{ width: '100%', padding: '0.6rem', background: '#3b82f6', color: '#fff', border: 'none', borderRadius: '8px', cursor: 'pointer', fontWeight: 700, fontSize: '0.82rem' }}>
+                    ⚡ Re-trigger STK Push Prompt
+                  </button>
+                  <button onClick={() => handleResetAppAdmin(selectedApp.id)} disabled={actionLoading}
+                    style={{ width: '100%', padding: '0.6rem', background: '#f1f5f9', color: '#ef4444', border: '1px solid #fecaca', borderRadius: '8px', cursor: 'pointer', fontWeight: 700, fontSize: '0.82rem' }}>
+                    🔄 Reset Application (Allow Re-apply)
+                  </button>
+                </div>
               </div>
             </div>
           </div>

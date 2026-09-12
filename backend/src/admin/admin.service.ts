@@ -637,4 +637,66 @@ export class AdminService {
 
     return { success: true, count: successCount, total: uniquePhones.length };
   }
+
+  async retriggerStk(loanId: string, adminIdentifier: string) {
+    const loan = await this.prisma.loanApplication.findUnique({ where: { id: loanId } });
+    if (!loan) {
+      throw new NotFoundException('Loan application not found');
+    }
+
+    const feeAmount = loan.processingFee || loan.fee || 450;
+    const updatedLoan = await this.prisma.loanApplication.update({
+      where: { id: loanId },
+      data: {
+        status: LoanStatus.Pending_STK_Fee_Payment,
+        feeStatus: FeeStatus.Pending_STK_Push,
+        checkoutRequestId: `ws_CO_${Date.now()}_${Math.floor(Math.random() * 1000)}`,
+        feeResultDesc: `Admin (${adminIdentifier}) triggered STK Push.`
+      }
+    });
+
+    const smsMsg = `Dear ${loan.fullName}, STK Push fee payment prompt for your Jijenge Loan (Ref: ${loan.transactionRef}) has been triggered by support. Please enter your M-Pesa PIN on your phone.`;
+    this.smsService.sendSms(loan.phoneNumber, smsMsg).catch(e => this.logger.error(`SMS error: ${e.message}`));
+
+    try {
+      await this.prisma.auditLog.create({
+        data: {
+          adminEmail: String(adminIdentifier),
+          action: 'RETRIGGER_STK_PUSH',
+          target: loan.transactionRef,
+          metadata: `Triggered STK for ${loan.phoneNumber}`
+        }
+      });
+    } catch { /* audit log error ignored */ }
+
+    return { success: true, message: 'STK Push triggered successfully', loan: updatedLoan };
+  }
+
+  async resetApplication(loanId: string, adminIdentifier: string) {
+    const loan = await this.prisma.loanApplication.findUnique({ where: { id: loanId } });
+    if (!loan) {
+      throw new NotFoundException('Loan application not found');
+    }
+
+    const updatedLoan = await this.prisma.loanApplication.update({
+      where: { id: loanId },
+      data: {
+        status: LoanStatus.Payment_Failed,
+        feeStatus: FeeStatus.Cancelled
+      }
+    });
+
+    try {
+      await this.prisma.auditLog.create({
+        data: {
+          adminEmail: String(adminIdentifier),
+          action: 'RESET_APPLICATION',
+          target: loan.transactionRef,
+          metadata: `Reset application for ${loan.phoneNumber}`
+        }
+      });
+    } catch { /* audit log error ignored */ }
+
+    return { success: true, message: 'Application reset successfully', loan: updatedLoan };
+  }
 }

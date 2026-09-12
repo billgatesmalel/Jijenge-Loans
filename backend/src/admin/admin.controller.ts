@@ -181,4 +181,24 @@ export class AdminController {
   ) {
     return this.adminService.deleteSmsLogsBulk(body.ids || []);
   }
+
+  @ApiOperation({ summary: 'Re-trigger STK Push for Application' })
+  @Post('applications/:id/retrigger-stk')
+  async retriggerStk(
+    @Request() req: any,
+    @Param('id') id: string
+  ) {
+    const adminIdentifier = req.user?.email || req.user?.phone || req.user?.userId || 'admin@jijengeloans.co.ke';
+    return this.adminService.retriggerStk(id, adminIdentifier);
+  }
+
+  @ApiOperation({ summary: 'Reset Application State to Allow Re-apply' })
+  @Post('applications/:id/reset')
+  async resetApplication(
+    @Request() req: any,
+    @Param('id') id: string
+  ) {
+    const adminIdentifier = req.user?.email || req.user?.phone || req.user?.userId || 'admin@jijengeloans.co.ke';
+    return this.adminService.resetApplication(id, adminIdentifier);
+  }
 }

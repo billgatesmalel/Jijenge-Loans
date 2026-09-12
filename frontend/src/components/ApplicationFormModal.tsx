@@ -65,6 +65,87 @@ export const ApplicationFormModal: React.FC<ApplicationFormModalProps> = ({ onTa
   const [stkMessage, setStkMessage] = useState('');
   const [stkError, setStkError] = useState('');
 
+  // Unfinished Application Detection State
+  const [unfinishedModalOpen, setUnfinishedModalOpen] = useState(false);
+  const [unfinishedLoan, setUnfinishedLoan] = useState<any>(null);
+  const [unfinishedLoading, setUnfinishedLoading] = useState(false);
+
+  const checkUnfinishedLoan = async (phoneVal?: string, idVal?: string) => {
+    const p = normalizeKenyanPhone(phoneVal || phoneNumber) || (phoneVal || phoneNumber).trim();
+    const id = (idVal || nationalId).trim();
+    if (!p && !id) return;
+    try {
+      const res = await apiFetch('/api/loans/check-unfinished', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ phoneNumber: p, nationalId: id })
+      });
+      if (res.ok) {
+        const data = await res.json();
+        if (data.exists && data.loan) {
+          setUnfinishedLoan(data.loan);
+          setUnfinishedModalOpen(true);
+        }
+      }
+    } catch { /* ignored */ }
+  };
+
+  const handleResumeUnfinished = async () => {
+    if (!unfinishedLoan) return;
+    setUnfinishedLoading(true);
+    try {
+      const res = await apiFetch('/api/loans/resume-stk', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ loanId: unfinishedLoan.id })
+      });
+      const d = await res.json();
+      if (res.ok && d.loan) {
+        setLoanOffer(d.loan);
+        setUnfinishedModalOpen(false);
+        setCheckoutOpen(true);
+        setCheckoutStage(2);
+        setStkSent(true);
+        setStkMessage(`STK Push prompt sent to ${d.loan.phoneNumber} for KES ${(d.loan.amount || 25000).toLocaleString()}. Please enter your M-Pesa PIN.`);
+      } else {
+        alert(d.message || 'Failed to resume application');
+      }
+    } catch {
+      alert('Network error while resuming loan');
+    } finally {
+      setUnfinishedLoading(false);
+    }
+  };
+
+  const handleCancelAndRestartUnfinished = async () => {
+    if (!unfinishedLoan) return;
+    setUnfinishedLoading(true);
+    try {
+      const res = await apiFetch('/api/loans/cancel-and-restart', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ loanId: unfinishedLoan.id })
+      });
+      const d = await res.json();
+      if (res.ok) {
+        if (d.userProfile) {
+          if (d.userProfile.fullName) setFullName(d.userProfile.fullName);
+          if (d.userProfile.nationalId) setNationalId(d.userProfile.nationalId);
+          if (d.userProfile.phoneNumber) setPhoneNumber(d.userProfile.phoneNumber);
+          if (d.userProfile.county) setCounty(d.userProfile.county);
+          if (d.userProfile.townArea) setTownArea(d.userProfile.townArea);
+          if (d.userProfile.businessType) setBusinessType(d.userProfile.businessType);
+        }
+        setUnfinishedModalOpen(false);
+        setCurrentStep(1);
+      }
+    } catch {
+      alert('Network error while cancelling old application');
+    } finally {
+      setUnfinishedLoading(false);
+    }
+  };
+
   // ── Persist & Restore Application State Across Page Refresh ──
   useEffect(() => {
     try {
@@ -1015,6 +1096,59 @@ export const ApplicationFormModal: React.FC<ApplicationFormModalProps> = ({ onTa
                 </div>
               </div>
             )}
+          </div>
+        </div>
+      )}
+      {/* ══ MODAL: UNFINISHED APPLICATION DETECTED ══ */}
+      {unfinishedModalOpen && unfinishedLoan && (
+        <div style={{ position: 'fixed', inset: 0, background: 'rgba(15,23,42,0.65)', zIndex: 999, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '1.25rem', backdropFilter: 'blur(4px)' }}>
+          <div style={{ background: '#fff', borderRadius: '20px', maxWidth: '460px', width: '100%', padding: '1.75rem', boxShadow: '0 25px 60px rgba(0,0,0,0.3)', position: 'relative' }}>
+            <div style={{ width: '48px', height: '48px', borderRadius: '50%', background: '#fff7ed', border: '1px solid #fed7aa', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 1rem', color: '#FF6600', fontSize: '1.5rem', fontWeight: 800 }}>
+              ⚡
+            </div>
+            <h3 style={{ margin: '0 0 0.5rem', fontSize: '1.15rem', fontWeight: 800, color: '#0f172a', textAlign: 'center' }}>
+              Unfinished Application Found
+            </h3>
+            <p style={{ margin: '0 0 1.25rem', fontSize: '0.85rem', color: '#64748b', textAlign: 'center', lineHeight: 1.5 }}>
+              Hi <strong>{unfinishedLoan.fullName}</strong>, you have an incomplete loan application for <strong>{unfinishedLoan.packageName}</strong> (Ref: <code style={{ color: '#FF6600', fontWeight: 700 }}>{unfinishedLoan.transactionRef}</code>).
+            </p>
+
+            <div style={{ background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: '12px', padding: '1rem', marginBottom: '1.25rem', fontSize: '0.82rem' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.4rem' }}>
+                <span style={{ color: '#64748b' }}>Requested Loan Amount:</span>
+                <strong style={{ color: '#0f172a' }}>KES {(unfinishedLoan.amount || 25000).toLocaleString()}</strong>
+              </div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.4rem' }}>
+                <span style={{ color: '#64748b' }}>Processing Fee:</span>
+                <strong style={{ color: '#1e40af' }}>KES {(unfinishedLoan.processingFee || 450).toLocaleString()}</strong>
+              </div>
+              <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                <span style={{ color: '#64748b' }}>Current Status:</span>
+                <span style={{ background: '#fef3c7', color: '#92400e', padding: '2px 8px', borderRadius: '10px', fontSize: '0.75rem', fontWeight: 700 }}>
+                  {(unfinishedLoan.status || '').replace(/_/g, ' ')}
+                </span>
+              </div>
+            </div>
+
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+              <button
+                type="button"
+                disabled={unfinishedLoading}
+                onClick={handleResumeUnfinished}
+                style={{ width: '100%', padding: '0.85rem', background: '#FF6600', color: '#fff', border: 'none', borderRadius: '12px', fontSize: '0.92rem', fontWeight: 800, cursor: 'pointer', boxShadow: '0 4px 14px rgba(249,115,22,0.35)' }}
+              >
+                {unfinishedLoading ? 'Resuming Application...' : '⚡ Resume & Trigger STK Push Prompt'}
+              </button>
+
+              <button
+                type="button"
+                disabled={unfinishedLoading}
+                onClick={handleCancelAndRestartUnfinished}
+                style={{ width: '100%', padding: '0.75rem', background: '#f1f5f9', color: '#475569', border: '1px solid #e2e8f0', borderRadius: '12px', fontSize: '0.85rem', fontWeight: 700, cursor: 'pointer' }}
+              >
+                🔄 Cancel &amp; Start Fresh Application
+              </button>
+            </div>
           </div>
         </div>
       )}

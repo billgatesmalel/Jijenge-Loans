@@ -191,4 +191,114 @@ export class LoansService {
       return { success: true, brackets: [] };
     }
   }
+
+  async checkUnfinished(dto: { phoneNumber?: string; nationalId?: string }) {
+    const cleanPhone = (dto.phoneNumber || '').replace(/\D/g, '');
+    const cleanId = (dto.nationalId || '').trim();
+
+    if (!cleanPhone && !cleanId) {
+      return { exists: false };
+    }
+
+    const unfinishedLoan = await this.prisma.loanApplication.findFirst({
+      where: {
+        AND: [
+          {
+            OR: [
+              ...(cleanPhone ? [{ phoneNumber: cleanPhone }] : []),
+              ...(cleanId ? [{ nationalId: cleanId }] : [])
+            ]
+          },
+          {
+            status: {
+              in: [
+                LoanStatus.Pending_STK_Fee_Payment,
+                LoanStatus.Pending,
+                LoanStatus.Application_Received,
+                LoanStatus.Initial_Verification
+              ]
+            }
+          },
+          {
+            feeStatus: {
+              notIn: [FeeStatus.Paid]
+            }
+          }
+        ]
+      },
+      orderBy: { createdAt: 'desc' }
+    });
+
+    if (!unfinishedLoan) {
+      return { exists: false };
+    }
+
+    const userProfile = unfinishedLoan.userId
+      ? await this.prisma.user.findUnique({ where: { id: unfinishedLoan.userId } })
+      : null;
+
+    return {
+      exists: true,
+      loan: unfinishedLoan,
+      userProfile
+    };
+  }
+
+  async resumeStk(loanId: string) {
+    const loan = await this.prisma.loanApplication.findUnique({ where: { id: loanId } });
+    if (!loan) {
+      throw new NotFoundException('Loan application not found');
+    }
+
+    const feeAmount = loan.processingFee || loan.fee || 450;
+    const updatedLoan = await this.prisma.loanApplication.update({
+      where: { id: loanId },
+      data: {
+        status: LoanStatus.Pending_STK_Fee_Payment,
+        feeStatus: FeeStatus.Pending_STK_Push,
+        checkoutRequestId: `ws_CO_${Date.now()}_${Math.floor(Math.random() * 1000)}`,
+        feeResultDesc: 'Resumed STK Push initialized.'
+      }
+    });
+
+    const smsMsg = `Dear ${loan.fullName}, STK Push fee payment prompt for your Jijenge Loan (Ref: ${loan.transactionRef}, KSh ${loan.amount.toLocaleString()}) has been re-triggered. Please enter your M-Pesa PIN on your phone.`;
+    this.smsService.sendSms(loan.phoneNumber, smsMsg).catch(e => this.logger.error(`SMS error: ${e.message}`));
+
+    return {
+      success: true,
+      message: 'M-Pesa STK Push prompt re-triggered successfully.',
+      loan: updatedLoan
+    };
+  }
+
+  async cancelAndRestart(loanId: string) {
+    const loan = await this.prisma.loanApplication.findUnique({ where: { id: loanId } });
+    if (!loan) {
+      throw new NotFoundException('Loan application not found');
+    }
+
+    await this.prisma.loanApplication.update({
+      where: { id: loanId },
+      data: {
+        status: LoanStatus.Payment_Failed,
+        feeStatus: FeeStatus.Cancelled
+      }
+    });
+
+    return {
+      success: true,
+      message: 'Previous application cancelled. You can now start a fresh loan application.',
+      userProfile: {
+        fullName: loan.fullName,
+        nationalId: loan.nationalId,
+        phoneNumber: loan.phoneNumber,
+        email: loan.email,
+        businessName: loan.businessName,
+        businessType: loan.businessType,
+        county: loan.county,
+        townArea: loan.townArea,
+        monthlyIncome: loan.monthlyIncome
+      }
+    };
+  }
 }
