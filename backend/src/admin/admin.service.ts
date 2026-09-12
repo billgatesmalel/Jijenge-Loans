@@ -254,22 +254,19 @@ export class AdminService {
           }
         });
       } catch (dbErr: any) {
-        if (dbErr?.message?.includes('processingFee')) {
-          await this.prisma.ensureSchemaUpToDate();
-          bracket = await this.prisma.eligibilityBracket.create({
-            data: {
-              name: cleanName,
-              minSalary: minSal,
-              maxSalary: maxSal,
-              assignedPackageName: pkgName,
-              maxLimit: maxLim,
-              processingFee: procFee,
-              active: true
-            }
-          });
-        } else {
-          throw dbErr;
-        }
+        this.logger.warn(`Retrying eligibilityBracket.create after auto schema/sequence repair: ${dbErr?.message || dbErr}`);
+        await this.prisma.ensureSchemaUpToDate();
+        bracket = await this.prisma.eligibilityBracket.create({
+          data: {
+            name: cleanName,
+            minSalary: minSal,
+            maxSalary: maxSal,
+            assignedPackageName: pkgName,
+            maxLimit: maxLim,
+            processingFee: procFee,
+            active: true
+          }
+        });
       }
 
       const safeAdminEmail = String(adminEmail || 'admin@jijengeloans.co.ke');

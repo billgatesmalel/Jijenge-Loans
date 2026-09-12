@@ -32,6 +32,18 @@ export class PrismaService extends PrismaClient implements OnModuleInit, OnModul
     } catch (e) {
       console.warn('PrismaService schema sync (AuditLog table):', (e as any)?.message || e);
     }
+
+    try {
+      await this.$executeRawUnsafe(`
+        SELECT setval(
+          pg_get_serial_sequence('"EligibilityBracket"', 'id'),
+          COALESCE((SELECT MAX(id) FROM "EligibilityBracket"), 0) + 1,
+          false
+        );
+      `);
+    } catch (e) {
+      console.warn('PrismaService sequence sync (EligibilityBracket_id_seq):', (e as any)?.message || e);
+    }
   }
 
   async onModuleDestroy() {
