@@ -262,4 +262,15 @@ export class AdminController {
     const adminIdentifier = req.user?.email || req.user?.phone || req.user?.userId || 'admin@jijengeloans.co.ke';
     return this.adminService.replySupportTicket(id, body.text, adminIdentifier);
   }
+
+  @ApiOperation({ summary: 'Toggle SMS Template ON/OFF' })
+  @Post('sms-templates/:id/toggle')
+  async toggleSmsTemplate(
+    @Request() req: any,
+    @Param('id') id: string,
+    @Body() body: { active: boolean }
+  ) {
+    const adminIdentifier = req.user?.email || req.user?.phone || req.user?.userId || 'admin@jijengeloans.co.ke';
+    return this.adminService.toggleSmsTemplate(id, body.active ?? true, adminIdentifier);
+  }
 }

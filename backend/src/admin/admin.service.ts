@@ -986,4 +986,21 @@ export class AdminService {
 
     return { success: true, message: 'Reply sent and customer notified via SMS with chat link.', ticket: updatedTicket };
   }
+
+  async toggleSmsTemplate(idOrKey: string, active: boolean, adminEmail: string) {
+    const res = await this.smsService.toggleSmsTemplate(idOrKey, active);
+
+    try {
+      await this.prisma.auditLog.create({
+        data: {
+          adminEmail: String(adminEmail || 'admin@jijengeloans.co.ke'),
+          action: 'TOGGLE_SMS_TEMPLATE',
+          target: idOrKey,
+          metadata: `Active: ${active}`
+        }
+      });
+    } catch { /* audit log error ignored */ }
+
+    return res;
+  }
 }

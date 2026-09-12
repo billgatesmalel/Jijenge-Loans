@@ -295,6 +295,11 @@ export class SmsService {
         return this.sendSms(recipientPhone, `Notification from Jijenge Loans: ${JSON.stringify(variables)}`);
       }
 
+      if (tpl.active === false) {
+        this.logger.log(`⏸️ [SMS TEMPLATE DISABLED] Template "${templateKey}" is turned OFF. Skipping dispatch to ${recipientPhone}.`);
+        return { success: false, error: `SMS template "${templateKey}" is disabled.` };
+      }
+
       let messageText = tpl.body;
       for (const [k, v] of Object.entries(variables)) {
         messageText = messageText.replace(new RegExp(`\\{${k}\\}`, 'g'), String(v));
@@ -431,6 +436,28 @@ export class SmsService {
       }
     });
 
-    return { success: true, template };
+    return { success: true, item: template };
+  }
+
+  async toggleSmsTemplate(idOrKey: string, active: boolean) {
+    const template = await this.prisma.smsTemplate.findFirst({
+      where: {
+        OR: [
+          { id: idOrKey },
+          { key: idOrKey }
+        ]
+      }
+    });
+
+    if (!template) {
+      throw new Error('SMS template not found');
+    }
+
+    const updated = await this.prisma.smsTemplate.update({
+      where: { id: template.id },
+      data: { active }
+    });
+
+    return { success: true, item: updated };
   }
 }

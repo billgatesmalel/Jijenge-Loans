@@ -279,11 +279,13 @@ export const AdminDashboardModal: React.FC<AdminDashboardProps> = ({ onClose }) 
 
   const handleSaveSystemSettings = async (e: React.FormEvent) => {
     e.preventDefault();
+    const token = getAdminToken();
+    if (!token) return;
     setActionLoading(true);
     try {
       const res = await apiFetch('/api/support/settings', {
         method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
         body: JSON.stringify({
           supportPhone: settingsPhone,
           supportEmail: settingsEmail,
@@ -292,6 +294,7 @@ export const AdminDashboardModal: React.FC<AdminDashboardProps> = ({ onClose }) 
           headquartersAddress: settingsAddress,
         }),
       });
+      if (handleAuthError(res)) return;
       const data = await res.json();
       if (res.ok && data.settings) {
         updateLocalSupportSettings(data.settings);
@@ -888,6 +891,28 @@ export const AdminDashboardModal: React.FC<AdminDashboardProps> = ({ onClose }) 
       alert('Error seeding default templates.');
     } finally {
       setActionLoading(false);
+    }
+  };
+
+  const handleToggleSmsTemplate = async (template: any) => {
+    const token = getAdminToken();
+    if (!token) return;
+    const nextState = template.active === false ? true : false;
+    try {
+      const res = await apiFetch(`/api/admin/sms-templates/${template.id || template.key}/toggle`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ active: nextState })
+      });
+      if (handleAuthError(res)) return;
+      if (res.ok) {
+        showToast(`Template "${template.title}" turned ${nextState ? 'ON (Active)' : 'OFF (Disabled)'}`);
+        fetchAllAdminData(token);
+      } else {
+        alert('Failed to toggle SMS template');
+      }
+    } catch {
+      alert('Network error toggling template');
     }
   };
 
@@ -2139,16 +2164,44 @@ export const AdminDashboardModal: React.FC<AdminDashboardProps> = ({ onClose }) 
                     <button onClick={() => setSmsTemplateModal(true)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: ORANGE, fontWeight: 700, fontSize: '0.78rem' }}>+ New</button>
                   </div>
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', maxHeight: '360px', overflowY: 'auto' }}>
-                    {smsTemplates.length > 0 ? smsTemplates.map((temp: any) => (
-                      <div key={temp.id || temp.key} onClick={() => handleUseTemplate(temp)}
-                        style={{ padding: '0.65rem', border: '1px solid #e2e8f0', borderRadius: '8px', cursor: 'pointer', background: selectedTemplateKey === temp.key ? '#f0f2fe' : '#f8fafc', transition: 'all 0.15s' }}>
-                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                          <div style={{ fontWeight: 700, fontSize: '0.8rem', color: '#334155' }}>{temp.title}</div>
-                          <span style={{ fontSize: '0.65rem', color: '#64748b', background: '#e2e8f0', padding: '1px 5px', borderRadius: '4px', fontFamily: 'monospace' }}>{temp.key}</span>
+                    {smsTemplates.length > 0 ? smsTemplates.map((temp: any) => {
+                      const isON = temp.active !== false;
+                      return (
+                        <div key={temp.id || temp.key}
+                          style={{ padding: '0.65rem', border: '1px solid #e2e8f0', borderRadius: '8px', background: selectedTemplateKey === temp.key ? '#f0f2fe' : '#f8fafc', transition: 'all 0.15s' }}>
+                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                            <div style={{ fontWeight: 700, fontSize: '0.8rem', color: '#334155', cursor: 'pointer' }} onClick={() => handleUseTemplate(temp)}>
+                              {temp.title}
+                            </div>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+                              <span style={{ fontSize: '0.65rem', color: '#64748b', background: '#e2e8f0', padding: '1px 5px', borderRadius: '4px', fontFamily: 'monospace' }}>{temp.key}</span>
+                              <button
+                                type="button"
+                                onClick={(e) => { e.stopPropagation(); handleToggleSmsTemplate(temp); }}
+                                style={{
+                                  padding: '2px 8px',
+                                  borderRadius: '12px',
+                                  fontSize: '0.65rem',
+                                  fontWeight: 800,
+                                  border: 'none',
+                                  cursor: 'pointer',
+                                  color: '#fff',
+                                  background: isON ? '#10b981' : '#64748b',
+                                  boxShadow: isON ? '0 2px 6px rgba(16,185,129,0.3)' : 'none',
+                                  transition: 'all 0.2s ease'
+                                }}
+                                title={isON ? 'Click to Turn OFF this SMS template' : 'Click to Turn ON this SMS template'}
+                              >
+                                {isON ? 'ON 🟢' : 'OFF ⚪'}
+                              </button>
+                            </div>
+                          </div>
+                          <div style={{ fontSize: '0.7rem', color: isON ? '#64748b' : '#94a3b8', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', marginTop: '4px', cursor: 'pointer' }} onClick={() => handleUseTemplate(temp)}>
+                            {temp.body}
+                          </div>
                         </div>
-                        <div style={{ fontSize: '0.7rem', color: '#94a3b8', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', marginTop: '2px' }}>{temp.body}</div>
-                      </div>
-                    )) : (
+                      );
+                    }) : (
                       <div style={{ color: '#94a3b8', fontSize: '0.75rem', textAlign: 'center', padding: '1rem 0' }}>No templates saved. Click "Seed Default Stage Templates" to load.</div>
                     )}
                   </div>
