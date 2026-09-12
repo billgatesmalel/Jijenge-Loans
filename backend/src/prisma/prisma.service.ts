@@ -12,9 +12,18 @@ export class PrismaService extends PrismaClient implements OnModuleInit, OnModul
     try {
       await this.$executeRawUnsafe(`
         ALTER TABLE "EligibilityBracket" ADD COLUMN IF NOT EXISTS "processingFee" DOUBLE PRECISION NOT NULL DEFAULT 450;
+        ALTER TABLE "EligibilityBracket" ADD COLUMN IF NOT EXISTS "weeklyInstallment" DOUBLE PRECISION DEFAULT 0;
+        ALTER TABLE "EligibilityBracket" ADD COLUMN IF NOT EXISTS "numWeeks" INTEGER DEFAULT 4;
+        ALTER TABLE "EligibilityBracket" ADD COLUMN IF NOT EXISTS "monthlyInstallment" DOUBLE PRECISION DEFAULT 0;
+        ALTER TABLE "EligibilityBracket" ADD COLUMN IF NOT EXISTS "numMonths" INTEGER DEFAULT 1;
+
+        ALTER TABLE "LoanApplication" ADD COLUMN IF NOT EXISTS "repaymentFrequency" TEXT DEFAULT 'Weekly';
+        ALTER TABLE "LoanApplication" ADD COLUMN IF NOT EXISTS "repaymentAmount" DOUBLE PRECISION DEFAULT 0;
+        ALTER TABLE "LoanApplication" ADD COLUMN IF NOT EXISTS "installmentAmount" DOUBLE PRECISION DEFAULT 0;
+        ALTER TABLE "LoanApplication" ADD COLUMN IF NOT EXISTS "numInstallments" INTEGER DEFAULT 4;
       `);
     } catch (e) {
-      console.warn('PrismaService schema sync (processingFee column):', (e as any)?.message || e);
+      console.warn('PrismaService schema sync (new repayment columns):', (e as any)?.message || e);
     }
 
     try {

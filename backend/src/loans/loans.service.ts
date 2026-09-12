@@ -31,6 +31,10 @@ export class LoansService {
     packageName: string;
     tenureDays?: number;
     processingFee?: number;
+    repaymentFrequency?: string;
+    repaymentAmount?: number;
+    installmentAmount?: number;
+    numInstallments?: number;
   }) {
     try {
       if (!dto.fullName || !dto.nationalId || !dto.phoneNumber || !dto.amount) {
@@ -104,6 +108,10 @@ export class LoansService {
           processingFee,
           packageName: dto.packageName || 'Jijenge Micro Booster',
           tenureDays: Number(dto.tenureDays) || 30,
+          repaymentFrequency: dto.repaymentFrequency || 'Weekly',
+          repaymentAmount: Number(dto.repaymentAmount) || 0,
+          installmentAmount: Number(dto.installmentAmount) || 0,
+          numInstallments: Number(dto.numInstallments) || 4,
           status: LoanStatus.Pending_STK_Fee_Payment,
           feeStatus: FeeStatus.Pending_STK_Push
         }
@@ -174,14 +182,28 @@ export class LoansService {
       });
       const brackets = rawBrackets.map((b: any) => {
         const limit = b.maxLimit || 0;
-        const weeklyRepayment = Math.round(limit * 1.05);
-        const monthlyRepayment = Math.round(limit * 1.12);
+        const numWeeks = b.numWeeks && b.numWeeks > 0 ? b.numWeeks : 4;
+        const weeklyInstallment = b.weeklyInstallment && b.weeklyInstallment > 0
+          ? b.weeklyInstallment
+          : Math.round((limit * 1.05) / numWeeks);
+        const weeklyTotal = Math.round(weeklyInstallment * numWeeks);
+
+        const numMonths = b.numMonths && b.numMonths > 0 ? b.numMonths : 1;
+        const monthlyInstallment = b.monthlyInstallment && b.monthlyInstallment > 0
+          ? b.monthlyInstallment
+          : Math.round((limit * 1.12) / numMonths);
+        const monthlyTotal = Math.round(monthlyInstallment * numMonths);
+
         return {
           ...b,
-          weeklyRepayment,
-          monthlyRepayment,
-          weeklyAmount: weeklyRepayment,
-          monthlyAmount: monthlyRepayment,
+          numWeeks,
+          weeklyInstallment,
+          weeklyTotal,
+          weeklyRepayment: weeklyTotal,
+          numMonths,
+          monthlyInstallment,
+          monthlyTotal,
+          monthlyRepayment: monthlyTotal,
           weeklyFeeRate: '5%',
           monthlyFeeRate: '12%'
         };

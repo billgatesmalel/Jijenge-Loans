@@ -337,7 +337,18 @@ export class AdminService {
   }
 
   async createEligibilityBracket(
-    body: { name: string; minSalary: number; maxSalary: number; assignedPackageName: string; maxLimit: number; processingFee?: number },
+    body: {
+      name: string;
+      minSalary: number;
+      maxSalary: number;
+      assignedPackageName: string;
+      maxLimit: number;
+      processingFee?: number;
+      weeklyInstallment?: number;
+      numWeeks?: number;
+      monthlyInstallment?: number;
+      numMonths?: number;
+    },
     adminEmail: string
   ) {
     try {
@@ -347,6 +358,10 @@ export class AdminService {
       const pkgName = String(body.assignedPackageName || cleanName).trim();
       const maxLim = isNaN(Number(body.maxLimit)) ? 0 : Number(body.maxLimit);
       const procFee = body.processingFee !== undefined && !isNaN(Number(body.processingFee)) ? Number(body.processingFee) : 450;
+      const wkInst = body.weeklyInstallment !== undefined && !isNaN(Number(body.weeklyInstallment)) ? Number(body.weeklyInstallment) : Math.round((maxLim * 1.05) / 4);
+      const nWeeks = body.numWeeks !== undefined && !isNaN(Number(body.numWeeks)) ? Number(body.numWeeks) : 4;
+      const moInst = body.monthlyInstallment !== undefined && !isNaN(Number(body.monthlyInstallment)) ? Number(body.monthlyInstallment) : Math.round(maxLim * 1.12);
+      const nMonths = body.numMonths !== undefined && !isNaN(Number(body.numMonths)) ? Number(body.numMonths) : 1;
 
       let bracket;
       try {
@@ -358,11 +373,15 @@ export class AdminService {
             assignedPackageName: pkgName,
             maxLimit: maxLim,
             processingFee: procFee,
+            weeklyInstallment: wkInst,
+            numWeeks: nWeeks,
+            monthlyInstallment: moInst,
+            numMonths: nMonths,
             active: true
           }
         });
       } catch (dbErr: any) {
-        this.logger.warn(`Retrying eligibilityBracket.create after auto schema/sequence repair: ${dbErr?.message || dbErr}`);
+        this.logger.warn(`Retrying eligibilityBracket.create after auto schema repair: ${dbErr?.message || dbErr}`);
         await this.prisma.ensureSchemaUpToDate();
         bracket = await this.prisma.eligibilityBracket.create({
           data: {
@@ -372,6 +391,10 @@ export class AdminService {
             assignedPackageName: pkgName,
             maxLimit: maxLim,
             processingFee: procFee,
+            weeklyInstallment: wkInst,
+            numWeeks: nWeeks,
+            monthlyInstallment: moInst,
+            numMonths: nMonths,
             active: true
           }
         });
@@ -384,7 +407,7 @@ export class AdminService {
             adminEmail: safeAdminEmail,
             action: 'CREATE_ELIGIBILITY_BRACKET',
             target: cleanName,
-            metadata: `Max Limit: ${maxLim}, Processing Fee: ${procFee}`
+            metadata: `Max Limit: ${maxLim}, Processing Fee: ${procFee}, Weekly: ${wkInst}x${nWeeks}, Monthly: ${moInst}x${nMonths}`
           }
         });
       } catch (auditErr: any) {
@@ -400,7 +423,19 @@ export class AdminService {
 
   async updateEligibilityBracket(
     id: number,
-    body: { name?: string; minSalary?: number; maxSalary?: number; assignedPackageName?: string; maxLimit?: number; processingFee?: number; active?: boolean },
+    body: {
+      name?: string;
+      minSalary?: number;
+      maxSalary?: number;
+      assignedPackageName?: string;
+      maxLimit?: number;
+      processingFee?: number;
+      weeklyInstallment?: number;
+      numWeeks?: number;
+      monthlyInstallment?: number;
+      numMonths?: number;
+      active?: boolean;
+    },
     adminEmail: string
   ) {
     try {
@@ -416,6 +451,10 @@ export class AdminService {
       if (body.assignedPackageName !== undefined) dataToUpdate.assignedPackageName = String(body.assignedPackageName).trim();
       if (body.maxLimit !== undefined) dataToUpdate.maxLimit = Number(body.maxLimit);
       if (body.processingFee !== undefined) dataToUpdate.processingFee = Number(body.processingFee);
+      if (body.weeklyInstallment !== undefined) dataToUpdate.weeklyInstallment = Number(body.weeklyInstallment);
+      if (body.numWeeks !== undefined) dataToUpdate.numWeeks = Number(body.numWeeks);
+      if (body.monthlyInstallment !== undefined) dataToUpdate.monthlyInstallment = Number(body.monthlyInstallment);
+      if (body.numMonths !== undefined) dataToUpdate.numMonths = Number(body.numMonths);
       if (body.active !== undefined) dataToUpdate.active = Boolean(body.active);
 
       let bracket;

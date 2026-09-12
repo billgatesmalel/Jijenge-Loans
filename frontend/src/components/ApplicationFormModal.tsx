@@ -42,6 +42,7 @@ export const ApplicationFormModal: React.FC<ApplicationFormModalProps> = ({ onTa
   const [county, setCounty] = useState('');
   const [townArea, setTownArea] = useState('');
   const [monthlyIncome, setMonthlyIncome] = useState('');
+  const [selectedRepaymentFrequency, setSelectedRepaymentFrequency] = useState<'Weekly' | 'Monthly'>('Weekly');
 
   // Inline Validation & Error States
   const [formErrors, setFormErrors] = useState<Record<string, string>>({});
@@ -259,28 +260,46 @@ export const ApplicationFormModal: React.FC<ApplicationFormModalProps> = ({ onTa
       );
       if (matched) {
         const limit = matched.maxLimit || 15000;
+        const nWeeks = matched.numWeeks || 4;
+        const wkInst = matched.weeklyInstallment && matched.weeklyInstallment > 0
+          ? matched.weeklyInstallment
+          : Math.round((limit * 1.05) / nWeeks);
+        const wkTotal = Math.round(wkInst * nWeeks);
+
+        const nMonths = matched.numMonths || 1;
+        const moInst = matched.monthlyInstallment && matched.monthlyInstallment > 0
+          ? matched.monthlyInstallment
+          : Math.round(limit * 1.12);
+        const moTotal = Math.round(moInst * nMonths);
+
         return {
           name: matched.assignedPackageName || matched.name,
           amount: limit,
           tenure: limit > 60000 ? 90 : limit > 35000 ? 60 : limit > 15000 ? 45 : 30,
           processingFee: matched.processingFee ?? 450,
-          weeklyRepayment: matched.weeklyRepayment || Math.round(limit * 1.05),
-          monthlyRepayment: matched.monthlyRepayment || Math.round(limit * 1.12),
+          numWeeks: nWeeks,
+          weeklyInstallment: wkInst,
+          weeklyTotal: wkTotal,
+          weeklyRepayment: wkTotal,
+          numMonths: nMonths,
+          monthlyInstallment: moInst,
+          monthlyTotal: moTotal,
+          monthlyRepayment: moTotal,
         };
       }
     }
 
     switch (incomeValue) {
       case '15000:30000':
-        return { name: 'Jijenge Micro Booster', amount: 15000, tenure: 30, processingFee: 250, weeklyRepayment: 15750, monthlyRepayment: 16800 };
+        return { name: 'Jijenge Micro Booster', amount: 15000, tenure: 30, processingFee: 250, numWeeks: 4, weeklyInstallment: 3938, weeklyTotal: 15750, numMonths: 1, monthlyInstallment: 16800, monthlyTotal: 16800, weeklyRepayment: 15750, monthlyRepayment: 16800 };
       case '30001:60000':
-        return { name: 'Jijenge Business Flex', amount: 35000, tenure: 45, processingFee: 450, weeklyRepayment: 36750, monthlyRepayment: 39200 };
+        return { name: 'Jijenge Business Flex', amount: 35000, tenure: 45, processingFee: 450, numWeeks: 4, weeklyInstallment: 9188, weeklyTotal: 36750, numMonths: 1, monthlyInstallment: 39200, monthlyTotal: 39200, weeklyRepayment: 36750, monthlyRepayment: 39200 };
       case '60001:100000':
-        return { name: 'Jijenge Trade Prime', amount: 60000, tenure: 60, processingFee: 750, weeklyRepayment: 63000, monthlyRepayment: 67200 };
+        return { name: 'Jijenge Trade Prime', amount: 60000, tenure: 60, processingFee: 750, numWeeks: 4, weeklyInstallment: 15750, weeklyTotal: 63000, numMonths: 1, monthlyInstallment: 67200, monthlyTotal: 67200, weeklyRepayment: 63000, monthlyRepayment: 67200 };
       case '100001:1000000':
-        return { name: 'Jijenge Enterprise Express', amount: 120000, tenure: 90, processingFee: 1200, weeklyRepayment: 126000, monthlyRepayment: 134400 };
+        return { name: 'Jijenge Enterprise Express', amount: 120000, tenure: 90, processingFee: 1200, numWeeks: 4, weeklyInstallment: 31500, weeklyTotal: 126000, numMonths: 1, monthlyInstallment: 134400, monthlyTotal: 134400, weeklyRepayment: 126000, monthlyRepayment: 134400 };
       default:
-        return { name: 'Jijenge Micro Booster', amount: 15000, tenure: 30, processingFee: 250, weeklyRepayment: 15750, monthlyRepayment: 16800 };
+        return { name: 'Jijenge Micro Booster', amount: 15000, tenure: 30, processingFee: 250, numWeeks: 4, weeklyInstallment: 3938, weeklyTotal: 15750, numMonths: 1, monthlyInstallment: 16800, monthlyTotal: 16800, weeklyRepayment: 15750, monthlyRepayment: 16800 };
     }
   };
 
@@ -387,6 +406,10 @@ export const ApplicationFormModal: React.FC<ApplicationFormModalProps> = ({ onTa
         packageName: selectedPkg.name,
         tenureDays: selectedPkg.tenure,
         processingFee: selectedPkg.processingFee,
+        repaymentFrequency: selectedRepaymentFrequency,
+        repaymentAmount: selectedRepaymentFrequency === 'Weekly' ? (selectedPkg.weeklyTotal || Math.round(selectedPkg.amount * 1.05)) : (selectedPkg.monthlyTotal || Math.round(selectedPkg.amount * 1.12)),
+        installmentAmount: selectedRepaymentFrequency === 'Weekly' ? (selectedPkg.weeklyInstallment || Math.round((selectedPkg.amount * 1.05) / 4)) : (selectedPkg.monthlyInstallment || Math.round(selectedPkg.amount * 1.12)),
+        numInstallments: selectedRepaymentFrequency === 'Weekly' ? (selectedPkg.numWeeks || 4) : (selectedPkg.numMonths || 1),
       };
 
       const res = await apiFetch('/api/loans/apply', {
@@ -979,6 +1002,78 @@ export const ApplicationFormModal: React.FC<ApplicationFormModalProps> = ({ onTa
                     </div>
                   </div>
 
+                  {/* Interactive Repayment Preference Selector */}
+                  <div style={{ marginBottom: '1.25rem' }}>
+                    <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 800, color: '#0f172a', marginBottom: '0.65rem' }}>
+                      Choose Preferred Repayment Schedule:
+                    </label>
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem' }}>
+                      {/* Weekly Plan Card */}
+                      <div
+                        onClick={() => setSelectedRepaymentFrequency('Weekly')}
+                        style={{
+                          border: selectedRepaymentFrequency === 'Weekly' ? '2.5px solid #FF6600' : '1.5px solid #cbd5e1',
+                          background: selectedRepaymentFrequency === 'Weekly' ? '#fff7ed' : '#ffffff',
+                          borderRadius: '12px',
+                          padding: '0.85rem',
+                          cursor: 'pointer',
+                          transition: 'all 0.15s ease'
+                        }}
+                      >
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', marginBottom: '0.35rem' }}>
+                          <input
+                            type="radio"
+                            name="repaymentFreq"
+                            checked={selectedRepaymentFrequency === 'Weekly'}
+                            onChange={() => setSelectedRepaymentFrequency('Weekly')}
+                          />
+                          <strong style={{ fontSize: '0.85rem', color: '#0f172a' }}>Weekly Repayment</strong>
+                        </div>
+                        <div style={{ fontSize: '1rem', fontWeight: 900, color: '#FF6600' }}>
+                          KES {(selectedPkg.weeklyInstallment || Math.round((selectedPkg.amount * 1.05) / 4)).toLocaleString()} <span style={{ fontSize: '0.75rem', fontWeight: 600, color: '#64748b' }}>/ wk</span>
+                        </div>
+                        <div style={{ fontSize: '0.75rem', color: '#475569', marginTop: '0.2rem' }}>
+                          {selectedPkg.numWeeks || 4} Weeks duration
+                        </div>
+                        <div style={{ fontSize: '0.78rem', fontWeight: 800, color: '#059669', marginTop: '0.35rem', borderTop: '1px dashed #fdba74', paddingTop: '0.35rem' }}>
+                          Total: KES {(selectedPkg.weeklyTotal || Math.round(selectedPkg.amount * 1.05)).toLocaleString()}
+                        </div>
+                      </div>
+
+                      {/* Monthly Plan Card */}
+                      <div
+                        onClick={() => setSelectedRepaymentFrequency('Monthly')}
+                        style={{
+                          border: selectedRepaymentFrequency === 'Monthly' ? '2.5px solid #FF6600' : '1.5px solid #cbd5e1',
+                          background: selectedRepaymentFrequency === 'Monthly' ? '#fff7ed' : '#ffffff',
+                          borderRadius: '12px',
+                          padding: '0.85rem',
+                          cursor: 'pointer',
+                          transition: 'all 0.15s ease'
+                        }}
+                      >
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', marginBottom: '0.35rem' }}>
+                          <input
+                            type="radio"
+                            name="repaymentFreq"
+                            checked={selectedRepaymentFrequency === 'Monthly'}
+                            onChange={() => setSelectedRepaymentFrequency('Monthly')}
+                          />
+                          <strong style={{ fontSize: '0.85rem', color: '#0f172a' }}>Monthly Repayment</strong>
+                        </div>
+                        <div style={{ fontSize: '1rem', fontWeight: 900, color: '#FF6600' }}>
+                          KES {(selectedPkg.monthlyInstallment || Math.round(selectedPkg.amount * 1.12)).toLocaleString()} <span style={{ fontSize: '0.75rem', fontWeight: 600, color: '#64748b' }}>/ mo</span>
+                        </div>
+                        <div style={{ fontSize: '0.75rem', color: '#475569', marginTop: '0.2rem' }}>
+                          {selectedPkg.numMonths || 1} Month duration
+                        </div>
+                        <div style={{ fontSize: '0.78rem', fontWeight: 800, color: '#2563eb', marginTop: '0.35rem', borderTop: '1px dashed #fdba74', paddingTop: '0.35rem' }}>
+                          Total: KES {(selectedPkg.monthlyTotal || Math.round(selectedPkg.amount * 1.12)).toLocaleString()}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
                   <div style={{ background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: '16px', padding: '1.25rem', marginBottom: '1.5rem' }}>
                     <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', fontSize: '0.875rem' }}>
                       <div>
@@ -990,20 +1085,27 @@ export const ApplicationFormModal: React.FC<ApplicationFormModalProps> = ({ onTa
                         <strong style={{ color: '#FF6600', fontWeight: 800 }}>KES {(loanOffer.processingFee || 0).toLocaleString()}</strong>
                       </div>
                       <div>
-                        <span style={{ fontSize: '0.75rem', color: '#64748b', display: 'block', marginBottom: '0.1rem' }}>Repayment Period</span>
-                        <strong style={{ color: '#0f172a', fontWeight: 800 }}>{loanOffer.tenureDays} Days</strong>
+                        <span style={{ fontSize: '0.75rem', color: '#64748b', display: 'block', marginBottom: '0.1rem' }}>Selected Repayment Plan</span>
+                        <strong style={{ color: '#0f172a', fontWeight: 800 }}>
+                          {selectedRepaymentFrequency} ({selectedRepaymentFrequency === 'Weekly' ? (selectedPkg.numWeeks || 4) : (selectedPkg.numMonths || 1)} {selectedRepaymentFrequency === 'Weekly' ? 'Weeks' : 'Month'})
+                        </strong>
                       </div>
                       <div>
-                        <span style={{ fontSize: '0.75rem', color: '#64748b', display: 'block', marginBottom: '0.1rem' }}>Repayment Cycle</span>
-                        <strong style={{ color: '#0f172a', fontWeight: 800 }}>Weekly / Monthly</strong>
+                        <span style={{ fontSize: '0.75rem', color: '#64748b', display: 'block', marginBottom: '0.1rem' }}>Installment Amount</span>
+                        <strong style={{ color: '#0f172a', fontWeight: 800 }}>
+                          KES {(selectedRepaymentFrequency === 'Weekly' ? (selectedPkg.weeklyInstallment || Math.round((selectedPkg.amount * 1.05) / 4)) : (selectedPkg.monthlyInstallment || Math.round(selectedPkg.amount * 1.12))).toLocaleString()} / {selectedRepaymentFrequency === 'Weekly' ? 'wk' : 'mo'}
+                        </strong>
                       </div>
-                      <div>
-                        <span style={{ fontSize: '0.75rem', color: '#64748b', display: 'block', marginBottom: '0.1rem' }}>7-Day Repayment (@ 5%)</span>
-                        <strong style={{ color: '#10b981', fontWeight: 800 }}>KES {Math.round((loanOffer.amount || 0) * 1.05).toLocaleString()}</strong>
-                      </div>
-                      <div>
-                        <span style={{ fontSize: '0.75rem', color: '#64748b', display: 'block', marginBottom: '0.1rem' }}>30-Day Repayment (@ 12%)</span>
-                        <strong style={{ color: '#3b82f6', fontWeight: 800 }}>KES {Math.round((loanOffer.amount || 0) * 1.12).toLocaleString()}</strong>
+                      <div style={{ gridColumn: '1 / -1', background: '#f0fdf4', border: '1.5px solid #86efac', padding: '0.85rem 1rem', borderRadius: '12px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                        <div>
+                          <span style={{ fontSize: '0.78rem', color: '#166534', fontWeight: 700, display: 'block' }}>Total Repayment Calculation</span>
+                          <span style={{ fontSize: '0.72rem', color: '#15803d' }}>
+                            (KES {(selectedRepaymentFrequency === 'Weekly' ? (selectedPkg.weeklyInstallment || Math.round((selectedPkg.amount * 1.05) / 4)) : (selectedPkg.monthlyInstallment || Math.round(selectedPkg.amount * 1.12))).toLocaleString()} × {selectedRepaymentFrequency === 'Weekly' ? (selectedPkg.numWeeks || 4) : (selectedPkg.numMonths || 1)})
+                          </span>
+                        </div>
+                        <strong style={{ fontSize: '1.15rem', color: '#15803d', fontWeight: 900 }}>
+                          KES {(selectedRepaymentFrequency === 'Weekly' ? (selectedPkg.weeklyTotal || Math.round(selectedPkg.amount * 1.05)) : (selectedPkg.monthlyTotal || Math.round(selectedPkg.amount * 1.12))).toLocaleString()} Total
+                        </strong>
                       </div>
                     </div>
                   </div>

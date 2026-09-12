@@ -132,6 +132,10 @@ export const AdminDashboardModal: React.FC<AdminDashboardProps> = ({ onClose }) 
   const [bracketPackage, setBracketPackage] = useState('');
   const [bracketLimit, setBracketLimit] = useState('');
   const [bracketFee, setBracketFee] = useState('');
+  const [bracketWeeklyInstallment, setBracketWeeklyInstallment] = useState('');
+  const [bracketNumWeeks, setBracketNumWeeks] = useState('');
+  const [bracketMonthlyInstallment, setBracketMonthlyInstallment] = useState('');
+  const [bracketNumMonths, setBracketNumMonths] = useState('');
 
   // SMS Form Fields
   const [smsRecipient, setSmsRecipient] = useState('');
@@ -465,7 +469,11 @@ export const AdminDashboardModal: React.FC<AdminDashboardProps> = ({ onClose }) 
       maxSalary: parseFloat(bracketMaxSalary),
       assignedPackageName: bracketPackage,
       maxLimit: parseFloat(bracketLimit),
-      processingFee: parseFloat(bracketFee) || 450
+      processingFee: parseFloat(bracketFee) || 450,
+      weeklyInstallment: parseFloat(bracketWeeklyInstallment) || 0,
+      numWeeks: parseInt(bracketNumWeeks, 10) || 4,
+      monthlyInstallment: parseFloat(bracketMonthlyInstallment) || 0,
+      numMonths: parseInt(bracketNumMonths, 10) || 1,
     };
 
     try {
@@ -529,6 +537,10 @@ export const AdminDashboardModal: React.FC<AdminDashboardProps> = ({ onClose }) 
     setBracketPackage('');
     setBracketLimit('');
     setBracketFee('');
+    setBracketWeeklyInstallment('');
+    setBracketNumWeeks('');
+    setBracketMonthlyInstallment('');
+    setBracketNumMonths('');
   };
 
   const handleEditBracket = (b: any) => {
@@ -538,6 +550,10 @@ export const AdminDashboardModal: React.FC<AdminDashboardProps> = ({ onClose }) 
     setBracketPackage(b.assignedPackageName || b.name || '');
     setBracketLimit(String(b.maxLimit));
     setBracketFee(b.processingFee !== undefined && b.processingFee !== null ? String(b.processingFee) : '450');
+    setBracketWeeklyInstallment(b.weeklyInstallment ? String(b.weeklyInstallment) : '');
+    setBracketNumWeeks(b.numWeeks ? String(b.numWeeks) : '4');
+    setBracketMonthlyInstallment(b.monthlyInstallment ? String(b.monthlyInstallment) : '');
+    setBracketNumMonths(b.numMonths ? String(b.numMonths) : '1');
     setBracketModalOpen(true);
   };
 
@@ -1676,16 +1692,26 @@ export const AdminDashboardModal: React.FC<AdminDashboardProps> = ({ onClose }) 
                       </thead>
                       <tbody>
                         {brackets.length > 0 ? brackets.map((b: any) => {
-                          const wkRepay = b.weeklyRepayment ?? Math.round(b.maxLimit * 1.05);
-                          const moRepay = b.monthlyRepayment ?? Math.round(b.maxLimit * 1.12);
+                          const limit = b.maxLimit || 0;
+                          const nWeeks = b.numWeeks || 4;
+                          const wkInst = b.weeklyInstallment || Math.round((limit * 1.05) / nWeeks);
+                          const wkTotal = Math.round(wkInst * nWeeks);
+
+                          const nMonths = b.numMonths || 1;
+                          const moInst = b.monthlyInstallment || Math.round(limit * 1.12);
+                          const moTotal = Math.round(moInst * nMonths);
                           return (
                             <tr key={b.id}>
                               <td>KES {b.minSalary.toLocaleString()}</td>
                               <td>KES {b.maxSalary.toLocaleString()}</td>
                               <td style={{ color: '#FF6600', fontWeight: 600 }}>{b.assignedPackageName || b.name}</td>
                               <td style={{ fontWeight: 700, color: '#065f46' }}>KES {b.maxLimit.toLocaleString()}</td>
-                              <td style={{ fontWeight: 700, color: '#2563eb' }}>KES {wkRepay.toLocaleString()}</td>
-                              <td style={{ fontWeight: 700, color: '#7c3aed' }}>KES {moRepay.toLocaleString()}</td>
+                              <td style={{ fontWeight: 700, color: '#2563eb' }}>
+                                KES {wkInst.toLocaleString()} × {nWeeks} wks = KES {wkTotal.toLocaleString()}
+                              </td>
+                              <td style={{ fontWeight: 700, color: '#7c3aed' }}>
+                                KES {moInst.toLocaleString()} × {nMonths} mo = KES {moTotal.toLocaleString()}
+                              </td>
                               <td style={{ fontWeight: 700, color: '#1e40af' }}>KES {(b.processingFee ?? 450).toLocaleString()}</td>
                               <td>
                                 <div style={{ display: 'flex', gap: '0.4rem' }}>
@@ -2224,12 +2250,51 @@ export const AdminDashboardModal: React.FC<AdminDashboardProps> = ({ onClose }) 
                   style={{ width: '100%', padding: '0.55rem 0.75rem', border: '1.5px solid #e2e8f0', borderRadius: '8px', fontSize: '0.85rem', boxSizing: 'border-box' }}
                 />
               </div>
-              <div style={{ marginBottom: '1.25rem' }}>
+              <div style={{ marginBottom: '0.85rem' }}>
                 <label style={{ display: 'block', fontSize: '0.78rem', fontWeight: 700, color: '#475569', marginBottom: '4px' }}>Package Processing Fee (KES)</label>
                 <input type="number" value={bracketFee} onChange={e => setBracketFee(e.target.value)} required placeholder="e.g. 450"
                   style={{ width: '100%', padding: '0.55rem 0.75rem', border: '1.5px solid #e2e8f0', borderRadius: '8px', fontSize: '0.85rem', boxSizing: 'border-box' }}
                 />
               </div>
+
+              {/* Weekly Plan Configuration */}
+              <div style={{ background: '#eff6ff', border: '1px solid #bfdbfe', borderRadius: '10px', padding: '0.75rem', marginBottom: '0.85rem' }}>
+                <span style={{ fontSize: '0.75rem', fontWeight: 800, color: '#1d4ed8', textTransform: 'uppercase', display: 'block', marginBottom: '0.35rem' }}>🗓️ Weekly Repayment Setup</span>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.5rem' }}>
+                  <div>
+                    <label style={{ display: 'block', fontSize: '0.72rem', fontWeight: 700, color: '#1e40af', marginBottom: '2px' }}>Weekly Amount (KES)</label>
+                    <input type="number" value={bracketWeeklyInstallment} onChange={e => setBracketWeeklyInstallment(e.target.value)} placeholder="Auto (Amount / 4)"
+                      style={{ width: '100%', padding: '0.45rem 0.6rem', border: '1px solid #93c5fd', borderRadius: '6px', fontSize: '0.8rem', boxSizing: 'border-box' }}
+                    />
+                  </div>
+                  <div>
+                    <label style={{ display: 'block', fontSize: '0.72rem', fontWeight: 700, color: '#1e40af', marginBottom: '2px' }}>No. of Weeks</label>
+                    <input type="number" value={bracketNumWeeks} onChange={e => setBracketNumWeeks(e.target.value)} placeholder="e.g. 4"
+                      style={{ width: '100%', padding: '0.45rem 0.6rem', border: '1px solid #93c5fd', borderRadius: '6px', fontSize: '0.8rem', boxSizing: 'border-box' }}
+                    />
+                  </div>
+                </div>
+              </div>
+
+              {/* Monthly Plan Configuration */}
+              <div style={{ background: '#f5f3ff', border: '1px solid #ddd6fe', borderRadius: '10px', padding: '0.75rem', marginBottom: '1.25rem' }}>
+                <span style={{ fontSize: '0.75rem', fontWeight: 800, color: '#6d28d9', textTransform: 'uppercase', display: 'block', marginBottom: '0.35rem' }}>📆 Monthly Repayment Setup</span>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.5rem' }}>
+                  <div>
+                    <label style={{ display: 'block', fontSize: '0.72rem', fontWeight: 700, color: '#5b21b6', marginBottom: '2px' }}>Monthly Amount (KES)</label>
+                    <input type="number" value={bracketMonthlyInstallment} onChange={e => setBracketMonthlyInstallment(e.target.value)} placeholder="Auto (Amount * 1.12)"
+                      style={{ width: '100%', padding: '0.45rem 0.6rem', border: '1px solid #c4b5fd', borderRadius: '6px', fontSize: '0.8rem', boxSizing: 'border-box' }}
+                    />
+                  </div>
+                  <div>
+                    <label style={{ display: 'block', fontSize: '0.72rem', fontWeight: 700, color: '#5b21b6', marginBottom: '2px' }}>No. of Months</label>
+                    <input type="number" value={bracketNumMonths} onChange={e => setBracketNumMonths(e.target.value)} placeholder="e.g. 1"
+                      style={{ width: '100%', padding: '0.45rem 0.6rem', border: '1px solid #c4b5fd', borderRadius: '6px', fontSize: '0.8rem', boxSizing: 'border-box' }}
+                    />
+                  </div>
+                </div>
+              </div>
+
               <button type="submit" disabled={actionLoading}
                 style={{ width: '100%', padding: '0.7rem', background: ORANGE, color: '#fff', border: 'none', borderRadius: '8px', cursor: 'pointer', fontSize: '0.9rem', fontWeight: 700 }}>
                 {actionLoading ? 'Saving bracket...' : 'Save Eligibility Rule'}
