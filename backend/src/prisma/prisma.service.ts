@@ -5,6 +5,33 @@ import { PrismaClient } from '@prisma/client';
 export class PrismaService extends PrismaClient implements OnModuleInit, OnModuleDestroy {
   async onModuleInit() {
     await this.$connect();
+    await this.ensureSchemaUpToDate();
+  }
+
+  async ensureSchemaUpToDate() {
+    try {
+      await this.$executeRawUnsafe(`
+        ALTER TABLE "EligibilityBracket" ADD COLUMN IF NOT EXISTS "processingFee" DOUBLE PRECISION NOT NULL DEFAULT 450;
+      `);
+    } catch (e) {
+      console.warn('PrismaService schema sync (processingFee column):', (e as any)?.message || e);
+    }
+
+    try {
+      await this.$executeRawUnsafe(`
+        CREATE TABLE IF NOT EXISTS "AuditLog" (
+          "id" TEXT NOT NULL PRIMARY KEY,
+          "adminEmail" TEXT NOT NULL,
+          "action" TEXT NOT NULL,
+          "target" TEXT,
+          "metadata" TEXT,
+          "ipAddress" TEXT,
+          "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP
+        );
+      `);
+    } catch (e) {
+      console.warn('PrismaService schema sync (AuditLog table):', (e as any)?.message || e);
+    }
   }
 
   async onModuleDestroy() {

@@ -255,6 +255,7 @@ export class AdminService {
         });
       } catch (dbErr: any) {
         if (dbErr?.message?.includes('processingFee')) {
+          await this.prisma.ensureSchemaUpToDate();
           bracket = await this.prisma.eligibilityBracket.create({
             data: {
               name: cleanName,
@@ -262,6 +263,7 @@ export class AdminService {
               maxSalary: maxSal,
               assignedPackageName: pkgName,
               maxLimit: maxLim,
+              processingFee: procFee,
               active: true
             }
           });
@@ -319,7 +321,7 @@ export class AdminService {
         });
       } catch (dbErr: any) {
         if (dbErr?.message?.includes('processingFee')) {
-          delete dataToUpdate.processingFee;
+          await this.prisma.ensureSchemaUpToDate();
           bracket = await this.prisma.eligibilityBracket.update({
             where: { id: bracketId },
             data: dataToUpdate
