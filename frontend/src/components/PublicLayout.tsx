@@ -1,9 +1,9 @@
 import React from 'react';
-import { Outlet } from 'react-router-dom';
+import { Outlet, useNavigate } from 'react-router-dom';
 import { Navbar } from './Navbar';
 import { Footer } from './Footer';
 import { SupportChatModal } from './SupportChatModal';
-import { MessageCircle } from 'lucide-react';
+import { Headphones } from 'lucide-react';
 
 interface PublicLayoutProps {
   supportOpen: boolean;
@@ -18,6 +18,8 @@ export const PublicLayout: React.FC<PublicLayoutProps> = ({
   onCloseSupport,
   directToken,
 }) => {
+  const navigate = useNavigate();
+
   return (
     <div className="site-wrapper" style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column' }}>
       <Navbar onOpenSupport={onOpenSupport} />
@@ -28,21 +30,21 @@ export const PublicLayout: React.FC<PublicLayoutProps> = ({
 
       <Footer onOpenSupport={onOpenSupport} />
 
-      {/* Floating WhatsApp Action Button */}
+      {/* Floating Website Support Centre Action Button */}
       <button
         type="button"
-        onClick={onOpenSupport}
+        onClick={() => navigate('/support')}
         style={{
           position: 'fixed',
           bottom: '24px',
           right: '24px',
           zIndex: 9999,
-          background: 'linear-gradient(135deg, #25D366, #128c7e)',
+          background: 'linear-gradient(135deg, #f97316, #ea580c)',
           color: '#ffffff',
           border: 'none',
           borderRadius: '50px',
           padding: '0.75rem 1.25rem',
-          boxShadow: '0 8px 24px rgba(18, 140, 126, 0.4)',
+          boxShadow: '0 8px 24px rgba(249, 115, 22, 0.4)',
           display: 'flex',
           alignItems: 'center',
           gap: '0.6rem',
@@ -57,22 +59,22 @@ export const PublicLayout: React.FC<PublicLayoutProps> = ({
         onMouseLeave={(e) => {
           e.currentTarget.style.transform = 'scale(1)';
         }}
-        aria-label="Open WhatsApp Support Chat"
+        aria-label="Open Jijenge Support Centre"
       >
         <div style={{ position: 'relative', display: 'flex' }}>
-          <MessageCircle size={20} />
+          <Headphones size={20} />
           <span style={{
             position: 'absolute',
             top: '-3px',
             right: '-3px',
             width: '8px',
             height: '8px',
-            background: '#4ade80',
+            background: '#22c55e',
             borderRadius: '50%',
-            border: '1.5px solid #128c7e'
+            border: '1.5px solid #ea580c'
           }} />
         </div>
-        <span>WhatsApp Support</span>
+        <span>Support Centre</span>
       </button>
 
       <SupportChatModal isOpen={supportOpen} onClose={onCloseSupport} directToken={directToken} />

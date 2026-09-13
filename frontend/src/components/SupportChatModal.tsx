@@ -244,32 +244,32 @@ export const SupportChatModal: React.FC<SupportChatModalProps> = ({ isOpen, onCl
       }}
       role="dialog"
       aria-modal="true"
-      aria-labelledby="support-whatsapp-title"
+      aria-labelledby="support-chat-title"
     >
-      {/* ── WhatsApp Styled Container Drawer Card ── */}
+      {/* ── Official Web Support Chat Container Drawer Card ── */}
       <div
         className="bg-white w-full sm:w-[420px] h-full sm:h-[620px] sm:max-h-[92vh] sm:rounded-2xl shadow-2xl flex flex-col overflow-hidden border border-slate-200"
         style={{ fontFamily: 'Segoe UI, Helvetica Neue, Helvetica, Lucida Grande, Arial, Ubuntu, Cantarell, Fira Sans, sans-serif' }}
       >
-        {/* ── WhatsApp Header Banner ── */}
+        {/* ── Jijenge Loans Header Banner ── */}
         <div
-          style={{ background: 'linear-gradient(135deg, #075e54, #128c7e)' }}
-          className="p-3 text-white flex items-center justify-between shadow-md flex-shrink-0"
+          style={{ background: 'linear-gradient(135deg, #0f172a, #1e293b)' }}
+          className="p-3 text-white flex items-center justify-between shadow-md flex-shrink-0 border-b border-orange-500/30"
         >
           <div className="flex items-center gap-3">
             <div className="relative">
-              <div className="w-10 h-10 rounded-full bg-white/20 border border-white/40 flex items-center justify-center font-bold text-white shadow-inner">
-                <ShieldCheck size={22} className="text-emerald-200" />
+              <div className="w-10 h-10 rounded-full bg-orange-500/20 border border-orange-400/40 flex items-center justify-center font-bold text-white shadow-inner">
+                <ShieldCheck size={22} className="text-orange-400" />
               </div>
-              <span className="absolute bottom-0 right-0 w-3 h-3 bg-emerald-400 border-2 border-emerald-800 rounded-full" />
+              <span className="absolute bottom-0 right-0 w-3 h-3 bg-emerald-400 border-2 border-slate-900 rounded-full" />
             </div>
 
             <div>
-              <h3 id="support-whatsapp-title" className="text-base font-bold m-0 leading-tight flex items-center gap-1.5">
+              <h3 id="support-chat-title" className="text-base font-bold m-0 leading-tight flex items-center gap-1.5 text-white">
                 Jijenge Customer Care
               </h3>
-              <span className="text-[11px] text-emerald-200 font-medium tracking-wide">
-                Online • Official Support Chat
+              <span className="text-[11px] text-orange-200 font-medium tracking-wide">
+                Online • Official Web Support Chat
               </span>
             </div>
           </div>
@@ -288,7 +288,7 @@ export const SupportChatModal: React.FC<SupportChatModalProps> = ({ isOpen, onCl
             <button
               type="button"
               onClick={onClose}
-              aria-label="Close WhatsApp chat drawer"
+              aria-label="Close support chat drawer"
               className="p-1.5 hover:bg-white/15 text-white/90 hover:text-white rounded-lg transition-colors"
             >
               <X size={20} />

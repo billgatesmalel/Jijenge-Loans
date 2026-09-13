@@ -22,7 +22,7 @@ const normalizeKenyanPhone = (raw: string): string | null => {
   return null;
 };
 
-export const SupportPage: React.FC<{ onOpenSupport?: () => void }> = () => {
+export const SupportPage: React.FC<{ onOpenSupport?: () => void }> = ({ onOpenSupport }) => {
   const navigate = useNavigate();
   const supportSettings = useSupportSettings();
 
@@ -349,22 +349,21 @@ export const SupportPage: React.FC<{ onOpenSupport?: () => void }> = () => {
             </div>
           </div>
 
-          {/* Card 3: WhatsApp Support */}
+          {/* Card 3: Live Web Support */}
           <div className="trust-card" style={{ display: 'flex', flexDirection: 'column' }}>
-            <div className="trust-icon-box" style={{ background: '#DCFCE7', color: '#16A34A' }}>
+            <div className="trust-icon-box" style={{ background: '#FFF7ED', color: '#F97316' }}>
               <MessageSquare size={22} strokeWidth={2} aria-hidden="true" />
             </div>
-            <h3 style={{ fontSize: '1rem', marginBottom: '0.35rem' }}>WhatsApp Support</h3>
-            <a
-              href={whatsappUrl}
-              target="_blank"
-              rel="noopener noreferrer"
-              style={{ fontSize: '0.95rem', fontWeight: 800, color: '#15803D', textDecoration: 'none', marginBottom: '0.25rem' }}
+            <h3 style={{ fontSize: '1rem', marginBottom: '0.35rem' }}>Live Web Support</h3>
+            <button
+              type="button"
+              onClick={onOpenSupport}
+              style={{ fontSize: '0.95rem', fontWeight: 800, color: 'var(--brand-orange)', background: 'none', border: 'none', padding: 0, cursor: 'pointer', textAlign: 'left', marginBottom: '0.25rem' }}
             >
-              Chat on WhatsApp ↗
-            </a>
+              Start Live Chat ↗
+            </button>
             <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginTop: 'auto' }}>
-              Instant live chat assistance
+              Instant website support chat
             </div>
           </div>
 

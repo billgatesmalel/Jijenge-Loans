@@ -146,10 +146,10 @@ export const Footer: React.FC<FooterProps> = ({ onOpenSupport }) => {
               </a>
             </li>
             <li>
-              <MessageSquare size={14} strokeWidth={1.8} style={{ color: '#22c55e' }} aria-hidden="true" />
-              <a href={whatsappUrl} target="_blank" rel="noopener noreferrer" style={{ color: '#22c55e', textDecoration: 'none', fontWeight: 600 }}>
-                WhatsApp Support ↗
-              </a>
+              <MessageSquare size={14} strokeWidth={1.8} style={{ color: 'var(--brand-orange)' }} aria-hidden="true" />
+              <Link to="/support" style={{ color: 'inherit', textDecoration: 'none', fontWeight: 600 }}>
+                Support Centre
+              </Link>
             </li>
             <li>
               <MapPin size={14} strokeWidth={1.8} aria-hidden="true" />
