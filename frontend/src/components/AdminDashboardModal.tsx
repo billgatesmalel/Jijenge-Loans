@@ -76,10 +76,11 @@ export const AdminDashboardModal: React.FC<AdminDashboardProps> = ({ onClose }) 
   const [loginError, setLoginError] = useState('');
   const [arrivedViaSwitch, setArrivedViaSwitch] = useState(false);
 
-  // Tab navigation with persistence
+  // Tab navigation with persistence & Mobile Drawer
   const [activeTab, setActiveTab] = useState<string>(() => {
     return localStorage.getItem('bl_admin_active_tab') || 'applications';
   });
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   // Data Collections
   const [applications, setApplications] = useState<any[]>([]);
@@ -1070,6 +1071,7 @@ export const AdminDashboardModal: React.FC<AdminDashboardProps> = ({ onClose }) 
     setSelectedCustomer(null);
     setSearchQuery('');
     setCurrentPage(1);
+    setMobileMenuOpen(false);
   };
 
   /* ── Dynamic Tab Content Logic ─────────────────────────────── */
@@ -1347,6 +1349,100 @@ export const AdminDashboardModal: React.FC<AdminDashboardProps> = ({ onClose }) 
         </div>
       </aside>
 
+      {/* ══ MOBILE NAVIGATION DRAWER (Phone Hamburger Menu Overlay) ══ */}
+      {mobileMenuOpen && (
+        <>
+          <div
+            onClick={() => setMobileMenuOpen(false)}
+            style={{
+              position: 'fixed', inset: 0, background: 'rgba(15,23,42,0.6)',
+              zIndex: 998, backdropFilter: 'blur(3px)'
+            }}
+          />
+          <div
+            style={{
+              position: 'fixed', left: 0, top: 0, bottom: 0, width: '85%', maxWidth: '320px',
+              background: '#ffffff', zIndex: 999, boxShadow: '8px 0 32px rgba(0,0,0,0.15)',
+              display: 'flex', flexDirection: 'column', overflowY: 'auto'
+            }}
+          >
+            {/* Drawer Header */}
+            <div style={{
+              display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+              padding: '1rem 1.25rem', borderBottom: '1px solid #f1f5f9', background: '#fff'
+            }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.65rem' }}>
+                <img src="/logo.png" alt="Jijenge Admin" style={{ width: '32px', height: '32px', objectFit: 'contain' }} />
+                <div>
+                  <div style={{ color: '#0f172a', fontWeight: 800, fontSize: '0.95rem', lineHeight: 1 }}>Jijenge Admin</div>
+                  <div style={{ color: '#64748b', fontSize: '0.68rem', lineHeight: 1.3 }}>Super Admin Control Panel</div>
+                </div>
+              </div>
+              <button onClick={() => setMobileMenuOpen(false)} style={{ background: '#f1f5f9', border: 'none', borderRadius: '8px', cursor: 'pointer', padding: '0.45rem', display: 'flex', color: '#475569' }}>
+                <X size={18} />
+              </button>
+            </div>
+
+            {/* Navigation List */}
+            <nav style={{ flex: 1, padding: '1rem 0.75rem', overflowY: 'auto' }}>
+              {NAV_SECTIONS.map(section => (
+                <div key={section.title} style={{ marginBottom: '1.5rem' }}>
+                  <div style={{ color: '#94a3b8', fontSize: '0.7rem', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.08em', padding: '0.35rem 0.75rem 0.5rem' }}>
+                    {section.title}
+                  </div>
+                  {section.items.map(item => {
+                    const Icon = item.icon;
+                    const active = activeTab === item.id;
+                    return (
+                      <button
+                        key={item.id}
+                        onClick={() => handleTabChange(item.id)}
+                        style={{
+                          display: 'flex', alignItems: 'center', gap: '0.85rem', width: '100%',
+                          padding: '0.75rem 0.85rem', marginBottom: '0.25rem', borderRadius: '10px',
+                          background: active ? '#FFF5ED' : 'transparent',
+                          border: active ? '1px solid #FFD6B3' : '1px solid transparent',
+                          cursor: 'pointer', position: 'relative', textAlign: 'left'
+                        }}
+                      >
+                        {active && <div style={{ position: 'absolute', left: 0, top: '20%', bottom: '20%', width: '3.5px', background: '#FF6600', borderRadius: '0 3px 3px 0' }} />}
+                        <Icon size={19} color={active ? '#FF6600' : item.color} style={{ flexShrink: 0 }} />
+                        <span style={{ color: active ? '#FF6600' : '#334155', fontSize: '0.9rem', fontWeight: active ? 700 : 500, flex: 1 }}>
+                          {item.label}
+                        </span>
+                        {item.id === 'support' && openTicketsCount > 0 && (
+                          <span style={{
+                            background: '#ef4444', color: '#fff', fontSize: '0.68rem', fontWeight: 700,
+                            padding: '2px 7px', borderRadius: '10px'
+                          }}>
+                            {openTicketsCount}
+                          </span>
+                        )}
+                      </button>
+                    );
+                  })}
+                </div>
+              ))}
+            </nav>
+
+            {/* Logout Footer */}
+            <div style={{ borderTop: '1px solid #f1f5f9', padding: '1rem 0.85rem' }}>
+              <button
+                onClick={() => { setMobileMenuOpen(false); handleLogout(); }}
+                style={{
+                  display: 'flex', alignItems: 'center', gap: '0.75rem', padding: '0.75rem 0.85rem',
+                  width: '100%', background: '#fef2f2', border: '1px solid #fecaca', borderRadius: '10px',
+                  cursor: 'pointer', justifyContent: 'center'
+                }}
+              >
+                <LogOut size={18} color="#ef4444" />
+                <span style={{ color: '#ef4444', fontSize: '0.9rem', fontWeight: 800 }}>Log Out Admin</span>
+              </button>
+            </div>
+          </div>
+        </>
+      )}
+
       {/* ══ MAIN AREA ══ */}
       <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden', minWidth: 0 }}>
 
@@ -1354,10 +1450,25 @@ export const AdminDashboardModal: React.FC<AdminDashboardProps> = ({ onClose }) 
         <header style={{
           height: '64px', background: '#fff', borderBottom: '1px solid #e2e8f0',
           display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-          padding: '0 1.5rem', flexShrink: 0, boxSizing: 'border-box',
+          padding: '0 1rem', flexShrink: 0, boxSizing: 'border-box',
           boxShadow: '0 1px 3px rgba(0,0,0,0.03)', zIndex: 40
         }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '0.85rem' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+            {/* Phone Hamburger Menu Button */}
+            <button
+              type="button"
+              onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+              className="admin-hamburger-btn"
+              style={{
+                background: '#f8fafc', border: '1px solid #cbd5e1', borderRadius: '8px',
+                padding: '0.45rem', cursor: 'pointer', color: '#0f172a', display: 'flex',
+                alignItems: 'center', justifyContent: 'center'
+              }}
+              aria-label="Toggle navigation menu"
+            >
+              {mobileMenuOpen ? <X size={20} /> : <Menu size={20} />}
+            </button>
+
             {sidebarCollapsed && (
               <button onClick={() => setSidebarCollapsed(false)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#64748b', display: 'flex', padding: '6px', borderRadius: '6px' }}>
                 <Menu size={20} />

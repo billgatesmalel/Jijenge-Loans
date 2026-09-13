@@ -2967,6 +2967,7 @@ html, body, #root {
 }
 
 /* 3. Responsive Admin Layout & Mobile Navigation Drawer */
+/* 3. Responsive Admin Layout & Mobile Navigation Hamburger Drawer */
 @media (max-width: 1024px) {
   .admin-layout-root {
     flex-direction: column !important;
@@ -2975,29 +2976,17 @@ html, body, #root {
   }
 
   .admin-sidebar-root {
-    width: 100% !important;
-    min-width: 100% !important;
-    height: auto !important;
-    position: sticky !important;
-    top: 0 !important;
-    z-index: 100 !important;
-    box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05) !important;
+    display: none !important;
   }
 
-  .admin-sidebar-nav {
+  .admin-hamburger-btn {
     display: flex !important;
-    flex-direction: row !important;
-    overflow-x: auto !important;
-    white-space: nowrap !important;
-    padding: 0.5rem !important;
-    -webkit-overflow-scrolling: touch;
   }
+}
 
-  .admin-sidebar-nav > div {
-    display: flex !important;
-    flex-direction: row !important;
-    margin-bottom: 0 !important;
-    gap: 0.35rem !important;
+@media (min-width: 1025px) {
+  .admin-hamburger-btn {
+    display: none !important;
   }
 }
 
