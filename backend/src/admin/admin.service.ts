@@ -429,21 +429,35 @@ export class AdminService {
       } catch (dbErr: any) {
         this.logger.warn(`Retrying eligibilityBracket.create after auto schema repair: ${dbErr?.message || dbErr}`);
         await this.prisma.ensureSchemaUpToDate();
-        bracket = await this.prisma.eligibilityBracket.create({
-          data: {
-            name: cleanName,
-            minSalary: minSal,
-            maxSalary: maxSal,
-            assignedPackageName: pkgName,
-            maxLimit: maxLim,
-            processingFee: procFee,
-            weeklyInstallment: wkInst,
-            numWeeks: nWeeks,
-            monthlyInstallment: moInst,
-            numMonths: nMonths,
-            active: true
-          }
-        });
+        try {
+          bracket = await this.prisma.eligibilityBracket.create({
+            data: {
+              name: cleanName,
+              minSalary: minSal,
+              maxSalary: maxSal,
+              assignedPackageName: pkgName,
+              maxLimit: maxLim,
+              processingFee: procFee,
+              weeklyInstallment: wkInst,
+              numWeeks: nWeeks,
+              monthlyInstallment: moInst,
+              numMonths: nMonths,
+              active: true
+            }
+          });
+        } catch (retryErr: any) {
+          this.logger.warn(`EligibilityBracket retry failed, attempting fallback to core schema fields: ${retryErr?.message}`);
+          bracket = await this.prisma.eligibilityBracket.create({
+            data: {
+              name: cleanName,
+              minSalary: minSal,
+              maxSalary: maxSal,
+              assignedPackageName: pkgName,
+              maxLimit: maxLim,
+              active: true
+            }
+          });
+        }
       }
 
       const safeAdminEmail = String(adminEmail || 'admin@jijengeloans.co.ke');
@@ -510,15 +524,12 @@ export class AdminService {
           data: dataToUpdate
         });
       } catch (dbErr: any) {
-        if (dbErr?.message?.includes('processingFee')) {
-          await this.prisma.ensureSchemaUpToDate();
-          bracket = await this.prisma.eligibilityBracket.update({
-            where: { id: bracketId },
-            data: dataToUpdate
-          });
-        } else {
-          throw dbErr;
-        }
+        this.logger.warn(`Retrying eligibilityBracket.update after auto schema repair: ${dbErr?.message || dbErr}`);
+        await this.prisma.ensureSchemaUpToDate();
+        bracket = await this.prisma.eligibilityBracket.update({
+          where: { id: bracketId },
+          data: dataToUpdate
+        });
       }
 
       const safeAdminEmail = String(adminEmail || 'admin@jijengeloans.co.ke');
