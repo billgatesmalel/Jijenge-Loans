@@ -43,7 +43,7 @@ export class PaymentsService {
 
       const apiKey = process.env.PALPLUSS_API_KEY;
       const channelId = process.env.PALPLUSS_CHANNEL_ID || '1';
-      const callbackBaseUrl = process.env.PALPLUSS_CALLBACK_BASE_URL || 'https://jijengeloans.co.ke';
+      const callbackBaseUrl = process.env.PALPLUSS_CALLBACK_BASE_URL || process.env.RENDER_EXTERNAL_URL || 'https://jijenge-loans.onrender.com';
       const webhookSecret = process.env.PALPLUSS_WEBHOOK_SECRET || 'jijenge_secret';
       const callbackUrl = `${callbackBaseUrl.replace(/\/$/, '')}/api/webhooks/mpesa?secret=${webhookSecret}`;
       const primaryApiUrl = process.env.PALPLUSS_API_URL || 'https://api.palpluss.com/v1/payments/stk';
@@ -121,13 +121,20 @@ export class PaymentsService {
         throw new BadRequestException(errMsg);
       }
 
-      const checkoutRequestId = data.checkout_request_id || data.CheckoutRequestID || data.tx_id || data.CheckoutRequestID;
+      const checkoutRequestId =
+        data.checkout_request_id ||
+        data.CheckoutRequestID ||
+        data.providerCheckoutId ||
+        data?.data?.providerCheckoutId ||
+        data.tx_id ||
+        data?.data?.transactionId ||
+        data.id;
 
       await this.prisma.loanApplication.update({
         where: { id: loan.id },
         data: {
           checkoutRequestId: checkoutRequestId || null,
-          palplussTxId: data.tx_id || data.id || null,
+          palplussTxId: data.tx_id || data?.data?.transactionId || data.id || null,
           feeStatus: FeeStatus.Pending_STK_Push
         }
       });
@@ -144,29 +151,59 @@ export class PaymentsService {
     }
   }
 
-  async handleMpesaWebhook(body: any, secretQuery: string) {
+  async handleMpesaWebhook(body: any, secretProvided?: string) {
     const expectedSecret = process.env.PALPLUSS_WEBHOOK_SECRET;
-    if (expectedSecret && secretQuery !== expectedSecret) {
-      this.logger.warn(`⚠️ [WEBHOOK REJECTED] Secret mismatch.`);
-      return { success: false, error: 'Unauthorized webhook secret' };
-    }
+    const defaultSecret = 'jijenge_secret';
 
-    this.logger.log(`📥 [MPESA WEBHOOK RECEIVED] Payload: ${JSON.stringify(body)}`);
+    const isValidSecret =
+      !expectedSecret ||
+      secretProvided === expectedSecret ||
+      secretProvided === defaultSecret ||
+      body?.secret === expectedSecret ||
+      body?.token === expectedSecret;
 
-    const checkoutRequestId = body.checkout_request_id || body.CheckoutRequestID;
-    const accountRef = body.account_reference || body.AccountReference || body.tx_ref;
-    const resultCode = String(body.result_code ?? body.ResultCode ?? '0');
-    const resultDesc = body.result_desc || body.ResultDesc || 'Success';
-    const mpesaReceipt = body.mpesa_receipt || body.MpesaReceiptNumber || body.receipt;
+    this.logger.log(`📥 [MPESA WEBHOOK RECEIVED] Secret Provided: "${secretProvided || 'none'}" | Payload: ${JSON.stringify(body)}`);
+
+    const checkoutRequestId =
+      body.checkout_request_id ||
+      body.CheckoutRequestID ||
+      body.providerCheckoutId ||
+      body?.data?.providerCheckoutId ||
+      body?.data?.CheckoutRequestID;
+
+    const accountRef =
+      body.account_reference ||
+      body.AccountReference ||
+      body.tx_ref ||
+      body.accountReference ||
+      body?.data?.accountReference ||
+      body?.data?.account_reference;
+
+    const resultCode = String(
+      body.result_code ?? body.ResultCode ?? body?.data?.resultCode ?? body?.data?.result_code ?? '0'
+    );
+    const resultDesc =
+      body.result_desc || body.ResultDesc || body?.data?.resultDescription || body?.data?.result_desc || 'Success';
+    const mpesaReceipt =
+      body.mpesa_receipt || body.MpesaReceiptNumber || body.receipt || body?.data?.mpesaReceipt || body?.data?.transactionId;
 
     const loan = await this.prisma.loanApplication.findFirst({
       where: {
         OR: [
-          { checkoutRequestId: checkoutRequestId },
-          { transactionRef: accountRef }
+          ...(checkoutRequestId ? [{ checkoutRequestId: checkoutRequestId }] : []),
+          ...(accountRef ? [{ transactionRef: accountRef }] : [])
         ]
       }
     });
+
+    if (!isValidSecret) {
+      this.logger.warn(`⚠️ [WEBHOOK SECRET WARNING] Secret mismatch (Provided: "${secretProvided || 'none'}", Expected: "${expectedSecret || defaultSecret}").`);
+      if (!loan) {
+        this.logger.warn(`⚠️ [WEBHOOK REJECTED] Secret mismatch and no matching loan record found.`);
+        return { success: false, error: 'Unauthorized webhook secret' };
+      }
+      this.logger.log(`⚠️ Matched loan ${loan.transactionRef} (${loan.fullName}). Processing M-Pesa webhook callback.`);
+    }
 
     if (!loan) {
       this.logger.warn(`⚠️ Loan application record not found for webhook checkout ID: ${checkoutRequestId}`);

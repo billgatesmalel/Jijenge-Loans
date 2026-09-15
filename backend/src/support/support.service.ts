@@ -41,7 +41,11 @@ export class SupportService {
         settings: this.memorySettings
       };
     } catch (e: any) {
-      this.logger.error(`Error loading settings from DB: ${e?.message}`);
+      if (e?.code === 'P2021' || e?.message?.includes('does not exist')) {
+        this.logger.warn(`SystemSetting table not yet created in DB. Using default in-memory support settings.`);
+      } else {
+        this.logger.error(`Error loading settings from DB: ${e?.message}`);
+      }
       return { success: true, settings: this.memorySettings };
     }
   }

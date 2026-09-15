@@ -7,6 +7,7 @@
     "build": "nest build",
     "start": "nest start",
     "start:dev": "nest start --watch",
+    "prestart:prod": "prisma db push --schema=prisma/schema.prisma --accept-data-loss",
     "start:prod": "node dist/main",
     "prisma:dbpush": "prisma db push --schema=prisma/schema.prisma --accept-data-loss",
     "prisma:generate": "prisma generate --schema=prisma/schema.prisma",

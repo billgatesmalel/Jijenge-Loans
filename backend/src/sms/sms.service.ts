@@ -326,7 +326,15 @@ export class SmsService {
 
       return this.sendSms(recipientPhone, messageText, ignoreSpamFilter);
     } catch (err: any) {
-      this.logger.error(`Failed to send template SMS (${templateKey}): ${err?.message}`);
+      this.logger.error(`Failed to send template SMS (${templateKey}) via DB query: ${err?.message}`);
+      const defaultDef = DEFAULT_SMS_TEMPLATES.find(t => t.key === templateKey);
+      if (defaultDef) {
+        let messageText = defaultDef.body;
+        for (const [k, v] of Object.entries(variables)) {
+          messageText = messageText.replace(new RegExp(`\\{${k}\\}`, 'g'), String(v));
+        }
+        return this.sendSms(recipientPhone, messageText, ignoreSpamFilter);
+      }
       return { success: false, error: err?.message };
     }
   }
