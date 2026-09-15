@@ -37,6 +37,8 @@ export class PaymentsService {
       let formattedPhone = cleanPhone;
       if (formattedPhone.startsWith('0')) {
         formattedPhone = '254' + formattedPhone.slice(1);
+      } else if (formattedPhone.length === 9 && (formattedPhone.startsWith('7') || formattedPhone.startsWith('1'))) {
+        formattedPhone = '254' + formattedPhone;
       }
 
       const apiKey = process.env.PALPLUSS_API_KEY;

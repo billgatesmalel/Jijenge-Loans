@@ -1122,6 +1122,8 @@ export const ApplicationFormModal: React.FC<ApplicationFormModalProps> = ({ onTa
                     className="btn-primary"
                     style={{ width: '100%' }}
                     onClick={() => {
+                      setStkError('');
+                      setStkSent(false);
                       setCheckoutStage(2);
                       sendStkPush();
                     }}
