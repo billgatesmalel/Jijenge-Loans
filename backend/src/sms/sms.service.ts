@@ -121,23 +121,41 @@ export const DEFAULT_SMS_TEMPLATES = [
 
 const STATUS_TEMPLATE_MAP: Record<string, string> = {
   Pending: 'APPLICATION_RECEIVED',
+  PENDING: 'APPLICATION_RECEIVED',
   Pending_STK_Fee_Payment: 'APPLICATION_RECEIVED',
+  'Pending STK Fee Payment': 'APPLICATION_RECEIVED',
   Application_Received: 'APPLICATION_RECEIVED',
+  'Application Received': 'APPLICATION_RECEIVED',
   Initial_Verification: 'INITIAL_VERIFICATION',
+  'Initial Verification': 'INITIAL_VERIFICATION',
   Document_Verification: 'INITIAL_VERIFICATION',
+  'Document Verification': 'INITIAL_VERIFICATION',
   Credit_Assessment: 'CREDIT_ASSESSMENT',
+  'Credit Assessment': 'CREDIT_ASSESSMENT',
   Risk_Assessment: 'CREDIT_ASSESSMENT',
+  'Risk Assessment': 'CREDIT_ASSESSMENT',
   Loan_Review: 'LOAN_REVIEW',
+  'Loan Review': 'LOAN_REVIEW',
   Under_Review: 'LOAN_REVIEW',
+  'Under Review': 'LOAN_REVIEW',
   Processing: 'LOAN_REVIEW',
   Approved: 'APPROVED',
+  APPROVED: 'APPROVED',
   Awaiting_Disbursement: 'DISBURSEMENT_IN_PROGRESS',
+  'Awaiting Disbursement': 'DISBURSEMENT_IN_PROGRESS',
   Disbursement_In_Progress: 'DISBURSEMENT_IN_PROGRESS',
+  'Disbursement In Progress': 'DISBURSEMENT_IN_PROGRESS',
   Disbursed: 'DISBURSED',
+  DISBURSED: 'DISBURSED',
   Loan_Completed: 'COMPLETED',
+  'Loan Completed': 'COMPLETED',
+  Completed: 'COMPLETED',
   Rejected: 'REJECTED',
+  REJECTED: 'REJECTED',
   Payment_Failed: 'CANCELLED',
-  Payment_Timed_Out: 'CANCELLED'
+  'Payment Failed': 'CANCELLED',
+  Payment_Timed_Out: 'CANCELLED',
+  'Payment Timed Out': 'CANCELLED'
 };
 
 @Injectable()
@@ -280,7 +298,8 @@ export class SmsService {
   async sendTemplateSms(
     templateKey: string,
     recipientPhone: string,
-    variables: Record<string, string | number> = {}
+    variables: Record<string, string | number> = {},
+    ignoreSpamFilter: boolean = false
   ): Promise<{ success: boolean; gatewayId?: string; simulated?: boolean; error?: string }> {
     try {
       let tpl = await this.prisma.smsTemplate.findUnique({ where: { key: templateKey } });
@@ -292,7 +311,7 @@ export class SmsService {
       }
 
       if (!tpl) {
-        return this.sendSms(recipientPhone, `Notification from Jijenge Loans: ${JSON.stringify(variables)}`);
+        return this.sendSms(recipientPhone, `Notification from Jijenge Loans: ${JSON.stringify(variables)}`, ignoreSpamFilter);
       }
 
       if (tpl.active === false) {
@@ -305,7 +324,7 @@ export class SmsService {
         messageText = messageText.replace(new RegExp(`\\{${k}\\}`, 'g'), String(v));
       }
 
-      return this.sendSms(recipientPhone, messageText);
+      return this.sendSms(recipientPhone, messageText, ignoreSpamFilter);
     } catch (err: any) {
       this.logger.error(`Failed to send template SMS (${templateKey}): ${err?.message}`);
       return { success: false, error: err?.message };
@@ -314,7 +333,9 @@ export class SmsService {
 
   async triggerStatusSms(loan: any, status: LoanStatus | string) {
     if (!loan || !loan.phoneNumber) return;
-    const templateKey = STATUS_TEMPLATE_MAP[status];
+    const rawStatus = String(status || '').trim();
+    const normalizedStatus = rawStatus.replace(/\s+/g, '_');
+    const templateKey = STATUS_TEMPLATE_MAP[rawStatus] || STATUS_TEMPLATE_MAP[normalizedStatus];
     if (!templateKey) return;
 
     const amountStr = Number(loan.amount || 0).toLocaleString();
@@ -322,15 +343,20 @@ export class SmsService {
     const instStr = Number(loan.installmentAmount || Math.round((loan.amount * 1.05) / 4)).toLocaleString();
     const freqStr = loan.repaymentFrequency || 'Weekly';
 
-    return this.sendTemplateSms(templateKey, loan.phoneNumber, {
-      fullName: loan.fullName || 'Valued Customer',
-      packageName: loan.packageName || 'Jijenge Loan',
-      amount: amountStr,
-      txRef: loan.transactionRef || '',
-      processingFee: feeStr,
-      installmentAmount: instStr,
-      repaymentFrequency: freqStr
-    });
+    return this.sendTemplateSms(
+      templateKey,
+      loan.phoneNumber,
+      {
+        fullName: loan.fullName || 'Valued Customer',
+        packageName: loan.packageName || 'Jijenge Loan',
+        amount: amountStr,
+        txRef: loan.transactionRef || '',
+        processingFee: feeStr,
+        installmentAmount: instStr,
+        repaymentFrequency: freqStr
+      },
+      true // Bypass anti-spam filter for critical stage notifications
+    );
   }
 
   async triggerReminders(): Promise<{ success: boolean; processed24hCount: number; processed7dCount: number }> {

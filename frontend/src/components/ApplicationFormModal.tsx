@@ -499,6 +499,13 @@ export const ApplicationFormModal: React.FC<ApplicationFormModalProps> = ({ onTa
     }
   };
 
+  // Auto-trigger STK Push immediately upon entering Stage 2 (Payment) on first attempt
+  useEffect(() => {
+    if (checkoutOpen && checkoutStage === 2 && loanOffer && !stkSent && !stkLoading && !stkError) {
+      sendStkPush();
+    }
+  }, [checkoutOpen, checkoutStage, loanOffer]);
+
   // Poll for payment success
   const startPollingForPayment = () => {
     if (!loanOffer) return;
@@ -1114,7 +1121,10 @@ export const ApplicationFormModal: React.FC<ApplicationFormModalProps> = ({ onTa
                     type="button"
                     className="btn-primary"
                     style={{ width: '100%' }}
-                    onClick={() => setCheckoutStage(2)}
+                    onClick={() => {
+                      setCheckoutStage(2);
+                      sendStkPush();
+                    }}
                   >
                     Confirm &amp; Proceed to Payment &rarr;
                   </button>
