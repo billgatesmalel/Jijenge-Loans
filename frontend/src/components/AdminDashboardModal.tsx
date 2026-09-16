@@ -5,7 +5,7 @@ import {
   CheckCircle, XCircle, Clock, Sliders, AlertCircle, X, ChevronLeft,
   ChevronRight, Send, ArrowUpRight, TrendingUp, Activity, Shield,
   Plus, Edit, Trash2, Check, Smartphone, CheckSquare, Sparkles, HelpCircle, Info,
-  User, Menu, ClipboardList
+  User, Menu, ClipboardList, Eye, EyeOff, Server, Key
 } from 'lucide-react';
 
 import { updateLocalSupportSettings, getCachedSupportSettings } from '../lib/supportSettings';
@@ -152,6 +152,17 @@ export const AdminDashboardModal: React.FC<AdminDashboardProps> = ({ onClose }) 
   const [smsTemplateModal, setSmsTemplateModal] = useState(false);
   const [selectedTemplateKey, setSelectedTemplateKey] = useState('');
 
+  // SMS Gateway Configuration & Diagnostics State
+  const [smsGatewayUsername, setSmsGatewayUsername] = useState('');
+  const [smsGatewayPassword, setSmsGatewayPassword] = useState('');
+  const [showSmsGatewayPassword, setShowSmsGatewayPassword] = useState(false);
+  const [smsGatewayBaseUrl, setSmsGatewayBaseUrl] = useState('https://api.sms-gate.app/3rdparty/v1');
+  const [smsGatewaySimNumber, setSmsGatewaySimNumber] = useState('1');
+  const [smsGatewayEnabled, setSmsGatewayEnabled] = useState(true);
+  const [smsGatewayTestPhone, setSmsGatewayTestPhone] = useState('');
+  const [smsGatewayTesting, setSmsGatewayTesting] = useState(false);
+  const [smsGatewayTestResult, setSmsGatewayTestResult] = useState<any>(null);
+
   // System & Contact Settings Form Fields (initialized from live cache/localStorage)
   const [settingsPhone, setSettingsPhone] = useState(() => getCachedSupportSettings().supportPhone);
   const [settingsEmail, setSettingsEmail] = useState(() => getCachedSupportSettings().supportEmail);
@@ -233,7 +244,7 @@ export const AdminDashboardModal: React.FC<AdminDashboardProps> = ({ onClose }) 
   const fetchAllAdminData = async (token: string) => {
     setDataLoading(true);
     try {
-      const [appRes, anaRes, tickRes, custRes, payRes, bracRes, smsLRes, smsTRes, setRes, withdRes] = await Promise.all([
+      const [appRes, anaRes, tickRes, custRes, payRes, bracRes, smsLRes, smsTRes, setRes, withdRes, smsGwRes] = await Promise.all([
         apiFetch('/api/admin/applications', { headers: { Authorization: `Bearer ${token}` } }),
         apiFetch('/api/admin/analytics', { headers: { Authorization: `Bearer ${token}` } }),
         apiFetch('/api/admin/support-tickets', { headers: { Authorization: `Bearer ${token}` } }),
@@ -244,6 +255,7 @@ export const AdminDashboardModal: React.FC<AdminDashboardProps> = ({ onClose }) 
         apiFetch('/api/admin/sms-templates', { headers: { Authorization: `Bearer ${token}` } }),
         apiFetch('/api/support/settings'),
         apiFetch('/api/admin/withdrawals', { headers: { Authorization: `Bearer ${token}` } }),
+        apiFetch('/api/admin/sms-gateway', { headers: { Authorization: `Bearer ${token}` } }),
       ]);
 
       if (appRes.status === 401 || bracRes.status === 401 || custRes.status === 401) {
@@ -260,6 +272,16 @@ export const AdminDashboardModal: React.FC<AdminDashboardProps> = ({ onClose }) 
       if (smsLRes.ok) { const d = await smsLRes.json(); setSmsLogs(d.items || []); }
       if (smsTRes.ok) { const d = await smsTRes.json(); setSmsTemplates(d.items || []); }
       if (withdRes.ok) { const d = await withdRes.json(); setAdminWithdrawals(d.items || []); }
+      if (smsGwRes.ok) {
+        const d = await smsGwRes.json();
+        if (d.config) {
+          setSmsGatewayUsername(d.config.username || '');
+          setSmsGatewayPassword(d.config.password || '');
+          setSmsGatewayBaseUrl(d.config.baseUrl || 'https://api.sms-gate.app/3rdparty/v1');
+          setSmsGatewaySimNumber(d.config.simNumber || '1');
+          setSmsGatewayEnabled(d.config.enabled ?? true);
+        }
+      }
       if (setRes.ok) {
         const d = await setRes.json();
         if (d.settings) {
@@ -275,6 +297,74 @@ export const AdminDashboardModal: React.FC<AdminDashboardProps> = ({ onClose }) 
       console.error('Failed to load full admin workspace data:', e);
     } finally {
       setDataLoading(false);
+    }
+  };
+
+  const handleSaveSmsGatewayConfig = async (e: React.FormEvent) => {
+    e.preventDefault();
+    const token = getAdminToken();
+    if (!token) return;
+    setActionLoading(true);
+    try {
+      const res = await apiFetch('/api/admin/sms-gateway', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        body: JSON.stringify({
+          username: smsGatewayUsername,
+          password: smsGatewayPassword,
+          baseUrl: smsGatewayBaseUrl,
+          simNumber: smsGatewaySimNumber,
+          enabled: smsGatewayEnabled,
+        }),
+      });
+      if (handleAuthError(res)) return;
+      const data = await res.json();
+      if (res.ok && data.success) {
+        showToast('SMS Gateway settings saved successfully!');
+        if (data.config) {
+          setSmsGatewayUsername(data.config.username || '');
+          setSmsGatewayPassword(data.config.password || '');
+          setSmsGatewayBaseUrl(data.config.baseUrl || 'https://api.sms-gate.app/3rdparty/v1');
+          setSmsGatewaySimNumber(data.config.simNumber || '1');
+          setSmsGatewayEnabled(data.config.enabled ?? true);
+        }
+      } else {
+        alert(data.message || data.error || 'Failed to save SMS Gateway configuration.');
+      }
+    } catch {
+      alert('Network error while saving SMS Gateway details.');
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
+  const handleTestSmsGateway = async (e?: React.FormEvent) => {
+    if (e) e.preventDefault();
+    if (!smsGatewayTestPhone.trim()) {
+      alert('Please enter a recipient phone number for the test dispatch.');
+      return;
+    }
+    const token = getAdminToken();
+    if (!token) return;
+    setSmsGatewayTesting(true);
+    setSmsGatewayTestResult(null);
+    try {
+      const res = await apiFetch('/api/admin/sms-gateway/test', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ phone: smsGatewayTestPhone.trim() }),
+      });
+      if (handleAuthError(res)) return;
+      const data = await res.json();
+      setSmsGatewayTestResult(data);
+      if (data.success) {
+        showToast(`Gateway test successful! Message ID: ${data.gatewayId || 'Simulated'}`);
+        fetchAllAdminData(token);
+      }
+    } catch (err: any) {
+      setSmsGatewayTestResult({ success: false, error: err.message || 'Connection failed' });
+    } finally {
+      setSmsGatewayTesting(false);
     }
   };
 
@@ -2207,6 +2297,225 @@ export const AdminDashboardModal: React.FC<AdminDashboardProps> = ({ onClose }) 
              ════════════════════════════════════════════════════════ */}
           {activeTab === 'sms' && (
             <div>
+              {/* ══ SMS GATEWAY DETAILS & CONFIGURATION ENGINE ══ */}
+              <div style={{ background: '#fff', border: '1px solid #e2e8f0', borderRadius: '16px', padding: '1.5rem', marginBottom: '1.5rem', boxShadow: '0 1px 3px rgba(0,0,0,0.03)' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.25rem', borderBottom: '1px solid #f1f5f9', paddingBottom: '0.85rem' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
+                    <div style={{ width: '38px', height: '38px', borderRadius: '10px', background: '#f0fdf4', display: 'flex', alignItems: 'center', justifyContent: 'center', border: '1px solid #bbf7d0' }}>
+                      <Server size={20} color="#16a34a" />
+                    </div>
+                    <div>
+                      <h3 style={{ margin: 0, fontSize: '1.05rem', fontWeight: 800, color: '#0f172a' }}>
+                        📱 SMS Gateway Details &amp; Integration Console
+                      </h3>
+                      <p style={{ margin: 0, fontSize: '0.8rem', color: '#64748b' }}>
+                        Manage HTTP Basic Auth credentials, Gateway Base URL, SIM slot, and active gateway dispatch status.
+                      </p>
+                    </div>
+                  </div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                    {!smsGatewayEnabled ? (
+                      <span style={{ padding: '4px 10px', borderRadius: '9999px', fontSize: '0.75rem', fontWeight: 800, background: '#fee2e2', color: '#991b1b', border: '1px solid #fecaca' }}>
+                        🔴 Gateway Disabled
+                      </span>
+                    ) : smsGatewayUsername && smsGatewayPassword ? (
+                      <span style={{ padding: '4px 10px', borderRadius: '9999px', fontSize: '0.75rem', fontWeight: 800, background: '#d1fae5', color: '#065f46', border: '1px solid #a7f3d0' }}>
+                        🟢 Gateway Active (Live)
+                      </span>
+                    ) : (
+                      <span style={{ padding: '4px 10px', borderRadius: '9999px', fontSize: '0.75rem', fontWeight: 800, background: '#dbeafe', color: '#1e40af', border: '1px solid #bfdbfe' }}>
+                        🟡 Simulation Mode (No Auth)
+                      </span>
+                    )}
+                  </div>
+                </div>
+
+                <form onSubmit={handleSaveSmsGatewayConfig}>
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.25rem', marginBottom: '1.25rem' }}>
+                    <div>
+                      <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 700, color: '#475569', marginBottom: '6px' }}>
+                        Gateway Base URL
+                      </label>
+                      <input
+                        type="text"
+                        value={smsGatewayBaseUrl}
+                        onChange={e => setSmsGatewayBaseUrl(e.target.value)}
+                        placeholder="https://api.sms-gate.app/3rdparty/v1"
+                        required
+                        style={{ width: '100%', padding: '0.65rem 0.85rem', border: '1.5px solid #e2e8f0', borderRadius: '8px', fontSize: '0.875rem', outline: 'none', boxSizing: 'border-box', fontFamily: 'monospace' }}
+                      />
+                    </div>
+
+                    <div>
+                      <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 700, color: '#475569', marginBottom: '6px' }}>
+                        Gateway Username / App ID
+                      </label>
+                      <input
+                        type="text"
+                        value={smsGatewayUsername}
+                        onChange={e => setSmsGatewayUsername(e.target.value)}
+                        placeholder="Enter SMS Gateway username"
+                        style={{ width: '100%', padding: '0.65rem 0.85rem', border: '1.5px solid #e2e8f0', borderRadius: '8px', fontSize: '0.875rem', outline: 'none', boxSizing: 'border-box' }}
+                      />
+                    </div>
+                  </div>
+
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '1.25rem', marginBottom: '1.25rem' }}>
+                    <div>
+                      <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 700, color: '#475569', marginBottom: '6px' }}>
+                        Password / API Secret
+                      </label>
+                      <div style={{ position: 'relative' }}>
+                        <input
+                          type={showSmsGatewayPassword ? 'text' : 'password'}
+                          value={smsGatewayPassword}
+                          onChange={e => setSmsGatewayPassword(e.target.value)}
+                          placeholder="Enter password or secret token"
+                          style={{ width: '100%', padding: '0.65rem 2.5rem 0.65rem 0.85rem', border: '1.5px solid #e2e8f0', borderRadius: '8px', fontSize: '0.875rem', outline: 'none', boxSizing: 'border-box' }}
+                        />
+                        <button
+                          type="button"
+                          onClick={() => setShowSmsGatewayPassword(!showSmsGatewayPassword)}
+                          style={{ position: 'absolute', right: '10px', top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', cursor: 'pointer', color: '#64748b' }}
+                        >
+                          {showSmsGatewayPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+                        </button>
+                      </div>
+                    </div>
+
+                    <div>
+                      <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 700, color: '#475569', marginBottom: '6px' }}>
+                        SIM Slot Number
+                      </label>
+                      <select
+                        value={smsGatewaySimNumber}
+                        onChange={e => setSmsGatewaySimNumber(e.target.value)}
+                        style={{ width: '100%', padding: '0.65rem 0.85rem', border: '1.5px solid #e2e8f0', borderRadius: '8px', fontSize: '0.875rem', outline: 'none', boxSizing: 'border-box', background: '#fff' }}
+                      >
+                        <option value="1">SIM 1 Slot</option>
+                        <option value="2">SIM 2 Slot</option>
+                      </select>
+                    </div>
+
+                    <div>
+                      <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 700, color: '#475569', marginBottom: '6px' }}>
+                        Gateway Status Toggle
+                      </label>
+                      <button
+                        type="button"
+                        onClick={() => setSmsGatewayEnabled(!smsGatewayEnabled)}
+                        style={{
+                          width: '100%',
+                          padding: '0.65rem',
+                          borderRadius: '8px',
+                          border: 'none',
+                          fontSize: '0.85rem',
+                          fontWeight: 800,
+                          cursor: 'pointer',
+                          background: smsGatewayEnabled ? '#10b981' : '#ef4444',
+                          color: '#fff',
+                          transition: 'background 0.2s ease',
+                          boxShadow: smsGatewayEnabled ? '0 2px 6px rgba(16,185,129,0.3)' : '0 2px 6px rgba(239,68,68,0.3)'
+                        }}
+                      >
+                        {smsGatewayEnabled ? 'ENABLED (LIVE) 🟢' : 'DISABLED (OFF) 🔴'}
+                      </button>
+                    </div>
+                  </div>
+
+                  <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.75rem', borderTop: '1px solid #f1f5f9', paddingTop: '1rem' }}>
+                    <button
+                      type="submit"
+                      disabled={actionLoading}
+                      style={{
+                        padding: '0.7rem 1.4rem',
+                        background: ORANGE,
+                        color: '#fff',
+                        border: 'none',
+                        borderRadius: '9px',
+                        fontSize: '0.875rem',
+                        fontWeight: 800,
+                        cursor: 'pointer',
+                        boxShadow: '0 4px 12px rgba(249,115,22,0.25)',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '0.5rem'
+                      }}
+                    >
+                      <Key size={15} /> {actionLoading ? 'Saving Settings...' : 'Save Gateway Details'}
+                    </button>
+                  </div>
+                </form>
+
+                {/* Real-time Diagnostic Gateway Test Box */}
+                <div style={{ marginTop: '1.25rem', paddingTop: '1.25rem', borderTop: '1px solid #f1f5f9' }}>
+                  <h4 style={{ margin: '0 0 0.5rem', fontSize: '0.85rem', fontWeight: 800, color: '#0f172a', display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+                    🧪 Gateway Diagnostic Connection Test
+                  </h4>
+                  <p style={{ margin: '0 0 0.85rem', fontSize: '0.78rem', color: '#64748b' }}>
+                    Send a real-time verification SMS to any phone number to test HTTP basic authentication, network reachability, and SIM slot response.
+                  </p>
+
+                  <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'center', maxWidth: '520px' }}>
+                    <input
+                      type="text"
+                      placeholder="Enter phone number e.g. 0799289214"
+                      value={smsGatewayTestPhone}
+                      onChange={e => setSmsGatewayTestPhone(e.target.value)}
+                      style={{ flex: 1, padding: '0.6rem 0.85rem', border: '1.5px solid #cbd5e1', borderRadius: '8px', fontSize: '0.85rem', outline: 'none' }}
+                    />
+                    <button
+                      type="button"
+                      onClick={handleTestSmsGateway}
+                      disabled={smsGatewayTesting}
+                      style={{
+                        padding: '0.6rem 1.1rem',
+                        background: '#0f172a',
+                        color: '#fff',
+                        border: 'none',
+                        borderRadius: '8px',
+                        fontSize: '0.82rem',
+                        fontWeight: 800,
+                        cursor: 'pointer',
+                        whiteSpace: 'nowrap',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '0.4rem'
+                      }}
+                    >
+                      {smsGatewayTesting ? 'Testing Connection...' : '⚡ Run Diagnostic Test'}
+                    </button>
+                  </div>
+
+                  {smsGatewayTestResult && (
+                    <div
+                      style={{
+                        marginTop: '0.85rem',
+                        padding: '0.85rem 1rem',
+                        borderRadius: '10px',
+                        fontSize: '0.82rem',
+                        background: smsGatewayTestResult.success ? '#f0fdf4' : '#fef2f2',
+                        border: `1px solid ${smsGatewayTestResult.success ? '#bbf7d0' : '#fecaca'}`,
+                        color: smsGatewayTestResult.success ? '#166534' : '#991b1b',
+                      }}
+                    >
+                      <div style={{ fontWeight: 800, marginBottom: '0.25rem' }}>
+                        {smsGatewayTestResult.success ? '✅ Test Dispatch Succeeded!' : '❌ Gateway Test Failed'}
+                      </div>
+                      {smsGatewayTestResult.gatewayId && (
+                        <div>Gateway Message ID: <strong>{smsGatewayTestResult.gatewayId}</strong></div>
+                      )}
+                      {smsGatewayTestResult.simulated && (
+                        <div>Mode: <strong>Simulation Mode</strong> (Credentials not provided or disabled)</div>
+                      )}
+                      {smsGatewayTestResult.error && (
+                        <div style={{ marginTop: '0.2rem', fontFamily: 'monospace' }}>Details: {smsGatewayTestResult.error}</div>
+                      )}
+                    </div>
+                  )}
+                </div>
+              </div>
+
               {/* Anti-Spam Banner & Reminder Engine Action Toolbar */}
               <div style={{ background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: '14px', padding: '1.25rem', marginBottom: '1.5rem' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '1rem' }}>

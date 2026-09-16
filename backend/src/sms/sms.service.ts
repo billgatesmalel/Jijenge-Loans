@@ -196,6 +196,87 @@ export class SmsService {
     }
   }
 
+  /** Retrieve SMS Gateway details from DB SystemSetting with fallback to process.env */
+  async getGatewayConfig(): Promise<{
+    username: string;
+    password: string;
+    baseUrl: string;
+    simNumber: string;
+    enabled: boolean;
+  }> {
+    try {
+      const settings = await this.prisma.systemSetting.findMany({
+        where: {
+          key: {
+            in: [
+              'SMSGATEWAY_USERNAME',
+              'SMSGATEWAY_PASSWORD',
+              'SMSGATEWAY_BASE_URL',
+              'SMSGATEWAY_SIM_NUMBER',
+              'SMSGATEWAY_ENABLED'
+            ]
+          }
+        }
+      });
+
+      const map = new Map(settings.map(s => [s.key, s.value]));
+
+      const username = map.get('SMSGATEWAY_USERNAME') ?? process.env.SMSGATEWAY_USERNAME ?? '';
+      const password = map.get('SMSGATEWAY_PASSWORD') ?? process.env.SMSGATEWAY_PASSWORD ?? '';
+      const baseUrl = map.get('SMSGATEWAY_BASE_URL') ?? process.env.SMSGATEWAY_BASE_URL ?? 'https://api.sms-gate.app/3rdparty/v1';
+      const simNumber = map.get('SMSGATEWAY_SIM_NUMBER') ?? process.env.SMSGATEWAY_SIM_NUMBER ?? '1';
+      const enabled = map.has('SMSGATEWAY_ENABLED') ? map.get('SMSGATEWAY_ENABLED') === 'true' : true;
+
+      return { username, password, baseUrl, simNumber, enabled };
+    } catch (err: any) {
+      this.logger.error(`Error fetching SMS gateway config: ${err?.message}`);
+      return {
+        username: process.env.SMSGATEWAY_USERNAME || '',
+        password: process.env.SMSGATEWAY_PASSWORD || '',
+        baseUrl: process.env.SMSGATEWAY_BASE_URL || 'https://api.sms-gate.app/3rdparty/v1',
+        simNumber: process.env.SMSGATEWAY_SIM_NUMBER || '1',
+        enabled: true
+      };
+    }
+  }
+
+  /** Upsert SMS Gateway credentials into SystemSetting table */
+  async saveGatewayConfig(dto: {
+    username?: string;
+    password?: string;
+    baseUrl?: string;
+    simNumber?: string;
+    enabled?: boolean;
+  }): Promise<{ success: boolean; config: any }> {
+    const entries: Array<{ key: string; value: string }> = [];
+
+    if (dto.username !== undefined) entries.push({ key: 'SMSGATEWAY_USERNAME', value: String(dto.username).trim() });
+    if (dto.password !== undefined) entries.push({ key: 'SMSGATEWAY_PASSWORD', value: String(dto.password).trim() });
+    if (dto.baseUrl !== undefined) entries.push({ key: 'SMSGATEWAY_BASE_URL', value: String(dto.baseUrl).trim() });
+    if (dto.simNumber !== undefined) entries.push({ key: 'SMSGATEWAY_SIM_NUMBER', value: String(dto.simNumber).trim() });
+    if (dto.enabled !== undefined) entries.push({ key: 'SMSGATEWAY_ENABLED', value: dto.enabled ? 'true' : 'false' });
+
+    for (const entry of entries) {
+      await this.prisma.systemSetting.upsert({
+        where: { key: entry.key },
+        create: entry,
+        update: { value: entry.value }
+      });
+    }
+
+    const updatedConfig = await this.getGatewayConfig();
+    return { success: true, config: updatedConfig };
+  }
+
+  /** Run a diagnostic test dispatch to verify SMS Gateway connectivity & auth credentials */
+  async testSmsGateway(recipientPhone: string): Promise<{ success: boolean; gatewayId?: string; simulated?: boolean; error?: string }> {
+    if (!recipientPhone) {
+      return { success: false, error: 'Recipient phone number is required for gateway test' };
+    }
+    const testMessage = `[Jijenge Loans Gateway Test] Verification test dispatch at ${new Date().toLocaleString('en-KE', { timeZone: 'Africa/Nairobi' })}. SMS Gateway connectivity is operational.`;
+    return this.sendSms(recipientPhone, testMessage, true);
+  }
+
   async sendSms(
     recipientPhone: string,
     message: string,
@@ -233,10 +314,27 @@ export class SmsService {
       }
     }
 
-    const username = process.env.SMSGATEWAY_USERNAME;
-    const password = process.env.SMSGATEWAY_PASSWORD;
-    const baseUrl = process.env.SMSGATEWAY_BASE_URL || 'https://api.sms-gate.app/3rdparty/v1';
-    const simNumber = parseInt(process.env.SMSGATEWAY_SIM_NUMBER || '1', 10);
+    const config = await this.getGatewayConfig();
+
+    if (config.enabled === false) {
+      const disabledMsg = '[SMS GATEWAY DISABLED] Gateway dispatch is disabled in admin settings';
+      this.logger.log(`📱 ${disabledMsg} | To: ${formattedPhone}`);
+      await this.prisma.smsLog.create({
+        data: {
+          recipientPhone: formattedPhone,
+          message,
+          simulated: true,
+          success: false,
+          error: disabledMsg
+        }
+      });
+      return { success: false, simulated: true, error: disabledMsg };
+    }
+
+    const username = config.username;
+    const password = config.password;
+    const baseUrl = config.baseUrl || 'https://api.sms-gate.app/3rdparty/v1';
+    const simNumber = parseInt(config.simNumber || '1', 10);
 
     if (!username || !password) {
       this.logger.log(`📱 [SMS SIMULATION] To: ${formattedPhone} | Text: "${message}"`);

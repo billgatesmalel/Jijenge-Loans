@@ -628,6 +628,44 @@ export class AdminService {
     return { success: true, ...res };
   }
 
+  async getSmsGatewayConfig() {
+    const config = await this.smsService.getGatewayConfig();
+    return { success: true, config };
+  }
+
+  async saveSmsGatewayConfig(
+    dto: { username?: string; password?: string; baseUrl?: string; simNumber?: string; enabled?: boolean },
+    adminEmail: string
+  ) {
+    const res = await this.smsService.saveGatewayConfig(dto);
+    try {
+      await this.prisma.auditLog.create({
+        data: {
+          adminEmail: String(adminEmail || 'admin@jijengeloans.co.ke'),
+          action: 'UPDATE_SMS_GATEWAY_CONFIG',
+          target: 'SMS_GATEWAY',
+          metadata: JSON.stringify({ baseUrl: dto.baseUrl, username: dto.username, simNumber: dto.simNumber, enabled: dto.enabled })
+        }
+      });
+    } catch { /* audit log error ignored */ }
+    return res;
+  }
+
+  async testSmsGateway(phone: string, adminEmail: string) {
+    const res = await this.smsService.testSmsGateway(phone);
+    try {
+      await this.prisma.auditLog.create({
+        data: {
+          adminEmail: String(adminEmail || 'admin@jijengeloans.co.ke'),
+          action: 'TEST_SMS_GATEWAY',
+          target: phone,
+          metadata: `Success: ${res.success}, GatewayId: ${res.gatewayId || 'N/A'}, Error: ${res.error || 'None'}`
+        }
+      });
+    } catch { /* audit log error ignored */ }
+    return res;
+  }
+
   async getSmsTemplates() {
     return this.smsService.getSmsTemplates();
   }

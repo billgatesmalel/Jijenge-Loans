@@ -129,6 +129,32 @@ export class AdminController {
     return this.adminService.sendSms(body.phone, body.message, adminIdentifier);
   }
 
+  @ApiOperation({ summary: 'Get SMS Gateway Configuration' })
+  @Get('sms-gateway')
+  async getSmsGatewayConfig() {
+    return this.adminService.getSmsGatewayConfig();
+  }
+
+  @ApiOperation({ summary: 'Update SMS Gateway Configuration' })
+  @Post('sms-gateway')
+  async saveSmsGatewayConfig(
+    @Request() req: any,
+    @Body() body: { username?: string; password?: string; baseUrl?: string; simNumber?: string; enabled?: boolean }
+  ) {
+    const adminIdentifier = req.user?.email || req.user?.phone || req.user?.userId || 'admin@jijengeloans.co.ke';
+    return this.adminService.saveSmsGatewayConfig(body, adminIdentifier);
+  }
+
+  @ApiOperation({ summary: 'Test SMS Gateway Connection' })
+  @Post('sms-gateway/test')
+  async testSmsGateway(
+    @Request() req: any,
+    @Body() body: { phone: string }
+  ) {
+    const adminIdentifier = req.user?.email || req.user?.phone || req.user?.userId || 'admin@jijengeloans.co.ke';
+    return this.adminService.testSmsGateway(body.phone, adminIdentifier);
+  }
+
   @ApiOperation({ summary: 'Get SMS Templates' })
   @Get('sms-templates')
   async getSmsTemplates() {
