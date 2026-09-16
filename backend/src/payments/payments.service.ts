@@ -224,11 +224,13 @@ export class PaymentsService {
         }
       });
 
-      this.smsService.sendTemplateSms('FEE_PAYMENT_SUCCESS', loan.phoneNumber, {
-        fullName: loan.fullName,
-        txRef: loan.transactionRef,
-        processingFee: (loan.processingFee || loan.fee || 450).toLocaleString()
-      }).catch((e) => this.logger.error(e.message));
+      this.smsService.sendLoanEvent({
+        event: 'PAYMENT_CONFIRMED',
+        applicationId: loan.id,
+        userId: loan.userId || undefined,
+        phone: loan.phoneNumber,
+        eventVersion: 1
+      }).catch((e) => this.logger.error(`Webhook SMS Error: ${e?.message}`));
 
       return { success: true, message: 'Fee payment confirmed' };
     } else {
@@ -243,6 +245,14 @@ export class PaymentsService {
           callbackReceivedAt: new Date()
         }
       });
+
+      this.smsService.sendLoanEvent({
+        event: 'PAYMENT_FAILED',
+        applicationId: loan.id,
+        userId: loan.userId || undefined,
+        phone: loan.phoneNumber,
+        eventVersion: 1
+      }).catch((e) => this.logger.error(`Webhook SMS Error: ${e?.message}`));
 
       return { success: false, message: 'Fee payment failed' };
     }

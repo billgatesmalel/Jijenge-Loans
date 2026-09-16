@@ -201,27 +201,46 @@ model WorkflowStage {
 }
 
 model SmsTemplate {
-  id        String   @id @default(cuid())
-  key       String   @unique
-  title     String
-  body      String
-  variables String[]
-  active    Boolean  @default(true)
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  id                    String   @id @default(cuid())
+  key                   String   @unique
+  title                 String
+  description           String?
+  body                  String
+  variables             String[]
+  supportedPlaceholders String[] @default([])
+  category              String?  @default("APPLICATION")
+  active                Boolean  @default(true)
+  notes                 String?
+  updatedBy             String?
+  createdAt             DateTime @default(now())
+  updatedAt             DateTime @updatedAt
 }
 
 model SmsLog {
-  id             String   @id @default(cuid())
-  recipientPhone String
-  message        String
-  gatewayId      String?
-  success        Boolean  @default(true)
-  simulated      Boolean  @default(false)
-  error          String?
-  createdAt      DateTime @default(now())
+  id                String    @id @default(cuid())
+  loanApplicationId String?
+  userId            String?
+  recipientPhone    String
+  eventKey          String?
+  templateId        String?
+  message           String
+  linkUsed          String?
+  provider          String?   @default("SMS_GATEWAY")
+  gatewayId         String?
+  status            String    @default("SENT")
+  success           Boolean   @default(true)
+  simulated         Boolean   @default(false)
+  error             String?
+  idempotencyKey    String?   @unique
+  retryCount        Int       @default(0)
+  sentAt            DateTime?
+  deliveredAt       DateTime?
+  createdAt         DateTime  @default(now())
 
   @@index([recipientPhone])
+  @@index([loanApplicationId])
+  @@index([eventKey])
+  @@index([status])
 }
 
 model SupportTicket {

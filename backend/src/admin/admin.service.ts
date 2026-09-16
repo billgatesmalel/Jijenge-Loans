@@ -210,10 +210,14 @@ export class AdminService {
       }
     });
 
-    this.smsService.sendTemplateSms('BALANCE_ALLOCATED', loan.phoneNumber, {
-      fullName: loan.fullName,
-      amount: amount.toLocaleString(),
-      txRef: loan.transactionRef
+    this.smsService.sendLoanEvent({
+      event: 'FUNDS_ALLOCATED',
+      applicationId: loan.id,
+      userId: loan.userId || undefined,
+      phone: loan.phoneNumber,
+      overrideVars: {
+        allocatedAmount: amount.toLocaleString()
+      }
     }).catch(() => {});
 
     try {
@@ -674,8 +678,20 @@ export class AdminService {
     return this.smsService.seedDefaultSmsTemplates();
   }
 
-  async upsertSmsTemplate(body: { key: string; title: string; body: string; variables?: string[] }, adminEmail: string) {
-    const res = await this.smsService.upsertSmsTemplate(body);
+  async upsertSmsTemplate(
+    body: {
+      key: string;
+      title: string;
+      body: string;
+      category?: string;
+      description?: string;
+      notes?: string;
+      variables?: string[];
+      supportedPlaceholders?: string[];
+    },
+    adminEmail: string
+  ) {
+    const res = await this.smsService.upsertSmsTemplate({ ...body, adminEmail });
 
     try {
       await this.prisma.auditLog.create({
@@ -688,6 +704,10 @@ export class AdminService {
     } catch { /* audit log error ignored */ }
 
     return res;
+  }
+
+  async previewSmsTemplate(key: string, sampleValues: Record<string, string>) {
+    return this.smsService.previewTemplate(key, sampleValues);
   }
 
   async triggerReminders(adminEmail: string) {
@@ -893,10 +913,14 @@ export class AdminService {
     });
 
     const loan = withdrawal.loanApplication;
-    this.smsService.sendTemplateSms('WITHDRAWAL_APPROVED', loan.phoneNumber, {
-      fullName: loan.fullName,
-      amount: withdrawal.amount.toLocaleString(),
-      txRef: loan.transactionRef
+    this.smsService.sendLoanEvent({
+      event: 'WITHDRAWAL_COMPLETED',
+      applicationId: loan.id,
+      userId: loan.userId || undefined,
+      phone: loan.phoneNumber,
+      overrideVars: {
+        allocatedAmount: withdrawal.amount.toLocaleString()
+      }
     }).catch(() => {});
 
     try {
@@ -943,11 +967,15 @@ export class AdminService {
     ]);
 
     // Send WITHDRAWAL_REJECTED SMS template informing customer of rejection & funds restoration
-    this.smsService.sendTemplateSms('WITHDRAWAL_REJECTED', loan.phoneNumber, {
-      fullName: loan.fullName,
-      amount: withdrawal.amount.toLocaleString(),
-      txRef: loan.transactionRef,
-      rejectionReason: cleanReason
+    this.smsService.sendLoanEvent({
+      event: 'WITHDRAWAL_REJECTED',
+      applicationId: loan.id,
+      userId: loan.userId || undefined,
+      phone: loan.phoneNumber,
+      overrideVars: {
+        allocatedAmount: withdrawal.amount.toLocaleString(),
+        rejectionReason: cleanReason
+      }
     }).catch(() => {});
 
     try {
@@ -1012,14 +1040,16 @@ export class AdminService {
     });
 
     // Send SUPPORT_REPLY SMS containing chatToken URL
-    const appUrl = process.env.APP_URL || 'https://jijenge-loans.onrender.com';
-    const chatUrl = `${appUrl}/?chatToken=${ticket.id}`;
     const snippet = cleanText.length > 55 ? cleanText.slice(0, 55) + '...' : cleanText;
 
-    this.smsService.sendTemplateSms('SUPPORT_REPLY', ticket.customerPhone, {
-      fullName: ticket.customerName,
-      snippet,
-      chatUrl
+    this.smsService.sendLoanEvent({
+      event: 'SUPPORT_REQUEST_RECEIVED',
+      userId: undefined,
+      phone: ticket.customerPhone,
+      overrideVars: {
+        firstName: ticket.customerName?.split(' ')[0] || 'Customer',
+        status: snippet
+      }
     }).catch(() => {});
 
     try {

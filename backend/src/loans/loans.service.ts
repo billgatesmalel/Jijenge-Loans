@@ -117,9 +117,15 @@ export class LoansService {
         }
       });
 
-      // Fire stage-specific SMS template asynchronously
+      // Fire APPLICATION_SUBMITTED notification event asynchronously
       Promise.resolve().then(() => {
-        this.smsService.triggerStatusSms(loan, loan.status).catch((e) => this.logger.error(`SMS Error: ${e.message}`));
+        this.smsService.sendLoanEvent({
+          event: 'APPLICATION_SUBMITTED',
+          applicationId: loan.id,
+          userId: loan.userId || undefined,
+          phone: loan.phoneNumber,
+          eventVersion: 1
+        }).catch((e) => this.logger.error(`SMS Error: ${e.message}`));
       });
 
       return {

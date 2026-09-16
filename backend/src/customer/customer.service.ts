@@ -91,12 +91,16 @@ export class CustomerService {
       })
     ]);
 
-    // Send WITHDRAWAL_REQUESTED SMS template
-    this.smsService.sendTemplateSms('WITHDRAWAL_REQUESTED', loan.phoneNumber, {
-      fullName: loan.fullName,
-      amount: amount.toLocaleString(),
-      txRef: loan.transactionRef,
-      processingFee: withdrawalFee.toLocaleString()
+    // Send WITHDRAWAL_PENDING SMS notification
+    this.smsService.sendLoanEvent({
+      event: 'WITHDRAWAL_PENDING',
+      applicationId: loan.id,
+      userId,
+      phone: loan.phoneNumber,
+      overrideVars: {
+        allocatedAmount: amount.toLocaleString(),
+        withdrawalFee: withdrawalFee.toLocaleString()
+      }
     }).catch(() => {});
 
     return {
@@ -127,12 +131,16 @@ export class CustomerService {
 
     const loan = withdrawal.loanApplication;
 
-    // Send WITHDRAWAL_FEE_PAID SMS template
-    this.smsService.sendTemplateSms('WITHDRAWAL_FEE_PAID', loan.phoneNumber, {
-      fullName: loan.fullName,
-      processingFee: withdrawal.withdrawalFee.toLocaleString(),
-      txRef: loan.transactionRef,
-      amount: withdrawal.amount.toLocaleString()
+    // Send WITHDRAWAL_PENDING SMS notification with fee paid context
+    this.smsService.sendLoanEvent({
+      event: 'WITHDRAWAL_PENDING',
+      applicationId: loan.id,
+      userId,
+      phone: loan.phoneNumber,
+      overrideVars: {
+        allocatedAmount: withdrawal.amount.toLocaleString(),
+        withdrawalFee: withdrawal.withdrawalFee.toLocaleString()
+      }
     }).catch(() => {});
 
     return {

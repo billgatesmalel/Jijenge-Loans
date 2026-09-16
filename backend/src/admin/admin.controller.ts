@@ -171,10 +171,18 @@ export class AdminController {
   @Post('sms-templates')
   async upsertSmsTemplate(
     @Request() req: any,
-    @Body() body: { key: string; title: string; body: string; variables?: string[] }
+    @Body() body: { key: string; title: string; body: string; category?: string; description?: string; notes?: string; variables?: string[]; supportedPlaceholders?: string[] }
   ) {
     const adminIdentifier = req.user.email || req.user.phone || req.user.userId;
     return this.adminService.upsertSmsTemplate(body, adminIdentifier);
+  }
+
+  @ApiOperation({ summary: 'Preview SMS Template rendering with sample variables' })
+  @Post('sms-templates/preview')
+  async previewSmsTemplate(
+    @Body() body: { key: string; sampleValues?: Record<string, string> }
+  ) {
+    return this.adminService.previewSmsTemplate(body.key, body.sampleValues || {});
   }
 
   @ApiOperation({ summary: 'Trigger 24H and 7D Reminders Engine' })

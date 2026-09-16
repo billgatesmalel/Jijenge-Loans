@@ -145,12 +145,36 @@ export const AdminDashboardModal: React.FC<AdminDashboardProps> = ({ onClose }) 
   const [bracketMonthlyInstallment, setBracketMonthlyInstallment] = useState('');
   const [bracketNumMonths, setBracketNumMonths] = useState('');
 
-  // SMS Form Fields
+  // SMS Form Fields & Template Editor
   const [smsRecipient, setSmsRecipient] = useState('');
   const [smsText, setSmsText] = useState('');
   const [smsBroadcast, setSmsBroadcast] = useState(false);
   const [smsTemplateModal, setSmsTemplateModal] = useState(false);
   const [selectedTemplateKey, setSelectedTemplateKey] = useState('');
+
+  // SMS Template Management & Interactive Editor State
+  const [smsCategoryFilter, setSmsCategoryFilter] = useState<string>('ALL');
+  const [editingTemplate, setEditingTemplate] = useState<any>(null);
+  const [templateFormKey, setTemplateFormKey] = useState('');
+  const [templateFormTitle, setTemplateFormTitle] = useState('');
+  const [templateFormCategory, setTemplateFormCategory] = useState('APPLICATION');
+  const [templateFormDescription, setTemplateFormDescription] = useState('');
+  const [templateFormNotes, setTemplateFormNotes] = useState('');
+  const [templateFormBody, setTemplateFormBody] = useState('');
+  const [previewModalOpen, setPreviewModalOpen] = useState(false);
+  const [previewSampleValues, setPreviewSampleValues] = useState<Record<string, string>>({
+    firstName: 'Wanjiku',
+    loanReference: 'JL-89F3A12',
+    loanAmount: '25,000',
+    allocatedAmount: '25,000',
+    withdrawalFee: '500',
+    repaymentAmount: '26,250',
+    status: 'Approved',
+    rejectionReason: 'Details verification requirement',
+    phone: '0799289214'
+  });
+  const [testDispatchPhone, setTestDispatchPhone] = useState('0799289214');
+  const bodyTextareaRef = useRef<HTMLTextAreaElement>(null);
 
   // SMS Gateway Configuration & Diagnostics State
   const [smsGatewayUsername, setSmsGatewayUsername] = useState('');
@@ -912,22 +936,93 @@ export const AdminDashboardModal: React.FC<AdminDashboardProps> = ({ onClose }) 
     }
   };
 
-  const handleUpsertTemplate = async (key: string, title: string, body: string) => {
+  const calcSmsMetrics = (text: string) => {
+    if (!text) return { chars: 0, segments: 0, isUnicode: false };
+    const gsm7 = /^[\n\r a-zA-Z0-9^{}\\\[~\]\|€!#\$%&'\(\)\*\+,\-\.\/:;<=>\?@_]*$/;
+    const isUnicode = !gsm7.test(text);
+    const chars = text.length;
+    let segments = 1;
+    if (isUnicode) {
+      if (chars > 70) segments = Math.ceil(chars / 67);
+    } else {
+      if (chars > 160) segments = Math.ceil(chars / 153);
+    }
+    return { chars, segments, isUnicode };
+  };
+
+  const handleOpenEditTemplateModal = (tpl?: any) => {
+    if (tpl) {
+      setEditingTemplate(tpl);
+      setTemplateFormKey(tpl.key || '');
+      setTemplateFormTitle(tpl.title || tpl.key || '');
+      setTemplateFormCategory(tpl.category || 'APPLICATION');
+      setTemplateFormDescription(tpl.description || '');
+      setTemplateFormNotes(tpl.notes || '');
+      setTemplateFormBody(tpl.body || '');
+    } else {
+      setEditingTemplate(null);
+      setTemplateFormKey('');
+      setTemplateFormTitle('');
+      setTemplateFormCategory('APPLICATION');
+      setTemplateFormDescription('');
+      setTemplateFormNotes('');
+      setTemplateFormBody('');
+    }
+    setSmsTemplateModal(true);
+  };
+
+  const handleInsertPlaceholder = (ph: string) => {
+    const placeholderTag = `{${ph}}`;
+    if (bodyTextareaRef.current) {
+      const textarea = bodyTextareaRef.current;
+      const start = textarea.selectionStart;
+      const end = textarea.selectionEnd;
+      const newText = templateFormBody.substring(0, start) + placeholderTag + templateFormBody.substring(end);
+      setTemplateFormBody(newText);
+      setTimeout(() => {
+        textarea.focus();
+        textarea.setSelectionRange(start + placeholderTag.length, start + placeholderTag.length);
+      }, 50);
+    } else {
+      setTemplateFormBody(prev => prev + placeholderTag);
+    }
+  };
+
+  const handleSaveSmsTemplateFull = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!templateFormKey.trim() || !templateFormBody.trim()) {
+      alert('Template Event Key and Body are required.');
+      return;
+    }
     const token = getAdminToken();
     if (!token) return;
+    setActionLoading(true);
     try {
       const res = await apiFetch('/api/admin/sms-templates', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
-        body: JSON.stringify({ key, title, body, variables: [] })
+        body: JSON.stringify({
+          key: templateFormKey.trim().toUpperCase(),
+          title: templateFormTitle.trim() || templateFormKey.trim(),
+          category: templateFormCategory,
+          description: templateFormDescription.trim(),
+          notes: templateFormNotes.trim(),
+          body: templateFormBody.trim()
+        })
       });
+      if (handleAuthError(res)) return;
       if (res.ok) {
-        showToast('SMS template saved');
+        showToast('SMS template saved successfully!');
         setSmsTemplateModal(false);
         fetchAllAdminData(token);
+      } else {
+        const d = await res.json();
+        alert(d.message || 'Failed to save SMS template');
       }
-    } catch (e) {
-      console.error(e);
+    } catch {
+      alert('Network error saving SMS template.');
+    } finally {
+      setActionLoading(false);
     }
   };
 
@@ -2521,10 +2616,10 @@ export const AdminDashboardModal: React.FC<AdminDashboardProps> = ({ onClose }) 
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '1rem' }}>
                   <div>
                     <h3 style={{ margin: '0 0 0.35rem', fontSize: '1rem', fontWeight: 800, color: '#0f172a', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                      <Shield size={18} color="#10b981" /> Anti-Spam &amp; Automated Stage SMS Engine
+                      <Shield size={18} color="#10b981" /> Anti-Spam &amp; Automated Loan-Stage SMS Notification System
                     </h3>
                     <p style={{ margin: 0, fontSize: '0.8rem', color: '#64748b' }}>
-                      SMS triggers automatically at every loan stage update. Anti-spam rate limiting blocks duplicate SMS within 3 mins &amp; caps at 10 SMS/day per recipient.
+                      Dynamic smart links ({'{trackLink}'}, {'{portalLink}'}, {'{applyLink}'}, {'{supportLink}'}) resolution, placeholder validation, event idempotency suppression, and active template management.
                     </p>
                   </div>
                   <div style={{ display: 'flex', gap: '0.65rem' }}>
@@ -2534,99 +2629,210 @@ export const AdminDashboardModal: React.FC<AdminDashboardProps> = ({ onClose }) 
                     </button>
                     <button onClick={handleSeedDefaultTemplates} disabled={actionLoading}
                       style={{ padding: '0.65rem 1rem', background: '#f1f5f9', color: '#334155', border: '1px solid #cbd5e1', borderRadius: '9px', fontSize: '0.82rem', fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
-                      <RefreshCcw size={14} /> Seed Default Stage Templates
+                      <RefreshCcw size={14} /> Seed Sensible Default Templates
+                    </button>
+                    <button onClick={() => handleOpenEditTemplateModal()}
+                      style={{ padding: '0.65rem 1rem', background: ORANGE, color: '#fff', border: 'none', borderRadius: '9px', fontSize: '0.82rem', fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.4rem', boxShadow: '0 2px 6px rgba(249,115,22,0.25)' }}>
+                      <Plus size={15} /> Add Custom Template
                     </button>
                   </div>
                 </div>
               </div>
 
-              {/* Send SMS Console & Templates Row */}
-              <div className="sms-console-row" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '1.25rem', marginBottom: '1.5rem', alignItems: 'start' }}>
-                
-                {/* Send SMS Form */}
-                <div style={{ background: '#fff', border: '1px solid #e2e8f0', borderRadius: '14px', padding: '1.5rem', boxShadow: '0 1px 3px rgba(0,0,0,0.03)' }}>
-                  <h3 style={{ margin: '0 0 1rem', fontSize: '0.95rem', fontWeight: 800, color: '#0f172a' }}>Send Custom Message</h3>
-                  <form onSubmit={handleSendManualSms}>
-                    <div style={{ marginBottom: '1rem' }}>
-                      <label style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', fontSize: '0.8rem', fontWeight: 700, color: '#475569', marginBottom: '6px' }}>
-                        <input type="checkbox" checked={smsBroadcast} onChange={e => setSmsBroadcast(e.target.checked)} />
-                        Broadcast to all loan applicants ({applications.length} recipients)
-                      </label>
-                    </div>
+              {/* SMS Template Management Section */}
+              <div style={{ background: '#fff', border: '1px solid #e2e8f0', borderRadius: '16px', padding: '1.5rem', marginBottom: '1.5rem', boxShadow: '0 1px 3px rgba(0,0,0,0.03)' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.25rem', borderBottom: '1px solid #f1f5f9', paddingBottom: '0.85rem', flexWrap: 'wrap', gap: '0.75rem' }}>
+                  <div>
+                    <h3 style={{ margin: '0 0 0.2rem', fontSize: '1.05rem', fontWeight: 800, color: '#0f172a' }}>
+                      📝 Customer-Facing SMS Templates ({smsTemplates.length})
+                    </h3>
+                    <p style={{ margin: 0, fontSize: '0.8rem', color: '#64748b' }}>
+                      Select a template category to view or edit customer SMS wording. All destination links are generated dynamically by the backend using centralized public URL configuration.
+                    </p>
+                  </div>
 
-                    {!smsBroadcast && (
-                      <div style={{ marginBottom: '1rem' }}>
-                        <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 700, color: '#475569', marginBottom: '4px' }}>Recipient Phone Number</label>
-                        <input type="text" placeholder="e.g. 0799289214" value={smsRecipient} onChange={e => setSmsRecipient(e.target.value)}
-                          style={{ width: '100%', padding: '0.55rem 0.75rem', border: '1.5px solid #e2e8f0', borderRadius: '8px', fontSize: '0.85rem', outline: 'none', boxSizing: 'border-box', fontFamily: 'inherit' }}
-                        />
-                      </div>
-                    )}
-
-                    <div style={{ marginBottom: '1.25rem' }}>
-                      <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 700, color: '#475569', marginBottom: '4px' }}>Message Body</label>
-                      <textarea placeholder="Type message body..." value={smsText} onChange={e => setSmsText(e.target.value)} required rows={4}
-                        style={{ width: '100%', padding: '0.65rem 0.75rem', border: '1.5px solid #e2e8f0', borderRadius: '8px', fontSize: '0.875rem', outline: 'none', resize: 'none', boxSizing: 'border-box', fontFamily: 'inherit' }}
-                      />
-                    </div>
-
-                    <button type="submit" disabled={actionLoading}
-                      style={{ width: '100%', padding: '0.7rem', background: '#0f172a', color: '#fff', border: 'none', borderRadius: '9px', cursor: 'pointer', fontSize: '0.9rem', fontWeight: 700, fontFamily: 'inherit' }}>
-                      {actionLoading ? 'Sending...' : smsBroadcast ? '🚀 Broadcast SMS' : '📤 Send SMS'}
-                    </button>
-                  </form>
+                  {/* Category Filter Chips */}
+                  <div style={{ display: 'flex', gap: '0.35rem', flexWrap: 'wrap' }}>
+                    {['ALL', 'APPLICATION', 'PAYMENT', 'APPROVAL', 'FUNDS', 'WITHDRAWAL', 'REMINDERS', 'SYSTEM', 'SUPPORT'].map(cat => {
+                      const active = smsCategoryFilter === cat;
+                      return (
+                        <button
+                          key={cat}
+                          type="button"
+                          onClick={() => setSmsCategoryFilter(cat)}
+                          style={{
+                            padding: '4px 10px',
+                            borderRadius: '9999px',
+                            fontSize: '0.72rem',
+                            fontWeight: 700,
+                            border: active ? `1.5px solid ${ORANGE}` : '1px solid #cbd5e1',
+                            background: active ? '#FFF5ED' : '#f8fafc',
+                            color: active ? ORANGE : '#475569',
+                            cursor: 'pointer',
+                            transition: 'all 0.15s ease'
+                          }}
+                        >
+                          {cat}
+                        </button>
+                      );
+                    })}
+                  </div>
                 </div>
 
-                {/* Templates Box */}
-                <div style={{ background: '#fff', border: '1px solid #e2e8f0', borderRadius: '14px', padding: '1.25rem', boxShadow: '0 1px 3px rgba(0,0,0,0.03)' }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.85rem' }}>
-                    <h3 style={{ margin: 0, fontSize: '0.9rem', fontWeight: 800, color: '#0f172a' }}>Stage SMS Templates ({smsTemplates.length})</h3>
-                    <button onClick={() => setSmsTemplateModal(true)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: ORANGE, fontWeight: 700, fontSize: '0.78rem' }}>+ New</button>
-                  </div>
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', maxHeight: '360px', overflowY: 'auto' }}>
-                    {smsTemplates.length > 0 ? smsTemplates.map((temp: any) => {
+                {/* Template Cards Grid */}
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))', gap: '1rem', marginBottom: '1.5rem' }}>
+                  {smsTemplates.length > 0 ? smsTemplates
+                    .filter((t: any) => smsCategoryFilter === 'ALL' || t.category === smsCategoryFilter)
+                    .map((temp: any) => {
                       const isON = temp.active !== false;
+                      const metrics = calcSmsMetrics(temp.body || '');
                       return (
-                        <div key={temp.id || temp.key}
-                          style={{ padding: '0.65rem', border: '1px solid #e2e8f0', borderRadius: '8px', background: selectedTemplateKey === temp.key ? '#f0f2fe' : '#f8fafc', transition: 'all 0.15s' }}>
-                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                            <div style={{ fontWeight: 700, fontSize: '0.8rem', color: '#334155', cursor: 'pointer' }} onClick={() => handleUseTemplate(temp)}>
-                              {temp.title}
-                            </div>
-                            <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
-                              <span style={{ fontSize: '0.65rem', color: '#64748b', background: '#e2e8f0', padding: '1px 5px', borderRadius: '4px', fontFamily: 'monospace' }}>{temp.key}</span>
+                        <div
+                          key={temp.id || temp.key}
+                          style={{
+                            border: `1.5px solid ${isON ? '#e2e8f0' : '#cbd5e1'}`,
+                            borderRadius: '12px',
+                            padding: '1rem',
+                            background: isON ? '#fff' : '#f8fafc',
+                            opacity: isON ? 1 : 0.75,
+                            boxShadow: '0 1px 2px rgba(0,0,0,0.02)',
+                            display: 'flex',
+                            flexDirection: 'column',
+                            justifyContent: 'space-between',
+                            transition: 'all 0.15s ease'
+                          }}
+                        >
+                          <div>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '0.4rem' }}>
+                              <div>
+                                <span style={{ fontSize: '0.65rem', fontWeight: 800, padding: '2px 7px', borderRadius: '4px', background: '#e0f2fe', color: '#0369a1', textTransform: 'uppercase', marginRight: '6px' }}>
+                                  {temp.category || 'EVENT'}
+                                </span>
+                                <h4 style={{ margin: '0.2rem 0 0', fontSize: '0.9rem', fontWeight: 800, color: '#0f172a' }}>{temp.title}</h4>
+                              </div>
                               <button
                                 type="button"
-                                onClick={(e) => { e.stopPropagation(); handleToggleSmsTemplate(temp); }}
+                                onClick={() => handleToggleSmsTemplate(temp)}
                                 style={{
-                                  padding: '2px 8px',
-                                  borderRadius: '12px',
-                                  fontSize: '0.65rem',
+                                  padding: '3px 9px',
+                                  borderRadius: '9999px',
+                                  fontSize: '0.68rem',
                                   fontWeight: 800,
                                   border: 'none',
                                   cursor: 'pointer',
                                   color: '#fff',
-                                  background: isON ? '#10b981' : '#64748b',
-                                  boxShadow: isON ? '0 2px 6px rgba(16,185,129,0.3)' : 'none',
-                                  transition: 'all 0.2s ease'
+                                  background: isON ? '#10b981' : '#64748b'
                                 }}
-                                title={isON ? 'Click to Turn OFF this SMS template' : 'Click to Turn ON this SMS template'}
                               >
-                                {isON ? 'ON 🟢' : 'OFF ⚪'}
+                                {isON ? 'ACTIVE 🟢' : 'DISABLED ⚪'}
                               </button>
                             </div>
+
+                            <div style={{ fontSize: '0.72rem', color: '#64748b', fontFamily: 'monospace', marginBottom: '0.5rem' }}>
+                              Key: {temp.key}
+                            </div>
+
+                            <div style={{ fontSize: '0.8rem', color: '#334155', background: '#f8fafc', padding: '0.65rem', borderRadius: '8px', border: '1px solid #f1f5f9', lineHeight: 1.45, marginBottom: '0.65rem' }}>
+                              "{temp.body}"
+                            </div>
                           </div>
-                          <div style={{ fontSize: '0.7rem', color: isON ? '#64748b' : '#94a3b8', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', marginTop: '4px', cursor: 'pointer' }} onClick={() => handleUseTemplate(temp)}>
-                            {temp.body}
+
+                          <div>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '0.72rem', color: '#64748b', borderTop: '1px solid #f1f5f9', paddingTop: '0.5rem', marginBottom: '0.65rem' }}>
+                              <span>Count: <strong>{metrics.chars}</strong> chars</span>
+                              <span>Segments: <strong>{metrics.segments}</strong> ({metrics.isUnicode ? 'Unicode' : 'GSM-7'})</span>
+                            </div>
+
+                            <div style={{ display: 'flex', gap: '0.4rem' }}>
+                              <button
+                                type="button"
+                                onClick={() => handleOpenEditTemplateModal(temp)}
+                                style={{
+                                  flex: 1,
+                                  padding: '0.45rem',
+                                  background: '#0f172a',
+                                  color: '#fff',
+                                  border: 'none',
+                                  borderRadius: '7px',
+                                  fontSize: '0.78rem',
+                                  fontWeight: 700,
+                                  cursor: 'pointer',
+                                  display: 'flex',
+                                  alignItems: 'center',
+                                  justifyContent: 'center',
+                                  gap: '0.35rem'
+                                }}
+                              >
+                                <Edit size={13} /> Edit Wording
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  setSelectedTemplateKey(temp.key);
+                                  setPreviewModalOpen(true);
+                                }}
+                                style={{
+                                  padding: '0.45rem 0.75rem',
+                                  background: '#f1f5f9',
+                                  color: '#334155',
+                                  border: '1px solid #cbd5e1',
+                                  borderRadius: '7px',
+                                  fontSize: '0.78rem',
+                                  fontWeight: 700,
+                                  cursor: 'pointer',
+                                  display: 'flex',
+                                  alignItems: 'center',
+                                  gap: '0.35rem'
+                                }}
+                              >
+                                <Eye size={13} /> Test Preview
+                              </button>
+                            </div>
                           </div>
                         </div>
                       );
                     }) : (
-                      <div style={{ color: '#94a3b8', fontSize: '0.75rem', textAlign: 'center', padding: '1rem 0' }}>No templates saved. Click "Seed Default Stage Templates" to load.</div>
-                    )}
-                  </div>
+                    <div style={{ gridColumn: '1 / -1', padding: '2rem', textAlign: 'center', color: '#94a3b8' }}>
+                      No templates found for category "{smsCategoryFilter}".
+                    </div>
+                  )}
                 </div>
+              </div>
 
+              {/* Send Manual/Broadcast Custom SMS Box */}
+              <div style={{ background: '#fff', border: '1px solid #e2e8f0', borderRadius: '14px', padding: '1.5rem', marginBottom: '1.5rem', boxShadow: '0 1px 3px rgba(0,0,0,0.03)' }}>
+                <h3 style={{ margin: '0 0 0.85rem', fontSize: '0.95rem', fontWeight: 800, color: '#0f172a' }}>📤 Send Manual / Broadcast Custom SMS Dispatch</h3>
+                <form onSubmit={handleSendManualSms}>
+                  <div style={{ marginBottom: '0.85rem' }}>
+                    <label style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', fontSize: '0.8rem', fontWeight: 700, color: '#475569' }}>
+                      <input type="checkbox" checked={smsBroadcast} onChange={e => setSmsBroadcast(e.target.checked)} />
+                      Broadcast message to all registered applicants ({applications.length} recipient numbers)
+                    </label>
+                  </div>
+
+                  {!smsBroadcast && (
+                    <div style={{ marginBottom: '0.85rem', maxWidth: '380px' }}>
+                      <label style={{ display: 'block', fontSize: '0.78rem', fontWeight: 700, color: '#475569', marginBottom: '4px' }}>Recipient Phone Number</label>
+                      <input type="text" placeholder="e.g. 0799289214" value={smsRecipient} onChange={e => setSmsRecipient(e.target.value)}
+                        style={{ width: '100%', padding: '0.55rem 0.75rem', border: '1.5px solid #e2e8f0', borderRadius: '8px', fontSize: '0.85rem', outline: 'none', boxSizing: 'border-box' }}
+                      />
+                    </div>
+                  )}
+
+                  <div style={{ marginBottom: '1rem' }}>
+                    <label style={{ display: 'block', fontSize: '0.78rem', fontWeight: 700, color: '#475569', marginBottom: '4px' }}>Message Body</label>
+                    <textarea placeholder="Type custom message..." value={smsText} onChange={e => setSmsText(e.target.value)} required rows={3}
+                      style={{ width: '100%', padding: '0.65rem 0.75rem', border: '1.5px solid #e2e8f0', borderRadius: '8px', fontSize: '0.875rem', outline: 'none', resize: 'vertical', boxSizing: 'border-box' }}
+                    />
+                  </div>
+
+                  <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
+                    <button type="submit" disabled={actionLoading}
+                      style={{ padding: '0.65rem 1.4rem', background: '#0f172a', color: '#fff', border: 'none', borderRadius: '8px', cursor: 'pointer', fontSize: '0.875rem', fontWeight: 700 }}>
+                      {actionLoading ? 'Sending...' : smsBroadcast ? '🚀 Send Broadcast SMS' : '📤 Send Direct SMS'}
+                    </button>
+                  </div>
+                </form>
               </div>
 
               {/* Bulk Action Bar for SMS Logs */}
@@ -2642,8 +2848,19 @@ export const AdminDashboardModal: React.FC<AdminDashboardProps> = ({ onClose }) 
                 </div>
               )}
 
-              {/* SMS Logs Table */}
-              <div className="admin-table-container">
+              {/* Immutable SMS Delivery Audit Logs Table */}
+              <div style={{ background: '#fff', border: '1px solid #e2e8f0', borderRadius: '16px', padding: '1.5rem', boxShadow: '0 1px 3px rgba(0,0,0,0.03)' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem', borderBottom: '1px solid #f1f5f9', paddingBottom: '0.75rem' }}>
+                  <div>
+                    <h3 style={{ margin: '0 0 0.2rem', fontSize: '1.05rem', fontWeight: 800, color: '#0f172a' }}>
+                      📜 Immutable SMS Delivery Audit Log ({smsLogs.length})
+                    </h3>
+                    <p style={{ margin: 0, fontSize: '0.8rem', color: '#64748b' }}>
+                      Detailed status tracking for every dispatched customer event message, dynamic link used, gateway ID, and idempotency suppression records.
+                    </p>
+                  </div>
+                </div>
+
                 <div className="admin-table-scroll">
                   <table className="admin-table">
                     <thead>
@@ -2651,46 +2868,72 @@ export const AdminDashboardModal: React.FC<AdminDashboardProps> = ({ onClose }) 
                         <th style={{ width: '40px', textAlign: 'center' }}>
                           <input type="checkbox" checked={selectedSmsIds.length === pagedSmsLogs.length && pagedSmsLogs.length > 0} onChange={handleToggleSelectAllSms} style={{ cursor: 'pointer' }} />
                         </th>
+                        <th>Event Key</th>
                         <th>Recipient</th>
-                        <th>Message Text</th>
-                        <th>Gateway Status</th>
-                        <th>Time</th>
+                        <th>Rendered Message Text</th>
+                        <th>Smart Link Used</th>
+                        <th>Delivery Status</th>
+                        <th>Gateway ID</th>
+                        <th>Timestamp</th>
                       </tr>
                     </thead>
                     <tbody>
                       {pagedSmsLogs.length > 0 ? pagedSmsLogs.map((log: any) => {
                         const isSelected = selectedSmsIds.includes(log.id);
+                        const isDup = log.status === 'DUPLICATE_SUPPRESSED' || (log.error && log.error.includes('SUPPRESSED'));
+                        const isFailed = log.status === 'FAILED' || log.success === false;
                         return (
                           <tr key={log.id} style={{ background: isSelected ? '#fef2f2' : undefined }}>
                             <td style={{ textAlign: 'center' }}>
                               <input type="checkbox" checked={isSelected} onChange={() => handleToggleSelectSms(log.id)} style={{ cursor: 'pointer' }} />
                             </td>
-                            <td style={{ fontWeight: 700, color: '#0f172a' }}>{log.recipientPhone}</td>
-                            <td style={{ color: '#475569', maxWidth: '400px', overflow: 'hidden', textOverflow: 'ellipsis' }}>{log.message}</td>
                             <td>
-                              {log.error && log.error.includes('ANTI-SPAM') ? (
-                                <span style={{ padding: '3px 9px', borderRadius: '9999px', fontSize: '0.75rem', fontWeight: 700, color: '#92400e', background: '#fef3c7' }}>
-                                  🛡️ Anti-Spam Suppressed
+                              <span style={{ fontSize: '0.7rem', fontWeight: 800, color: '#475569', background: '#f1f5f9', padding: '2px 6px', borderRadius: '4px', fontFamily: 'monospace' }}>
+                                {log.eventKey || 'DIRECT_SMS'}
+                              </span>
+                            </td>
+                            <td style={{ fontWeight: 700, color: '#0f172a' }}>{log.recipientPhone}</td>
+                            <td style={{ color: '#475569', maxWidth: '320px', overflow: 'hidden', textOverflow: 'ellipsis', fontSize: '0.8rem' }}>
+                              {log.message}
+                            </td>
+                            <td style={{ fontSize: '0.75rem', fontFamily: 'monospace', color: '#2563eb' }}>
+                              {log.linkUsed ? (
+                                <a href={log.linkUsed} target="_blank" rel="noreferrer" style={{ color: '#2563eb', textDecoration: 'underline' }}>
+                                  {log.linkUsed.replace(/^https?:\/\/[^\/]+/, '')}
+                                </a>
+                              ) : (
+                                <span style={{ color: '#94a3b8' }}>N/A</span>
+                              )}
+                            </td>
+                            <td>
+                              {isDup ? (
+                                <span style={{ padding: '3px 9px', borderRadius: '9999px', fontSize: '0.73rem', fontWeight: 800, color: '#92400e', background: '#fef3c7', border: '1px solid #fde68a' }}>
+                                  🛡️ Suppressed (Duplicate)
+                                </span>
+                              ) : isFailed ? (
+                                <span style={{ padding: '3px 9px', borderRadius: '9999px', fontSize: '0.73rem', fontWeight: 800, color: '#991b1b', background: '#fee2e2', border: '1px solid #fecaca' }}>
+                                  ❌ Failed
                                 </span>
                               ) : log.simulated ? (
-                                <span style={{ padding: '3px 9px', borderRadius: '9999px', fontSize: '0.75rem', fontWeight: 700, color: '#1e40af', background: '#dbeafe' }}>
-                                  Simulated
-                                </span>
-                              ) : log.success ? (
-                                <span style={{ padding: '3px 9px', borderRadius: '9999px', fontSize: '0.75rem', fontWeight: 700, color: '#065f46', background: '#d1fae5' }}>
-                                  Delivered
+                                <span style={{ padding: '3px 9px', borderRadius: '9999px', fontSize: '0.73rem', fontWeight: 800, color: '#1e40af', background: '#dbeafe', border: '1px solid #bfdbfe' }}>
+                                  ⚡ Simulated
                                 </span>
                               ) : (
-                                <span style={{ padding: '3px 9px', borderRadius: '9999px', fontSize: '0.75rem', fontWeight: 700, color: '#991b1b', background: '#fee2e2' }}>
-                                  Failed
+                                <span style={{ padding: '3px 9px', borderRadius: '9999px', fontSize: '0.73rem', fontWeight: 800, color: '#065f46', background: '#d1fae5', border: '1px solid #a7f3d0' }}>
+                                  🟢 Sent / Delivered
                                 </span>
                               )}
                             </td>
-                            <td style={{ color: '#94a3b8', fontSize: '0.78rem' }}>{new Date(log.createdAt).toLocaleString()}</td>
+                            <td style={{ fontFamily: 'monospace', fontSize: '0.75rem', color: '#64748b' }}>
+                              {log.gatewayId || 'Simulated'}
+                            </td>
+                            <td style={{ color: '#64748b', fontSize: '0.75rem' }}>
+                              {new Date(log.createdAt).toLocaleString()}
+                            </td>
                           </tr>
                         );
                       }) : (
-                        <tr><td colSpan={5} style={{ padding: '2rem', textAlign: 'center', color: '#94a3b8' }}>No SMS logs found.</td></tr>
+                        <tr><td colSpan={8} style={{ padding: '2rem', textAlign: 'center', color: '#94a3b8' }}>No SMS logs recorded.</td></tr>
                       )}
                     </tbody>
                   </table>
@@ -3112,45 +3355,262 @@ export const AdminDashboardModal: React.FC<AdminDashboardProps> = ({ onClose }) 
         </>
       )}
 
-      {/* ══ MODAL: SMS TEMPLATE CREATION ══ */}
+      {/* ══ MODAL: RICH SMS TEMPLATE EDITOR ══ */}
       {smsTemplateModal && (
         <>
-          <div onClick={() => setSmsTemplateModal(false)} style={{ position: 'fixed', inset: 0, background: 'rgba(15,23,42,0.3)', zIndex: 100, backdropFilter: 'blur(2px)' }} />
-          <div style={{ position: 'fixed', left: '50%', top: '50%', transform: 'translate(-50%, -50%)', width: '92%', maxWidth: '440px', background: '#fff', borderRadius: '16px', padding: '1.5rem', boxShadow: '0 20px 50px rgba(0,0,0,0.15)', zIndex: 101 }}>
+          <div onClick={() => setSmsTemplateModal(false)} style={{ position: 'fixed', inset: 0, background: 'rgba(15,23,42,0.4)', zIndex: 100, backdropFilter: 'blur(3px)' }} />
+          <div style={{ position: 'fixed', left: '50%', top: '50%', transform: 'translate(-50%, -50%)', width: '94%', maxWidth: '640px', maxHeight: '92vh', background: '#fff', borderRadius: '16px', padding: '1.5rem', boxShadow: '0 20px 50px rgba(0,0,0,0.2)', zIndex: 101, display: 'flex', flexDirection: 'column', overflowY: 'auto' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid #f1f5f9', paddingBottom: '0.75rem', marginBottom: '1.25rem' }}>
-              <h3 style={{ margin: 0, fontSize: '1rem', fontWeight: 800, color: '#0f172a' }}>Add SMS Template</h3>
-              <button onClick={() => setSmsTemplateModal(false)} style={{ background: '#f1f5f9', border: 'none', borderRadius: '8px', cursor: 'pointer', padding: '0.4rem' }}><X size={15} /></button>
+              <div>
+                <h3 style={{ margin: 0, fontSize: '1.1rem', fontWeight: 800, color: '#0f172a' }}>
+                  {editingTemplate ? `Edit Template: ${editingTemplate.title}` : 'Create New Loan-Stage SMS Template'}
+                </h3>
+                <p style={{ margin: '2px 0 0', fontSize: '0.78rem', color: '#64748b' }}>
+                  Click dynamic placeholder chips to insert variable tags safely. Smart links are resolved automatically at send time.
+                </p>
+              </div>
+              <button onClick={() => setSmsTemplateModal(false)} style={{ background: '#f1f5f9', border: 'none', borderRadius: '8px', cursor: 'pointer', padding: '0.4rem', color: '#64748b' }}><X size={16} /></button>
             </div>
-            <form onSubmit={e => {
-              e.preventDefault();
-              const keyVal = (e.currentTarget.elements.namedItem('tempKey') as HTMLInputElement).value;
-              const titleVal = (e.currentTarget.elements.namedItem('tempTitle') as HTMLInputElement).value;
-              const bodyVal = (e.currentTarget.elements.namedItem('tempBody') as HTMLTextAreaElement).value;
-              handleUpsertTemplate(keyVal, titleVal, bodyVal);
-            }}>
+
+            <form onSubmit={handleSaveSmsTemplateFull}>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.85rem', marginBottom: '0.85rem' }}>
+                <div>
+                  <label style={{ display: 'block', fontSize: '0.78rem', fontWeight: 700, color: '#475569', marginBottom: '4px' }}>Event Key</label>
+                  <input
+                    type="text"
+                    value={templateFormKey}
+                    onChange={e => setTemplateFormKey(e.target.value.toUpperCase())}
+                    disabled={!!editingTemplate}
+                    required
+                    placeholder="e.g. APPLICATION_APPROVED"
+                    style={{ width: '100%', padding: '0.55rem 0.75rem', border: '1.5px solid #cbd5e1', borderRadius: '8px', fontSize: '0.85rem', boxSizing: 'border-box', fontFamily: 'monospace', background: editingTemplate ? '#f8fafc' : '#fff' }}
+                  />
+                </div>
+                <div>
+                  <label style={{ display: 'block', fontSize: '0.78rem', fontWeight: 700, color: '#475569', marginBottom: '4px' }}>Category</label>
+                  <select
+                    value={templateFormCategory}
+                    onChange={e => setTemplateFormCategory(e.target.value)}
+                    style={{ width: '100%', padding: '0.55rem 0.75rem', border: '1.5px solid #cbd5e1', borderRadius: '8px', fontSize: '0.85rem', boxSizing: 'border-box', background: '#fff' }}
+                  >
+                    <option value="APPLICATION">APPLICATION</option>
+                    <option value="PAYMENT">PAYMENT</option>
+                    <option value="APPROVAL">APPROVAL</option>
+                    <option value="FUNDS">FUNDS</option>
+                    <option value="WITHDRAWAL">WITHDRAWAL</option>
+                    <option value="REMINDERS">REMINDERS</option>
+                    <option value="SYSTEM">SYSTEM</option>
+                    <option value="SUPPORT">SUPPORT</option>
+                  </select>
+                </div>
+              </div>
+
               <div style={{ marginBottom: '0.85rem' }}>
-                <label style={{ display: 'block', fontSize: '0.78rem', fontWeight: 700, color: '#475569', marginBottom: '4px' }}>Template Key</label>
-                <input name="tempKey" type="text" required placeholder="e.g. REPAYMENT_ALERT"
-                  style={{ width: '100%', padding: '0.55rem 0.75rem', border: '1.5px solid #e2e8f0', borderRadius: '8px', fontSize: '0.85rem', boxSizing: 'border-box' }}
+                <label style={{ display: 'block', fontSize: '0.78rem', fontWeight: 700, color: '#475569', marginBottom: '4px' }}>Template Display Title</label>
+                <input
+                  type="text"
+                  value={templateFormTitle}
+                  onChange={e => setTemplateFormTitle(e.target.value)}
+                  required
+                  placeholder="e.g. Application Approval Notice"
+                  style={{ width: '100%', padding: '0.55rem 0.75rem', border: '1.5px solid #cbd5e1', borderRadius: '8px', fontSize: '0.85rem', boxSizing: 'border-box' }}
                 />
               </div>
+
+              {/* Dynamic Placeholders Palette */}
+              <div style={{ background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: '10px', padding: '0.75rem', marginBottom: '0.85rem' }}>
+                <div style={{ fontSize: '0.75rem', fontWeight: 800, color: '#0f172a', marginBottom: '0.35rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <span>Interactive Placeholders Palette (Click to Insert):</span>
+                  <span style={{ fontSize: '0.68rem', color: '#64748b' }}>Inserts at cursor</span>
+                </div>
+                <div style={{ display: 'flex', gap: '0.35rem', flexWrap: 'wrap' }}>
+                  {[
+                    'firstName', 'loanReference', 'loanAmount', 'allocatedAmount', 'withdrawalFee',
+                    'repaymentAmount', 'status', 'applyLink', 'trackLink', 'portalLink', 'supportLink',
+                    'businessName', 'rejectionReason'
+                  ].map(ph => (
+                    <button
+                      key={ph}
+                      type="button"
+                      onClick={() => handleInsertPlaceholder(ph)}
+                      style={{
+                        padding: '3px 8px',
+                        borderRadius: '6px',
+                        fontSize: '0.72rem',
+                        fontWeight: 700,
+                        border: '1px solid #cbd5e1',
+                        background: '#fff',
+                        color: '#2563eb',
+                        cursor: 'pointer',
+                        fontFamily: 'monospace'
+                      }}
+                      title={`Click to insert {${ph}} into message body`}
+                    >
+                      +{'{' + ph + '}'}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
               <div style={{ marginBottom: '0.85rem' }}>
-                <label style={{ display: 'block', fontSize: '0.78rem', fontWeight: 700, color: '#475569', marginBottom: '4px' }}>Template Title</label>
-                <input name="tempTitle" type="text" required placeholder="e.g. Loan Repayment Due Date"
-                  style={{ width: '100%', padding: '0.55rem 0.75rem', border: '1.5px solid #e2e8f0', borderRadius: '8px', fontSize: '0.85rem', boxSizing: 'border-box' }}
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '4px' }}>
+                  <label style={{ fontSize: '0.78rem', fontWeight: 700, color: '#475569' }}>SMS Message Body</label>
+                  {(() => {
+                    const metrics = calcSmsMetrics(templateFormBody);
+                    return (
+                      <span style={{ fontSize: '0.72rem', fontWeight: 700, color: metrics.chars > 160 ? '#d97706' : '#166534' }}>
+                        {metrics.chars} chars | {metrics.segments} segment(s) ({metrics.isUnicode ? 'Unicode ⚠️' : 'GSM 7-bit'})
+                      </span>
+                    );
+                  })()}
+                </div>
+                <textarea
+                  ref={bodyTextareaRef}
+                  value={templateFormBody}
+                  onChange={e => setTemplateFormBody(e.target.value)}
+                  required
+                  rows={4}
+                  placeholder="Type template message body using placeholders..."
+                  style={{ width: '100%', padding: '0.65rem 0.75rem', border: '1.5px solid #cbd5e1', borderRadius: '8px', fontSize: '0.875rem', outline: 'none', resize: 'vertical', boxSizing: 'border-box', fontFamily: 'inherit', lineHeight: 1.45 }}
                 />
               </div>
-              <div style={{ marginBottom: '1.25rem' }}>
-                <label style={{ display: 'block', fontSize: '0.78rem', fontWeight: 700, color: '#475569', marginBottom: '4px' }}>Template Text Body</label>
-                <textarea name="tempBody" required rows={4} placeholder="Type template body..."
-                  style={{ width: '100%', padding: '0.65rem 0.75rem', border: '1.5px solid #e2e8f0', borderRadius: '8px', fontSize: '0.875rem', resize: 'none', boxSizing: 'border-box' }}
-                />
+
+              {/* Live Render Preview Box */}
+              <div style={{ background: '#eff6ff', border: '1px solid #bfdbfe', borderRadius: '10px', padding: '0.75rem', marginBottom: '1.25rem' }}>
+                <div style={{ fontSize: '0.72rem', fontWeight: 800, color: '#1d4ed8', textTransform: 'uppercase', marginBottom: '0.35rem' }}>
+                  📱 Live Render Preview (Sample Customer View)
+                </div>
+                <div style={{ fontSize: '0.82rem', color: '#1e3a8a', lineHeight: 1.45 }}>
+                  {templateFormBody
+                    .replace(/\{firstName\}/g, previewSampleValues.firstName || 'Wanjiku')
+                    .replace(/\{loanReference\}/g, previewSampleValues.loanReference || 'JL-89F3A12')
+                    .replace(/\{loanAmount\}/g, previewSampleValues.loanAmount || '25,000')
+                    .replace(/\{allocatedAmount\}/g, previewSampleValues.allocatedAmount || '25,000')
+                    .replace(/\{withdrawalFee\}/g, previewSampleValues.withdrawalFee || '500')
+                    .replace(/\{repaymentAmount\}/g, previewSampleValues.repaymentAmount || '26,250')
+                    .replace(/\{status\}/g, previewSampleValues.status || 'Approved')
+                    .replace(/\{rejectionReason\}/g, previewSampleValues.rejectionReason || 'Verification requirement')
+                    .replace(/\{applyLink\}/g, 'https://jijengeloans.co.ke/apply')
+                    .replace(/\{trackLink\}/g, `https://jijengeloans.co.ke/track-loan?ref=${previewSampleValues.loanReference || 'JL-89F3A12'}`)
+                    .replace(/\{portalLink\}/g, 'https://jijengeloans.co.ke/customer')
+                    .replace(/\{supportLink\}/g, 'https://jijengeloans.co.ke/support')
+                    .replace(/\{businessName\}/g, 'Jijenge Loans')
+                  }
+                </div>
               </div>
-              <button type="submit"
-                style={{ width: '100%', padding: '0.7rem', background: ORANGE, color: '#fff', border: 'none', borderRadius: '8px', cursor: 'pointer', fontSize: '0.9rem', fontWeight: 700 }}>
-                Save SMS Template
-              </button>
+
+              <div style={{ display: 'flex', gap: '0.75rem' }}>
+                <button type="button" onClick={() => setSmsTemplateModal(false)} style={{ flex: 1, padding: '0.7rem', background: '#f1f5f9', color: '#475569', border: 'none', borderRadius: '8px', cursor: 'pointer', fontSize: '0.875rem', fontWeight: 700 }}>
+                  Cancel
+                </button>
+                <button type="submit" disabled={actionLoading} style={{ flex: 1.5, padding: '0.7rem', background: ORANGE, color: '#fff', border: 'none', borderRadius: '8px', cursor: 'pointer', fontSize: '0.875rem', fontWeight: 800 }}>
+                  {actionLoading ? 'Saving...' : 'Save Template Changes'}
+                </button>
+              </div>
             </form>
+          </div>
+        </>
+      )}
+
+      {/* ══ MODAL: SAFE TEST & PREVIEW MODAL ══ */}
+      {previewModalOpen && selectedTemplateKey && (
+        <>
+          <div onClick={() => setPreviewModalOpen(false)} style={{ position: 'fixed', inset: 0, background: 'rgba(15,23,42,0.4)', zIndex: 100, backdropFilter: 'blur(3px)' }} />
+          <div style={{ position: 'fixed', left: '50%', top: '50%', transform: 'translate(-50%, -50%)', width: '92%', maxWidth: '520px', background: '#fff', borderRadius: '16px', padding: '1.5rem', boxShadow: '0 20px 50px rgba(0,0,0,0.2)', zIndex: 101 }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid #f1f5f9', paddingBottom: '0.75rem', marginBottom: '1.25rem' }}>
+              <div>
+                <h3 style={{ margin: 0, fontSize: '1.05rem', fontWeight: 800, color: '#0f172a' }}>🧪 SMS Template Preview &amp; Safe Test</h3>
+                <span style={{ fontSize: '0.75rem', color: '#64748b' }}>Template Key: {selectedTemplateKey}</span>
+              </div>
+              <button onClick={() => setPreviewModalOpen(false)} style={{ background: '#f1f5f9', border: 'none', borderRadius: '8px', cursor: 'pointer', padding: '0.4rem', color: '#64748b' }}><X size={15} /></button>
+            </div>
+
+            {(() => {
+              const currentTpl = smsTemplates.find((t: any) => t.key === selectedTemplateKey) || { body: '' };
+              const rendered = (currentTpl.body || '')
+                .replace(/\{firstName\}/g, previewSampleValues.firstName || 'Wanjiku')
+                .replace(/\{loanReference\}/g, previewSampleValues.loanReference || 'JL-89F3A12')
+                .replace(/\{loanAmount\}/g, previewSampleValues.loanAmount || '25,000')
+                .replace(/\{allocatedAmount\}/g, previewSampleValues.allocatedAmount || '25,000')
+                .replace(/\{withdrawalFee\}/g, previewSampleValues.withdrawalFee || '500')
+                .replace(/\{repaymentAmount\}/g, previewSampleValues.repaymentAmount || '26,250')
+                .replace(/\{status\}/g, previewSampleValues.status || 'Approved')
+                .replace(/\{rejectionReason\}/g, previewSampleValues.rejectionReason || 'Verification requirement')
+                .replace(/\{applyLink\}/g, 'https://jijengeloans.co.ke/apply')
+                .replace(/\{trackLink\}/g, `https://jijengeloans.co.ke/track-loan?ref=${previewSampleValues.loanReference || 'JL-89F3A12'}`)
+                .replace(/\{portalLink\}/g, 'https://jijengeloans.co.ke/customer')
+                .replace(/\{supportLink\}/g, 'https://jijengeloans.co.ke/support')
+                .replace(/\{businessName\}/g, 'Jijenge Loans');
+
+              const metrics = calcSmsMetrics(rendered);
+              const unresolved = (rendered.match(/\{[a-zA-Z0-9_]+\}/g) || []);
+
+              return (
+                <div>
+                  <div style={{ background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: '10px', padding: '0.85rem', marginBottom: '1rem' }}>
+                    <div style={{ fontSize: '0.75rem', fontWeight: 800, color: '#475569', marginBottom: '0.4rem' }}>Rendered Final Customer SMS Text:</div>
+                    <div style={{ fontSize: '0.85rem', color: '#0f172a', fontWeight: 600, lineHeight: 1.5 }}>
+                      "{rendered}"
+                    </div>
+                  </div>
+
+                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.78rem', color: '#475569', marginBottom: '1rem', background: '#eff6ff', padding: '0.55rem 0.85rem', borderRadius: '8px' }}>
+                    <span>Length: <strong>{metrics.chars} chars</strong></span>
+                    <span>Segments: <strong>{metrics.segments}</strong></span>
+                    <span>Type: <strong>{metrics.isUnicode ? 'Unicode' : 'GSM 7-bit'}</strong></span>
+                  </div>
+
+                  {unresolved.length > 0 && (
+                    <div style={{ background: '#fef2f2', border: '1px solid #fecaca', borderRadius: '8px', padding: '0.65rem 0.85rem', color: '#991b1b', fontSize: '0.78rem', marginBottom: '1rem', fontWeight: 700 }}>
+                      ⚠️ Warning: Unresolved placeholders present: {unresolved.join(', ')}
+                    </div>
+                  )}
+
+                  <div style={{ marginBottom: '1.25rem' }}>
+                    <label style={{ display: 'block', fontSize: '0.78rem', fontWeight: 700, color: '#475569', marginBottom: '4px' }}>Send Test SMS to Authorized Number</label>
+                    <div style={{ display: 'flex', gap: '0.5rem' }}>
+                      <input
+                        type="text"
+                        value={testDispatchPhone}
+                        onChange={e => setTestDispatchPhone(e.target.value)}
+                        placeholder="e.g. 0799289214"
+                        style={{ flex: 1, padding: '0.55rem 0.75rem', border: '1.5px solid #cbd5e1', borderRadius: '8px', fontSize: '0.85rem', outline: 'none' }}
+                      />
+                      <button
+                        type="button"
+                        onClick={async () => {
+                          if (!testDispatchPhone) return alert('Enter recipient test phone');
+                          const token = getAdminToken();
+                          if (!token) return;
+                          setActionLoading(true);
+                          try {
+                            const res = await apiFetch('/api/admin/send-sms', {
+                              method: 'POST',
+                              headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+                              body: JSON.stringify({ phone: testDispatchPhone, message: rendered })
+                            });
+                            if (res.ok) {
+                              showToast(`Test SMS sent to ${testDispatchPhone}!`);
+                              setPreviewModalOpen(false);
+                            } else {
+                              alert('Test SMS dispatch failed');
+                            }
+                          } catch {
+                            alert('Network error during test dispatch.');
+                          } finally {
+                            setActionLoading(false);
+                          }
+                        }}
+                        disabled={actionLoading}
+                        style={{ padding: '0.55rem 1.1rem', background: '#0f172a', color: '#fff', border: 'none', borderRadius: '8px', fontSize: '0.82rem', fontWeight: 800, cursor: 'pointer' }}
+                      >
+                        {actionLoading ? 'Sending...' : '📤 Send Test SMS'}
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              );
+            })()}
           </div>
         </>
       )}

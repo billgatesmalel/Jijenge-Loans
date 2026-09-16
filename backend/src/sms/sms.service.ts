@@ -1,162 +1,262 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable, Logger, BadRequestException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { LoanStatus } from '@prisma/client';
+import { getPublicUrls, PublicUrlsConfig } from './notification-urls.config';
 
-export const DEFAULT_SMS_TEMPLATES = [
+export interface SmsTemplateDef {
+  key: string;
+  title: string;
+  category: 'APPLICATION' | 'PAYMENT' | 'APPROVAL' | 'FUNDS' | 'WITHDRAWAL' | 'REMINDERS' | 'SYSTEM' | 'SUPPORT';
+  description: string;
+  body: string;
+  variables: string[];
+  supportedPlaceholders: string[];
+  notes?: string;
+}
+
+export const SYSTEM_PLACEHOLDERS = [
+  'firstName',
+  'phoneNumber',
+  'loanReference',
+  'loanAmount',
+  'allocatedAmount',
+  'withdrawalFee',
+  'repaymentAmount',
+  'repaymentDate',
+  'status',
+  'supportNumber',
+  'businessName',
+  'applyLink',
+  'trackLink',
+  'portalLink',
+  'supportLink',
+  'rejectionReason'
+];
+
+export const DEFAULT_SMS_TEMPLATES: SmsTemplateDef[] = [
   {
-    key: 'APPLICATION_RECEIVED',
-    title: 'Application Received & Fee Prompt',
-    body: 'Dear {fullName}, your loan application for {packageName} (KSh {amount}) was received (Ref: {txRef}). Complete processing fee payment of KSh {processingFee} to proceed.',
-    variables: ['fullName', 'packageName', 'amount', 'txRef', 'processingFee']
+    key: 'APPLICATION_SUBMITTED',
+    title: 'Application Submitted',
+    category: 'APPLICATION',
+    description: 'Triggered when a customer registers and submits a new loan application.',
+    body: 'Hi {firstName}, we’ve received your Jijenge Loans application {loanReference}. Our team is processing your application and we’ll update you once there is progress. Track your application: {trackLink} {businessName}',
+    variables: ['firstName', 'loanReference', 'trackLink', 'businessName'],
+    supportedPlaceholders: ['firstName', 'loanReference', 'trackLink', 'businessName', 'loanAmount']
   },
   {
-    key: 'INITIAL_VERIFICATION',
-    title: 'Initial Verification Underway',
-    body: 'Dear {fullName}, your loan application {txRef} is currently undergoing initial document and identity verification.',
-    variables: ['fullName', 'txRef']
+    key: 'APPLICATION_UNDER_REVIEW',
+    title: 'Application Under Review',
+    category: 'APPLICATION',
+    description: 'Triggered when an application advances to document or credit verification.',
+    body: 'Hi {firstName}, your Jijenge Loans application {loanReference} is currently under review. We’ll notify you once the assessment is complete. You can check your status here: {trackLink} {businessName}',
+    variables: ['firstName', 'loanReference', 'trackLink', 'businessName'],
+    supportedPlaceholders: ['firstName', 'loanReference', 'trackLink', 'businessName', 'status']
   },
   {
-    key: 'CREDIT_ASSESSMENT',
-    title: 'Credit Risk Assessment',
-    body: 'Dear {fullName}, credit risk assessment for your application {txRef} ({packageName}, KSh {amount}) is now underway.',
-    variables: ['fullName', 'txRef', 'packageName', 'amount']
+    key: 'APPLICATION_APPROVED',
+    title: 'Application Approved',
+    category: 'APPROVAL',
+    description: 'Triggered when a loan application is approved by credit assessment.',
+    body: 'Hi {firstName}, your Jijenge Loans application {loanReference} has been approved for KES {allocatedAmount}. Please log in to your customer portal to review the details and continue: {portalLink} {businessName}',
+    variables: ['firstName', 'loanReference', 'allocatedAmount', 'portalLink', 'businessName'],
+    supportedPlaceholders: ['firstName', 'loanReference', 'allocatedAmount', 'portalLink', 'businessName', 'repaymentAmount']
   },
   {
-    key: 'LOAN_REVIEW',
-    title: 'Loan Final Review',
-    body: 'Dear {fullName}, application {txRef} is under final review by our Jijenge underwriting team.',
-    variables: ['fullName', 'txRef']
+    key: 'PAYMENT_REQUIRED',
+    title: 'Processing Payment Required',
+    category: 'PAYMENT',
+    description: 'Triggered when an application requires processing fee payment to proceed.',
+    body: 'Hi {firstName}, your Jijenge Loans application {loanReference} requires the applicable processing payment before the next stage. Please review and continue securely through your portal: {portalLink} {businessName}',
+    variables: ['firstName', 'loanReference', 'portalLink', 'businessName'],
+    supportedPlaceholders: ['firstName', 'loanReference', 'portalLink', 'businessName', 'withdrawalFee']
   },
   {
-    key: 'APPROVED',
-    title: 'Loan Approved',
-    body: 'Dear {fullName}, congratulations! Your Jijenge Loan application {txRef} for KSh {amount} has been APPROVED.',
-    variables: ['fullName', 'txRef', 'amount']
+    key: 'PAYMENT_PENDING',
+    title: 'Payment Confirmation Pending',
+    category: 'PAYMENT',
+    description: 'Triggered when M-Pesa STK push is dispatched and waiting for PIN confirmation.',
+    body: 'Hi {firstName}, we’re waiting for confirmation of the payment for application {loanReference}. Please allow some time for processing. Check your application here: {trackLink} {businessName}',
+    variables: ['firstName', 'loanReference', 'trackLink', 'businessName'],
+    supportedPlaceholders: ['firstName', 'loanReference', 'trackLink', 'businessName']
   },
   {
-    key: 'DISBURSEMENT_IN_PROGRESS',
-    title: 'Disbursement In Progress',
-    body: 'Dear {fullName}, disbursement of KSh {amount} for loan {txRef} is processing to your M-Pesa account.',
-    variables: ['fullName', 'txRef', 'amount']
+    key: 'PAYMENT_CONFIRMED',
+    title: 'Payment Received & Confirmed',
+    category: 'PAYMENT',
+    description: 'Triggered after M-Pesa confirms successful processing fee receipt.',
+    body: 'Hi {firstName}, your payment for Jijenge Loans application {loanReference} has been received. Your application will now proceed to the next stage. Track it here: {trackLink} {businessName}',
+    variables: ['firstName', 'loanReference', 'trackLink', 'businessName'],
+    supportedPlaceholders: ['firstName', 'loanReference', 'trackLink', 'businessName']
   },
   {
-    key: 'DISBURSED',
-    title: 'Loan Disbursed',
-    body: 'Dear {fullName}, KSh {amount} for loan {txRef} has been disbursed to your M-Pesa. Installment: KSh {installmentAmount} ({repaymentFrequency}).',
-    variables: ['fullName', 'txRef', 'amount', 'installmentAmount', 'repaymentFrequency']
+    key: 'PAYMENT_FAILED',
+    title: 'Payment Confirmation Failed',
+    category: 'PAYMENT',
+    description: 'Triggered when payment is cancelled or rejected by user/M-Pesa.',
+    body: 'Hi {firstName}, we could not confirm the payment for application {loanReference}. Please check your customer portal for the current status and available next steps: {portalLink} {businessName}',
+    variables: ['firstName', 'loanReference', 'portalLink', 'businessName'],
+    supportedPlaceholders: ['firstName', 'loanReference', 'portalLink', 'businessName']
   },
   {
-    key: 'REJECTED',
-    title: 'Application Declined',
-    body: 'Dear {fullName}, we regret to inform you that loan application {txRef} could not be approved at this time.',
-    variables: ['fullName', 'txRef']
+    key: 'PAYMENT_TIMED_OUT',
+    title: 'Payment Request Timed Out',
+    category: 'PAYMENT',
+    description: 'Triggered when STK push times out without PIN entry response.',
+    body: 'Hi {firstName}, we have not yet received confirmation of the payment for application {loanReference}. If you were charged, please allow time for confirmation before trying again. Check your status: {trackLink} {businessName}',
+    variables: ['firstName', 'loanReference', 'trackLink', 'businessName'],
+    supportedPlaceholders: ['firstName', 'loanReference', 'trackLink', 'businessName']
   },
   {
-    key: 'COMPLETED',
-    title: 'Loan Repaid & Completed',
-    body: 'Dear {fullName}, your Jijenge Loan {txRef} has been fully repaid and completed. Thank you for choosing Jijenge Loans!',
-    variables: ['fullName', 'txRef']
+    key: 'FUNDS_ALLOCATED',
+    title: 'Approved Loan Balance Allocated',
+    category: 'FUNDS',
+    description: 'Triggered when administrator allocates approved loan funds to customer portal.',
+    body: 'Hi {firstName}, KES {allocatedAmount} has been allocated to your Jijenge Loans application {loanReference}. Please log in to your customer portal to review the details and complete the next step: {portalLink} {businessName}',
+    variables: ['firstName', 'allocatedAmount', 'loanReference', 'portalLink', 'businessName'],
+    supportedPlaceholders: ['firstName', 'allocatedAmount', 'loanReference', 'portalLink', 'businessName']
   },
   {
-    key: 'CANCELLED',
-    title: 'Application Cancelled',
-    body: 'Dear {fullName}, loan application {txRef} has been cancelled.',
-    variables: ['fullName', 'txRef']
-  },
-  {
-    key: 'FEE_PAYMENT_SUCCESS',
-    title: 'Processing Fee Payment Received',
-    body: 'Dear {fullName}, processing fee payment of KSh {processingFee} for loan {txRef} was received successfully. Your loan is now processing.',
-    variables: ['fullName', 'txRef', 'processingFee']
-  },
-  {
-    key: 'REMINDER_24H',
-    title: '24-Hour Action & Payment Reminder',
-    body: 'Dear {fullName}, 24-hour reminder: your Jijenge Loan application (Ref: {txRef}, KSh {amount}) requires processing fee payment within 24 hours to proceed.',
-    variables: ['fullName', 'txRef', 'amount']
-  },
-  {
-    key: 'REMINDER_7D',
-    title: '7-Day Repayment Notice',
-    body: 'Dear {fullName}, 7-day notice: your Jijenge Loan repayment of KSh {amount} (Ref: {txRef}) is due soon.',
-    variables: ['fullName', 'txRef', 'amount']
-  },
-  {
-    key: 'BALANCE_ALLOCATED',
-    title: 'Loan Balance Allocated',
-    body: 'Dear {fullName}, your loan balance of KSh {amount} (Ref: {txRef}) has been allocated to your Jijenge account! Log into your portal to withdraw.',
-    variables: ['fullName', 'amount', 'txRef']
-  },
-  {
-    key: 'WITHDRAWAL_REQUESTED',
+    key: 'WITHDRAWAL_PENDING',
     title: 'Withdrawal Request Received',
-    body: 'Dear {fullName}, your withdrawal request of KSh {amount} (Ref: {txRef}) has been submitted. Pay withdrawal fee of KSh {processingFee} to process.',
-    variables: ['fullName', 'amount', 'txRef', 'processingFee']
+    category: 'WITHDRAWAL',
+    description: 'Triggered when customer submits withdrawal request in portal.',
+    body: 'Hi {firstName}, your withdrawal request for KES {allocatedAmount} is being processed. We’ll notify you once the transaction is completed. Check your status: {portalLink} {businessName}',
+    variables: ['firstName', 'allocatedAmount', 'portalLink', 'businessName'],
+    supportedPlaceholders: ['firstName', 'allocatedAmount', 'withdrawalFee', 'portalLink', 'businessName']
   },
   {
-    key: 'WITHDRAWAL_FEE_PAID',
-    title: 'Withdrawal Fee Payment Received',
-    body: 'Dear {fullName}, withdrawal processing fee payment of KSh {processingFee} for loan {txRef} is received! Your withdrawal request of KSh {amount} is now being processed to your M-Pesa.',
-    variables: ['fullName', 'processingFee', 'txRef', 'amount']
+    key: 'WITHDRAWAL_COMPLETED',
+    title: 'Withdrawal Disbursed Successfully',
+    category: 'WITHDRAWAL',
+    description: 'Triggered when admin approves disbursement or gateway confirms payout.',
+    body: 'Hi {firstName}, your Jijenge Loans withdrawal of KES {allocatedAmount} for application {loanReference} has been completed. Please check your M-Pesa account and portal for the transaction details: {portalLink} {businessName}',
+    variables: ['firstName', 'allocatedAmount', 'loanReference', 'portalLink', 'businessName'],
+    supportedPlaceholders: ['firstName', 'allocatedAmount', 'loanReference', 'portalLink', 'businessName']
   },
   {
-    key: 'WITHDRAWAL_APPROVED',
-    title: 'Withdrawal Approved & Disbursed',
-    body: 'Dear {fullName}, KSh {amount} for loan {txRef} has been successfully sent to your M-Pesa phone number. Thank you for choosing Jijenge Loans!',
-    variables: ['fullName', 'amount', 'txRef']
+    key: 'WITHDRAWAL_FAILED',
+    title: 'Withdrawal Processing Error',
+    category: 'WITHDRAWAL',
+    description: 'Triggered if withdrawal payout encounters a technical error.',
+    body: 'Hi {firstName}, we could not complete your withdrawal request for application {loanReference}. Please log in to your customer portal to review the status and available next steps: {portalLink} {businessName}',
+    variables: ['firstName', 'loanReference', 'portalLink', 'businessName'],
+    supportedPlaceholders: ['firstName', 'loanReference', 'portalLink', 'businessName']
   },
   {
     key: 'WITHDRAWAL_REJECTED',
-    title: 'Withdrawal Declined & Balance Restored',
-    body: 'Dear {fullName}, your withdrawal request of KSh {amount} (Ref: {txRef}) was declined due to: {rejectionReason}. KSh {amount} has been returned to your portal balance. Please log in to update your profile details and re-request withdrawal.',
-    variables: ['fullName', 'amount', 'txRef', 'rejectionReason']
+    title: 'Withdrawal Declined & Restored',
+    category: 'WITHDRAWAL',
+    description: 'Triggered when admin declines withdrawal request and reverts funds to balance.',
+    body: 'Hi {firstName}, your withdrawal request of KES {allocatedAmount} for application {loanReference} was not completed. Your available balance has been updated where applicable. Please review your portal: {portalLink} {businessName}',
+    variables: ['firstName', 'allocatedAmount', 'loanReference', 'portalLink', 'businessName'],
+    supportedPlaceholders: ['firstName', 'allocatedAmount', 'loanReference', 'rejectionReason', 'portalLink', 'businessName']
   },
   {
-    key: 'SUPPORT_REPLY',
-    title: 'Support Ticket Reply & Chat Direct Access',
-    body: 'Hello {fullName}, Jijenge Support replied to your inquiry: "{snippet}". Click to view & reply directly: {chatUrl}',
-    variables: ['fullName', 'snippet', 'chatUrl']
+    key: 'APPLICATION_REJECTED',
+    title: 'Application Declined',
+    category: 'APPROVAL',
+    description: 'Triggered when application does not meet eligibility criteria.',
+    body: 'Hi {firstName}, your Jijenge Loans application {loanReference} was not approved at this time. You can review your application status and available information here: {trackLink} {businessName}',
+    variables: ['firstName', 'loanReference', 'trackLink', 'businessName'],
+    supportedPlaceholders: ['firstName', 'loanReference', 'trackLink', 'businessName']
+  },
+  {
+    key: 'APPLICATION_SYSTEM_ERROR',
+    title: 'System Error / Re-Application',
+    category: 'SYSTEM',
+    description: 'Triggered when customer is invited to restart after a system resolution.',
+    body: 'Hi {firstName}, we’re sorry for the inconvenience with your previous Jijenge Loans application. A system issue affecting the application process has been resolved. You can now apply again here: {applyLink} {businessName}',
+    variables: ['firstName', 'applyLink', 'businessName'],
+    supportedPlaceholders: ['firstName', 'applyLink', 'businessName', 'loanReference']
+  },
+  {
+    key: 'APPLICATION_REMINDER',
+    title: 'Incomplete Action / Payment Reminder',
+    category: 'REMINDERS',
+    description: '24-hour reminder dispatched to users with pending applications.',
+    body: 'Hi {firstName}, your Jijenge Loans application {loanReference} requires processing before the next stage. Please log in to your customer portal to review and continue: {portalLink} {businessName}',
+    variables: ['firstName', 'loanReference', 'portalLink', 'businessName'],
+    supportedPlaceholders: ['firstName', 'loanReference', 'portalLink', 'businessName']
+  },
+  {
+    key: 'WITHDRAWAL_REMINDER',
+    title: 'Allocated Funds Awaiting Withdrawal',
+    category: 'REMINDERS',
+    description: 'Reminder sent when approved funds remain unwithdrawn in portal.',
+    body: 'Hi {firstName}, your approved funds of KES {allocatedAmount} for application {loanReference} are still available for withdrawal. Please log in to your customer portal to review and continue: {portalLink} {businessName}',
+    variables: ['firstName', 'allocatedAmount', 'loanReference', 'portalLink', 'businessName'],
+    supportedPlaceholders: ['firstName', 'allocatedAmount', 'loanReference', 'portalLink', 'businessName']
+  },
+  {
+    key: 'SUPPORT_REQUEST_RECEIVED',
+    title: 'Support Agent Reply',
+    category: 'SUPPORT',
+    description: 'Triggered when support replies to a customer ticket or message.',
+    body: 'Hi {firstName}, Jijenge Support replied to your inquiry: "{status}". Click to view & reply directly in support: {supportLink} {businessName}',
+    variables: ['firstName', 'status', 'supportLink', 'businessName'],
+    supportedPlaceholders: ['firstName', 'status', 'supportLink', 'businessName']
   }
 ];
 
-const STATUS_TEMPLATE_MAP: Record<string, string> = {
-  Pending: 'APPLICATION_RECEIVED',
-  PENDING: 'APPLICATION_RECEIVED',
-  Pending_STK_Fee_Payment: 'APPLICATION_RECEIVED',
-  'Pending STK Fee Payment': 'APPLICATION_RECEIVED',
-  Application_Received: 'APPLICATION_RECEIVED',
-  'Application Received': 'APPLICATION_RECEIVED',
-  Initial_Verification: 'INITIAL_VERIFICATION',
-  'Initial Verification': 'INITIAL_VERIFICATION',
-  Document_Verification: 'INITIAL_VERIFICATION',
-  'Document Verification': 'INITIAL_VERIFICATION',
-  Credit_Assessment: 'CREDIT_ASSESSMENT',
-  'Credit Assessment': 'CREDIT_ASSESSMENT',
-  Risk_Assessment: 'CREDIT_ASSESSMENT',
-  'Risk Assessment': 'CREDIT_ASSESSMENT',
-  Loan_Review: 'LOAN_REVIEW',
-  'Loan Review': 'LOAN_REVIEW',
-  Under_Review: 'LOAN_REVIEW',
-  'Under Review': 'LOAN_REVIEW',
-  Processing: 'LOAN_REVIEW',
-  Approved: 'APPROVED',
-  APPROVED: 'APPROVED',
-  Awaiting_Disbursement: 'DISBURSEMENT_IN_PROGRESS',
-  'Awaiting Disbursement': 'DISBURSEMENT_IN_PROGRESS',
-  Disbursement_In_Progress: 'DISBURSEMENT_IN_PROGRESS',
-  'Disbursement In Progress': 'DISBURSEMENT_IN_PROGRESS',
-  Disbursed: 'DISBURSED',
-  DISBURSED: 'DISBURSED',
-  Loan_Completed: 'COMPLETED',
-  'Loan Completed': 'COMPLETED',
-  Completed: 'COMPLETED',
-  Rejected: 'REJECTED',
-  REJECTED: 'REJECTED',
-  Payment_Failed: 'CANCELLED',
-  'Payment Failed': 'CANCELLED',
-  Payment_Timed_Out: 'CANCELLED',
-  'Payment Timed Out': 'CANCELLED'
+const STATUS_TO_EVENT_KEY: Record<string, string> = {
+  Pending: 'APPLICATION_SUBMITTED',
+  PENDING: 'APPLICATION_SUBMITTED',
+  Pending_STK_Fee_Payment: 'PAYMENT_REQUIRED',
+  'Pending STK Fee Payment': 'PAYMENT_REQUIRED',
+  Application_Received: 'APPLICATION_SUBMITTED',
+  'Application Received': 'APPLICATION_SUBMITTED',
+  Initial_Verification: 'APPLICATION_UNDER_REVIEW',
+  'Initial Verification': 'APPLICATION_UNDER_REVIEW',
+  Document_Verification: 'APPLICATION_UNDER_REVIEW',
+  'Document Verification': 'APPLICATION_UNDER_REVIEW',
+  Credit_Assessment: 'APPLICATION_UNDER_REVIEW',
+  'Credit Assessment': 'APPLICATION_UNDER_REVIEW',
+  Risk_Assessment: 'APPLICATION_UNDER_REVIEW',
+  'Risk Assessment': 'APPLICATION_UNDER_REVIEW',
+  Loan_Review: 'APPLICATION_UNDER_REVIEW',
+  'Loan Review': 'APPLICATION_UNDER_REVIEW',
+  Under_Review: 'APPLICATION_UNDER_REVIEW',
+  'Under Review': 'APPLICATION_UNDER_REVIEW',
+  Processing: 'APPLICATION_UNDER_REVIEW',
+  Approved: 'APPLICATION_APPROVED',
+  APPROVED: 'APPLICATION_APPROVED',
+  Awaiting_Disbursement: 'WITHDRAWAL_PENDING',
+  'Awaiting Disbursement': 'WITHDRAWAL_PENDING',
+  Disbursement_In_Progress: 'WITHDRAWAL_PENDING',
+  'Disbursement In Progress': 'WITHDRAWAL_PENDING',
+  Disbursed: 'WITHDRAWAL_COMPLETED',
+  DISBURSED: 'WITHDRAWAL_COMPLETED',
+  Loan_Completed: 'WITHDRAWAL_COMPLETED',
+  'Loan Completed': 'WITHDRAWAL_COMPLETED',
+  Rejected: 'APPLICATION_REJECTED',
+  REJECTED: 'APPLICATION_REJECTED',
+  Payment_Failed: 'PAYMENT_FAILED',
+  'Payment Failed': 'PAYMENT_FAILED',
+  Payment_Timed_Out: 'PAYMENT_TIMED_OUT',
+  'Payment Timed Out': 'PAYMENT_TIMED_OUT'
 };
+
+export function calculateSmsSegments(text: string): { charCount: number; isUnicode: boolean; segmentCount: number } {
+  if (!text) return { charCount: 0, isUnicode: false, segmentCount: 0 };
+  
+  // Standard GSM 7-bit character set check
+  const gsm7Regex = /^[\n\r a-zA-Z0-9^{}\\\[~\]\|€!#\$%&'\(\)\*\+,\-\.\/:;<=>\?@_]*$/;
+  const isUnicode = !gsm7Regex.test(text);
+  const charCount = text.length;
+
+  let segmentCount = 1;
+  if (isUnicode) {
+    if (charCount > 70) {
+      segmentCount = Math.ceil(charCount / 67);
+    }
+  } else {
+    if (charCount > 160) {
+      segmentCount = Math.ceil(charCount / 153);
+    }
+  }
+
+  return { charCount, isUnicode, segmentCount };
+}
 
 @Injectable()
 export class SmsService {
@@ -268,31 +368,61 @@ export class SmsService {
     return { success: true, config: updatedConfig };
   }
 
-  /** Run a diagnostic test dispatch to verify SMS Gateway connectivity & auth credentials */
+  /** Run diagnostic test dispatch to verify SMS Gateway connectivity */
   async testSmsGateway(recipientPhone: string): Promise<{ success: boolean; gatewayId?: string; simulated?: boolean; error?: string }> {
     if (!recipientPhone) {
       return { success: false, error: 'Recipient phone number is required for gateway test' };
     }
-    const testMessage = `[Jijenge Loans Gateway Test] Verification test dispatch at ${new Date().toLocaleString('en-KE', { timeZone: 'Africa/Nairobi' })}. SMS Gateway connectivity is operational.`;
+    const testMessage = `[Jijenge Loans Test] Gateway connectivity check at ${new Date().toLocaleTimeString('en-KE', { timeZone: 'Africa/Nairobi' })}. SMS service is operational.`;
     return this.sendSms(recipientPhone, testMessage, true);
   }
 
+  /** Format raw phone number into standard international format (+254...) */
+  formatPhoneNumber(phone: string): string {
+    let clean = String(phone || '').replace(/\D/g, '');
+    if (clean.startsWith('0')) {
+      return '+254' + clean.slice(1);
+    } else if (clean.startsWith('254')) {
+      return '+' + clean;
+    } else if (clean.length === 9 && (clean.startsWith('7') || clean.startsWith('1'))) {
+      return '+254' + clean;
+    } else if (!clean.startsWith('+') && clean.length > 0) {
+      return '+' + clean;
+    }
+    return phone;
+  }
+
+  /** Dispatch raw SMS message through gateway or simulation */
   async sendSms(
     recipientPhone: string,
     message: string,
-    ignoreSpamFilter: boolean = false
-  ): Promise<{ success: boolean; gatewayId?: string; simulated?: boolean; error?: string }> {
+    ignoreSpamFilter: boolean = false,
+    metadata: {
+      loanApplicationId?: string;
+      userId?: string;
+      eventKey?: string;
+      templateId?: string;
+      linkUsed?: string;
+      idempotencyKey?: string;
+    } = {}
+  ): Promise<{ success: boolean; gatewayId?: string; simulated?: boolean; error?: string; status?: string }> {
     if (!recipientPhone || !message) {
       return { success: false, error: 'Missing phone number or message text' };
     }
 
-    let formattedPhone = String(recipientPhone).replace(/\D/g, '');
-    if (formattedPhone.startsWith('0')) {
-      formattedPhone = '+254' + formattedPhone.slice(1);
-    } else if (formattedPhone.startsWith('254')) {
-      formattedPhone = '+' + formattedPhone;
-    } else if (!formattedPhone.startsWith('+')) {
-      formattedPhone = '+' + formattedPhone;
+    const formattedPhone = this.formatPhoneNumber(recipientPhone);
+
+    // Check Idempotency Key
+    if (metadata.idempotencyKey) {
+      try {
+        const existing = await this.prisma.smsLog.findUnique({
+          where: { idempotencyKey: metadata.idempotencyKey }
+        });
+        if (existing && (existing.success || existing.status === 'DUPLICATE_SUPPRESSED' || existing.status === 'SENT')) {
+          this.logger.log(`🛡️ [IDEMPOTENCY SUPPRESSED] Duplicate event "${metadata.idempotencyKey}" blocked.`);
+          return { success: true, simulated: true, status: 'DUPLICATE_SUPPRESSED' };
+        }
+      } catch { /* ignored */ }
     }
 
     // Check anti-spam protection unless explicitly bypassed
@@ -303,14 +433,21 @@ export class SmsService {
         this.logger.warn(`🛡️ ${errorDesc} | Recipient: ${formattedPhone}`);
         await this.prisma.smsLog.create({
           data: {
+            loanApplicationId: metadata.loanApplicationId || null,
+            userId: metadata.userId || null,
+            eventKey: metadata.eventKey || null,
+            templateId: metadata.templateId || null,
             recipientPhone: formattedPhone,
             message,
+            linkUsed: metadata.linkUsed || null,
+            status: 'DUPLICATE_SUPPRESSED',
             success: false,
             simulated: true,
-            error: errorDesc
+            error: errorDesc,
+            idempotencyKey: metadata.idempotencyKey || null
           }
         });
-        return { success: false, simulated: true, error: errorDesc };
+        return { success: false, simulated: true, error: errorDesc, status: 'DUPLICATE_SUPPRESSED' };
       }
     }
 
@@ -321,14 +458,21 @@ export class SmsService {
       this.logger.log(`📱 ${disabledMsg} | To: ${formattedPhone}`);
       await this.prisma.smsLog.create({
         data: {
+          loanApplicationId: metadata.loanApplicationId || null,
+          userId: metadata.userId || null,
+          eventKey: metadata.eventKey || null,
+          templateId: metadata.templateId || null,
           recipientPhone: formattedPhone,
           message,
+          linkUsed: metadata.linkUsed || null,
+          status: 'FAILED',
           simulated: true,
           success: false,
-          error: disabledMsg
+          error: disabledMsg,
+          idempotencyKey: metadata.idempotencyKey || null
         }
       });
-      return { success: false, simulated: true, error: disabledMsg };
+      return { success: false, simulated: true, error: disabledMsg, status: 'FAILED' };
     }
 
     const username = config.username;
@@ -340,13 +484,21 @@ export class SmsService {
       this.logger.log(`📱 [SMS SIMULATION] To: ${formattedPhone} | Text: "${message}"`);
       await this.prisma.smsLog.create({
         data: {
+          loanApplicationId: metadata.loanApplicationId || null,
+          userId: metadata.userId || null,
+          eventKey: metadata.eventKey || null,
+          templateId: metadata.templateId || null,
           recipientPhone: formattedPhone,
           message,
+          linkUsed: metadata.linkUsed || null,
+          status: 'SENT',
           simulated: true,
-          success: true
+          success: true,
+          sentAt: new Date(),
+          idempotencyKey: metadata.idempotencyKey || null
         }
       });
-      return { success: true, simulated: true };
+      return { success: true, simulated: true, status: 'SENT' };
     }
 
     try {
@@ -371,100 +523,272 @@ export class SmsService {
         const errText = await response.text();
         this.logger.error(`❌ [SMS GATEWAY ERROR] ${response.status}: ${errText}`);
         await this.prisma.smsLog.create({
-          data: { recipientPhone: formattedPhone, message, success: false, error: errText }
+          data: {
+            loanApplicationId: metadata.loanApplicationId || null,
+            userId: metadata.userId || null,
+            eventKey: metadata.eventKey || null,
+            templateId: metadata.templateId || null,
+            recipientPhone: formattedPhone,
+            message,
+            linkUsed: metadata.linkUsed || null,
+            status: 'FAILED',
+            success: false,
+            error: errText,
+            idempotencyKey: metadata.idempotencyKey || null
+          }
         });
-        return { success: false, error: errText };
+        return { success: false, error: errText, status: 'FAILED' };
       }
 
       const data = (await response.json()) as { id?: string };
       this.logger.log(`✅ [SMS SENT] Recipient: ${formattedPhone} | Gateway ID: ${data.id || 'N/A'}`);
 
       await this.prisma.smsLog.create({
-        data: { recipientPhone: formattedPhone, message, gatewayId: data.id || null, success: true }
+        data: {
+          loanApplicationId: metadata.loanApplicationId || null,
+          userId: metadata.userId || null,
+          eventKey: metadata.eventKey || null,
+          templateId: metadata.templateId || null,
+          recipientPhone: formattedPhone,
+          message,
+          linkUsed: metadata.linkUsed || null,
+          gatewayId: data.id || null,
+          status: 'SENT',
+          success: true,
+          sentAt: new Date(),
+          idempotencyKey: metadata.idempotencyKey || null
+        }
       });
 
-      return { success: true, gatewayId: data.id };
+      return { success: true, gatewayId: data.id, status: 'SENT' };
     } catch (err: any) {
       this.logger.error(`❌ [SMS EXCEPTION] ${err.message}`);
       await this.prisma.smsLog.create({
-        data: { recipientPhone: formattedPhone, message, success: false, error: err.message }
+        data: {
+          loanApplicationId: metadata.loanApplicationId || null,
+          userId: metadata.userId || null,
+          eventKey: metadata.eventKey || null,
+          templateId: metadata.templateId || null,
+          recipientPhone: formattedPhone,
+          message,
+          linkUsed: metadata.linkUsed || null,
+          status: 'FAILED',
+          success: false,
+          error: err.message,
+          idempotencyKey: metadata.idempotencyKey || null
+        }
       });
-      return { success: false, error: err.message };
+      return { success: false, error: err.message, status: 'FAILED' };
     }
   }
 
-  async sendTemplateSms(
-    templateKey: string,
-    recipientPhone: string,
-    variables: Record<string, string | number> = {},
-    ignoreSpamFilter: boolean = false
-  ): Promise<{ success: boolean; gatewayId?: string; simulated?: boolean; error?: string }> {
+  /** Render template body using active template and dynamic variables */
+  async renderTemplate(
+    eventKey: string,
+    contextData: {
+      loan?: any;
+      user?: any;
+      overrideVars?: Record<string, string | number>;
+    } = {}
+  ): Promise<{
+    template: any;
+    renderedMessage: string;
+    linkUsed: string;
+    unresolvedPlaceholders: string[];
+  }> {
+    let tpl = await this.prisma.smsTemplate.findUnique({ where: { key: eventKey } });
+
+    if (!tpl) {
+      const seedDef = DEFAULT_SMS_TEMPLATES.find(t => t.key === eventKey);
+      if (seedDef) {
+        try {
+          tpl = await this.prisma.smsTemplate.create({
+            data: {
+              key: seedDef.key,
+              title: seedDef.title,
+              category: seedDef.category,
+              description: seedDef.description,
+              body: seedDef.body,
+              variables: seedDef.variables,
+              supportedPlaceholders: seedDef.supportedPlaceholders
+            }
+          });
+        } catch {
+          tpl = seedDef as any;
+        }
+      }
+    }
+
+    if (!tpl) {
+      throw new BadRequestException(`SMS Template for event "${eventKey}" not found`);
+    }
+
+    const urls: PublicUrlsConfig = getPublicUrls();
+    const loan = contextData.loan || {};
+    const user = contextData.user || {};
+    const override = contextData.overrideVars || {};
+
+    const txRef = String(override.loanReference || loan.transactionRef || 'JL-000000');
+    const firstName = String(override.firstName || loan.fullName?.split(' ')[0] || user.fullName?.split(' ')[0] || 'Valued Customer');
+    const phoneNumber = String(override.phoneNumber || loan.phoneNumber || user.phoneNumber || '');
+    const loanAmountStr = Number(override.loanAmount || loan.amount || 25000).toLocaleString();
+    const allocatedAmountStr = Number(override.allocatedAmount || loan.allocatedBalance || loan.amount || 25000).toLocaleString();
+    const withdrawalFeeStr = Number(override.withdrawalFee || loan.withdrawalFee || 150).toLocaleString();
+    const repaymentAmountStr = Number(override.repaymentAmount || loan.repaymentAmount || loan.installmentAmount || 0).toLocaleString();
+    const statusStr = String(override.status || loan.status || 'Processing');
+    const rejectionReasonStr = String(override.rejectionReason || loan.allocationNotes || 'Details verification requirement');
+
+    const linksMap: Record<string, string> = {
+      applyLink: urls.apply,
+      trackLink: urls.track(txRef),
+      portalLink: urls.customerPortal,
+      supportLink: urls.support()
+    };
+
+    // Primary link used for log audit based on event category
+    let linkUsed = urls.track(txRef);
+    if (tpl.category === 'APPROVAL' || tpl.category === 'FUNDS' || tpl.category === 'WITHDRAWAL' || tpl.category === 'REMINDERS') {
+      linkUsed = urls.customerPortal;
+    } else if (tpl.category === 'SYSTEM') {
+      linkUsed = urls.apply;
+    } else if (tpl.category === 'SUPPORT') {
+      linkUsed = urls.support();
+    }
+
+    const dict: Record<string, string> = {
+      firstName,
+      phoneNumber,
+      loanReference: txRef,
+      loanAmount: loanAmountStr,
+      allocatedAmount: allocatedAmountStr,
+      withdrawalFee: withdrawalFeeStr,
+      repaymentAmount: repaymentAmountStr,
+      repaymentDate: 'in 30 days',
+      status: statusStr,
+      supportNumber: '0700000000',
+      businessName: 'Jijenge Loans',
+      applyLink: linksMap.applyLink,
+      trackLink: linksMap.trackLink,
+      portalLink: linksMap.portalLink,
+      supportLink: linksMap.supportLink,
+      rejectionReason: rejectionReasonStr,
+      ...Object.fromEntries(Object.entries(override).map(([k, v]) => [k, String(v)]))
+    };
+
+    let renderedMessage = tpl.body;
+    for (const [key, val] of Object.entries(dict)) {
+      renderedMessage = renderedMessage.replace(new RegExp(`\\{${key}\\}`, 'g'), val);
+    }
+
+    // Check for unresolved placeholders
+    const unresolvedMatches = renderedMessage.match(/\{[a-zA-Z0-9_]+\}/g) || [];
+    const unresolvedPlaceholders = Array.from(new Set(unresolvedMatches));
+
+    return {
+      template: tpl,
+      renderedMessage,
+      linkUsed,
+      unresolvedPlaceholders
+    };
+  }
+
+  /** Trigger notification event via Notification Engine */
+  async sendLoanEvent(dto: {
+    event: string;
+    applicationId?: string;
+    userId?: string;
+    phone?: string;
+    eventVersion?: number;
+    overrideVars?: Record<string, string | number>;
+    ignoreSpamFilter?: boolean;
+  }): Promise<{ success: boolean; gatewayId?: string; status?: string; error?: string; suppressed?: boolean }> {
     try {
-      let tpl = await this.prisma.smsTemplate.findUnique({ where: { key: templateKey } });
-      if (!tpl) {
-        const defaultDef = DEFAULT_SMS_TEMPLATES.find(t => t.key === templateKey);
-        if (defaultDef) {
-          tpl = await this.prisma.smsTemplate.create({ data: defaultDef });
-        }
+      const eventKey = dto.event;
+      let loan: any = null;
+      let user: any = null;
+
+      if (dto.applicationId) {
+        loan = await this.prisma.loanApplication.findUnique({ where: { id: dto.applicationId } });
       }
 
-      if (!tpl) {
-        return this.sendSms(recipientPhone, `Notification from Jijenge Loans: ${JSON.stringify(variables)}`, ignoreSpamFilter);
+      if (dto.userId) {
+        user = await this.prisma.user.findUnique({ where: { id: dto.userId } });
+      } else if (loan?.userId) {
+        user = await this.prisma.user.findUnique({ where: { id: loan.userId } });
       }
 
-      if (tpl.active === false) {
-        this.logger.log(`⏸️ [SMS TEMPLATE DISABLED] Template "${templateKey}" is turned OFF. Skipping dispatch to ${recipientPhone}.`);
-        return { success: false, error: `SMS template "${templateKey}" is disabled.` };
+      const recipientPhone = dto.phone || loan?.phoneNumber || user?.phoneNumber;
+      if (!recipientPhone) {
+        this.logger.warn(`⚠️ [NOTIFICATION SKIPPED] No recipient phone for event "${eventKey}"`);
+        return { success: false, error: 'Recipient phone number is missing' };
       }
 
-      let messageText = tpl.body;
-      for (const [k, v] of Object.entries(variables)) {
-        messageText = messageText.replace(new RegExp(`\\{${k}\\}`, 'g'), String(v));
+      // Render Active Template
+      const { template, renderedMessage, linkUsed, unresolvedPlaceholders } = await this.renderTemplate(eventKey, {
+        loan,
+        user,
+        overrideVars: dto.overrideVars
+      });
+
+      if (!template.active) {
+        this.logger.log(`⏸️ [SMS TEMPLATE INACTIVE] Event template "${eventKey}" is disabled.`);
+        return { success: false, error: `SMS template "${eventKey}" is currently disabled.` };
       }
 
-      return this.sendSms(recipientPhone, messageText, ignoreSpamFilter);
+      if (unresolvedPlaceholders.length > 0) {
+        const err = `Unresolved placeholders detected: ${unresolvedPlaceholders.join(', ')}`;
+        this.logger.error(`❌ [SMS VALIDATION ERROR] ${err} for template ${eventKey}`);
+        await this.prisma.smsLog.create({
+          data: {
+            loanApplicationId: dto.applicationId || null,
+            userId: dto.userId || null,
+            eventKey,
+            templateId: template.id,
+            recipientPhone,
+            message: renderedMessage,
+            linkUsed,
+            status: 'FAILED',
+            success: false,
+            error: err
+          }
+        });
+        return { success: false, error: err, status: 'FAILED' };
+      }
+
+      // Generate unique Idempotency Key
+      const version = dto.eventVersion || 1;
+      const idempotencyKey = dto.applicationId ? `${dto.applicationId}_${eventKey}_v${version}` : undefined;
+
+      return this.sendSms(recipientPhone, renderedMessage, dto.ignoreSpamFilter ?? true, {
+        loanApplicationId: dto.applicationId,
+        userId: dto.userId || loan?.userId,
+        eventKey,
+        templateId: template.id,
+        linkUsed,
+        idempotencyKey
+      });
     } catch (err: any) {
-      this.logger.error(`Failed to send template SMS (${templateKey}) via DB query: ${err?.message}`);
-      const defaultDef = DEFAULT_SMS_TEMPLATES.find(t => t.key === templateKey);
-      if (defaultDef) {
-        let messageText = defaultDef.body;
-        for (const [k, v] of Object.entries(variables)) {
-          messageText = messageText.replace(new RegExp(`\\{${k}\\}`, 'g'), String(v));
-        }
-        return this.sendSms(recipientPhone, messageText, ignoreSpamFilter);
-      }
+      this.logger.error(`Failed to send loan event SMS (${dto.event}): ${err?.message}`, err.stack);
       return { success: false, error: err?.message };
     }
   }
 
+  /** Trigger status-gated SMS on loan application status changes */
   async triggerStatusSms(loan: any, status: LoanStatus | string) {
     if (!loan || !loan.phoneNumber) return;
     const rawStatus = String(status || '').trim();
-    const normalizedStatus = rawStatus.replace(/\s+/g, '_');
-    const templateKey = STATUS_TEMPLATE_MAP[rawStatus] || STATUS_TEMPLATE_MAP[normalizedStatus];
-    if (!templateKey) return;
+    const eventKey = STATUS_TO_EVENT_KEY[rawStatus] || STATUS_TO_EVENT_KEY[rawStatus.replace(/\s+/g, '_')];
+    if (!eventKey) return;
 
-    const amountStr = Number(loan.amount || 0).toLocaleString();
-    const feeStr = Number(loan.processingFee || loan.fee || 450).toLocaleString();
-    const instStr = Number(loan.installmentAmount || Math.round((loan.amount * 1.05) / 4)).toLocaleString();
-    const freqStr = loan.repaymentFrequency || 'Weekly';
-
-    return this.sendTemplateSms(
-      templateKey,
-      loan.phoneNumber,
-      {
-        fullName: loan.fullName || 'Valued Customer',
-        packageName: loan.packageName || 'Jijenge Loan',
-        amount: amountStr,
-        txRef: loan.transactionRef || '',
-        processingFee: feeStr,
-        installmentAmount: instStr,
-        repaymentFrequency: freqStr
-      },
-      true // Bypass anti-spam filter for critical stage notifications
-    );
+    return this.sendLoanEvent({
+      event: eventKey,
+      applicationId: loan.id,
+      userId: loan.userId,
+      phone: loan.phoneNumber
+    });
   }
 
+  /** Run automated reminder checks */
   async triggerReminders(): Promise<{ success: boolean; processed24hCount: number; processed7dCount: number }> {
     let processed24hCount = 0;
     let processed7dCount = 0;
@@ -483,32 +807,34 @@ export class SmsService {
       });
 
       for (const loan of pending24hLoans) {
-        const res = await this.sendTemplateSms('REMINDER_24H', loan.phoneNumber, {
-          fullName: loan.fullName || 'Valued Customer',
-          txRef: loan.transactionRef,
-          amount: Number(loan.amount || 0).toLocaleString()
+        const res = await this.sendLoanEvent({
+          event: 'APPLICATION_REMINDER',
+          applicationId: loan.id,
+          userId: loan.userId,
+          phone: loan.phoneNumber
         });
-        if (res.success || res.simulated) processed24hCount++;
+        if (res.success) processed24hCount++;
       }
 
-      // 2. 7-Day Repayment Reminders
+      // 2. 7-Day Unwithdrawn / Repayment Reminders
       const sevenDaysAgoMin = new Date(Date.now() - (7 * 24 + 12) * 60 * 60 * 1000);
       const sevenDaysAgoMax = new Date(Date.now() - (7 * 24 - 12) * 60 * 60 * 1000);
 
       const active7dLoans = await this.prisma.loanApplication.findMany({
         where: {
           updatedAt: { gte: sevenDaysAgoMin, lte: sevenDaysAgoMax },
-          status: { in: [LoanStatus.Disbursed, LoanStatus.Approved] }
+          status: { in: [LoanStatus.Approved] }
         }
       });
 
       for (const loan of active7dLoans) {
-        const res = await this.sendTemplateSms('REMINDER_7D', loan.phoneNumber, {
-          fullName: loan.fullName || 'Valued Customer',
-          txRef: loan.transactionRef,
-          amount: Number(loan.installmentAmount || loan.amount || 0).toLocaleString()
+        const res = await this.sendLoanEvent({
+          event: 'WITHDRAWAL_REMINDER',
+          applicationId: loan.id,
+          userId: loan.userId,
+          phone: loan.phoneNumber
         });
-        if (res.success || res.simulated) processed7dCount++;
+        if (res.success) processed7dCount++;
       }
 
       return { success: true, processed24hCount, processed7dCount };
@@ -518,15 +844,39 @@ export class SmsService {
     }
   }
 
+  /** Seed standard sensible default templates */
+  async seedDefaultSmsTemplates() {
+    for (const seed of DEFAULT_SMS_TEMPLATES) {
+      try {
+        await this.prisma.smsTemplate.upsert({
+          where: { key: seed.key },
+          create: {
+            key: seed.key,
+            title: seed.title,
+            category: seed.category,
+            description: seed.description,
+            body: seed.body,
+            variables: seed.variables,
+            supportedPlaceholders: seed.supportedPlaceholders
+          },
+          update: {
+            title: seed.title,
+            category: seed.category,
+            description: seed.description,
+            supportedPlaceholders: seed.supportedPlaceholders
+          }
+        });
+      } catch { /* ignored */ }
+    }
+    return this.getSmsTemplates();
+  }
+
+  /** Retrieve all SMS templates with default seeding fallback */
   async getSmsTemplates() {
     try {
       let items = await this.prisma.smsTemplate.findMany({ orderBy: { key: 'asc' } });
       if (!items || items.length === 0) {
-        for (const seed of DEFAULT_SMS_TEMPLATES) {
-          try {
-            await this.prisma.smsTemplate.create({ data: seed });
-          } catch { /* ignored fallback */ }
-        }
+        await this.seedDefaultSmsTemplates();
         items = await this.prisma.smsTemplate.findMany({ orderBy: { key: 'asc' } });
       }
       return { success: true, items };
@@ -536,20 +886,18 @@ export class SmsService {
     }
   }
 
-  async seedDefaultSmsTemplates() {
-    for (const seed of DEFAULT_SMS_TEMPLATES) {
-      try {
-        await this.prisma.smsTemplate.upsert({
-          where: { key: seed.key },
-          create: seed,
-          update: { title: seed.title }
-        });
-      } catch { /* ignored */ }
-    }
-    return this.getSmsTemplates();
-  }
-
-  async upsertSmsTemplate(body: { key: string; title: string; body: string; variables?: string[] }) {
+  /** Create or update an SMS template */
+  async upsertSmsTemplate(body: {
+    key: string;
+    title: string;
+    body: string;
+    category?: string;
+    description?: string;
+    notes?: string;
+    variables?: string[];
+    supportedPlaceholders?: string[];
+    adminEmail?: string;
+  }) {
     const key = String(body.key || '').trim().toUpperCase();
     if (!key) throw new Error('Template key is required');
 
@@ -558,27 +906,35 @@ export class SmsService {
       create: {
         key,
         title: body.title || key,
+        category: body.category || 'APPLICATION',
+        description: body.description || '',
+        notes: body.notes || '',
         body: body.body || '',
-        variables: body.variables || []
+        variables: body.variables || [],
+        supportedPlaceholders: body.supportedPlaceholders || body.variables || [],
+        updatedBy: body.adminEmail || 'admin'
       },
       update: {
         title: body.title,
+        category: body.category,
+        description: body.description,
+        notes: body.notes,
         body: body.body,
-        variables: body.variables || []
+        variables: body.variables || [],
+        supportedPlaceholders: body.supportedPlaceholders || body.variables || [],
+        updatedBy: body.adminEmail || 'admin'
       }
     });
 
     return { success: true, item: template };
   }
 
+  /** Toggle SMS template active status */
   async toggleSmsTemplate(idOrKey: string, active: boolean) {
     try {
       const template = await this.prisma.smsTemplate.findFirst({
         where: {
-          OR: [
-            { id: idOrKey },
-            { key: idOrKey }
-          ]
+          OR: [{ id: idOrKey }, { key: idOrKey }]
         }
       });
 
@@ -596,5 +952,36 @@ export class SmsService {
       this.logger.error(`Error toggling SMS template ${idOrKey}: ${e?.message}`);
       return { success: true, item: { id: idOrKey, key: idOrKey, active } };
     }
+  }
+
+  /** Safe Template Preview Generator for Admin */
+  async previewTemplate(
+    key: string,
+    sampleValues: Record<string, string> = {}
+  ): Promise<{
+    renderedMessage: string;
+    charCount: number;
+    segmentCount: number;
+    isUnicode: boolean;
+    placeholdersUsed: string[];
+    unresolvedPlaceholders: string[];
+  }> {
+    const { renderedMessage, unresolvedPlaceholders } = await this.renderTemplate(key, {
+      overrideVars: sampleValues
+    });
+
+    const metrics = calculateSmsSegments(renderedMessage);
+
+    const matches = renderedMessage.match(/\{[a-zA-Z0-9_]+\}/g) || [];
+    const placeholdersUsed = Array.from(new Set(matches));
+
+    return {
+      renderedMessage,
+      charCount: metrics.charCount,
+      segmentCount: metrics.segmentCount,
+      isUnicode: metrics.isUnicode,
+      placeholdersUsed,
+      unresolvedPlaceholders
+    };
   }
 }
