@@ -2220,7 +2220,7 @@ export const AdminDashboardModal: React.FC<AdminDashboardProps> = ({ onClose }) 
              MODULE 6: Support Centre
              ════════════════════════════════════════════════════════ */}
           {activeTab === 'support' && (
-            <div style={{ display: 'grid', gridTemplateColumns: '300px 1fr', gap: 0, background: '#fff', border: '1px solid #e2e8f0', borderRadius: '14px', overflow: 'hidden', boxShadow: '0 1px 3px rgba(0,0,0,0.03)', minHeight: '520px' }}>
+            <div className="support-chat-split" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: 0, background: '#fff', border: '1px solid #e2e8f0', borderRadius: '14px', overflow: 'hidden', boxShadow: '0 1px 3px rgba(0,0,0,0.03)', minHeight: '520px' }}>
               <div style={{ borderRight: '1px solid #e2e8f0', overflowY: 'auto' }}>
                 <div style={{ padding: '1rem 1.15rem', borderBottom: '1px solid #f1f5f9' }}>
                   <h3 style={{ margin: '0 0 0.1rem', fontSize: '0.9rem', fontWeight: 800, color: '#0f172a' }}>Customer Tickets</h3>
@@ -2331,7 +2331,7 @@ export const AdminDashboardModal: React.FC<AdminDashboardProps> = ({ onClose }) 
                 </div>
 
                 <form onSubmit={handleSaveSmsGatewayConfig}>
-                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.25rem', marginBottom: '1.25rem' }}>
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '1.25rem', marginBottom: '1.25rem' }}>
                     <div>
                       <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 700, color: '#475569', marginBottom: '6px' }}>
                         Gateway Base URL
@@ -2360,7 +2360,7 @@ export const AdminDashboardModal: React.FC<AdminDashboardProps> = ({ onClose }) 
                     </div>
                   </div>
 
-                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '1.25rem', marginBottom: '1.25rem' }}>
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '1.25rem', marginBottom: '1.25rem' }}>
                     <div>
                       <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 700, color: '#475569', marginBottom: '6px' }}>
                         Password / API Secret
@@ -2541,7 +2541,7 @@ export const AdminDashboardModal: React.FC<AdminDashboardProps> = ({ onClose }) 
               </div>
 
               {/* Send SMS Console & Templates Row */}
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 340px', gap: '1.25rem', marginBottom: '1.5rem', alignItems: 'start' }}>
+              <div className="sms-console-row" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '1.25rem', marginBottom: '1.5rem', alignItems: 'start' }}>
                 
                 {/* Send SMS Form */}
                 <div style={{ background: '#fff', border: '1px solid #e2e8f0', borderRadius: '14px', padding: '1.5rem', boxShadow: '0 1px 3px rgba(0,0,0,0.03)' }}>
@@ -2787,7 +2787,7 @@ export const AdminDashboardModal: React.FC<AdminDashboardProps> = ({ onClose }) 
                 </div>
 
                 <form onSubmit={handleSaveSystemSettings}>
-                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.25rem', marginBottom: '1.25rem' }}>
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '1.25rem', marginBottom: '1.25rem' }}>
                     {/* Phone Number */}
                     <div>
                       <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 700, color: '#475569', marginBottom: '6px' }}>
@@ -2819,7 +2819,7 @@ export const AdminDashboardModal: React.FC<AdminDashboardProps> = ({ onClose }) 
                     </div>
                   </div>
 
-                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.25rem', marginBottom: '1.25rem' }}>
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '1.25rem', marginBottom: '1.25rem' }}>
                     {/* WhatsApp Support Number */}
                     <div>
                       <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 700, color: '#16a34a', marginBottom: '6px' }}>

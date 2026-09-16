@@ -3059,3 +3059,53 @@ html, body, #root {
   }
 }
 
+/* 7. Universal Font Scaling, Accessibility & Screen Readability Safety */
+body, h1, h2, h3, h4, h5, h6, p, span, label, th, td, button, input, select, textarea {
+  overflow-wrap: break-word;
+  word-break: normal;
+}
+
+/* Prevent fixed-width overflows on flex and grid children under high zoom */
+.admin-card,
+.admin-table-container,
+.tab-pane,
+.page-container,
+.site-wrapper {
+  max-width: 100% !important;
+  box-sizing: border-box !important;
+}
+
+/* Adaptive multi-column grid utilities for forms & cards */
+.responsive-grid-auto-2col {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 1.25rem;
+}
+
+.responsive-grid-auto-3col {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 1.25rem;
+}
+
+/* Tablet & Mobile Stack Overrides */
+@media (max-width: 860px) {
+  .support-chat-split {
+    grid-template-columns: 1fr !important;
+    min-height: auto !important;
+  }
+  .sms-console-row {
+    grid-template-columns: 1fr !important;
+  }
+}
+
+@media (max-width: 640px) {
+  .admin-table-scroll table {
+    font-size: 0.78rem !important;
+  }
+  .admin-table th, .admin-table td {
+    padding: 0.55rem 0.65rem !important;
+  }
+}
+
+
