@@ -20,6 +20,8 @@ export const SYSTEM_PLACEHOLDERS = [
   'loanReference',
   'loanAmount',
   'allocatedAmount',
+  'processingFee',
+  'feeAmount',
   'withdrawalFee',
   'repaymentAmount',
   'repaymentDate',
@@ -66,9 +68,9 @@ export const DEFAULT_SMS_TEMPLATES: SmsTemplateDef[] = [
     title: 'Processing Payment Required',
     category: 'PAYMENT',
     description: 'Triggered when an application requires processing fee payment to proceed.',
-    body: 'Hi {firstName}, your Jijenge Loans application {loanReference} requires the applicable processing payment before the next stage. Please review and continue securely through your portal: {portalLink} {businessName}',
-    variables: ['firstName', 'loanReference', 'portalLink', 'businessName'],
-    supportedPlaceholders: ['firstName', 'loanReference', 'portalLink', 'businessName', 'withdrawalFee']
+    body: 'Hi {firstName}, your Jijenge Loans application {loanReference} requires a processing fee payment of KES {processingFee} before proceeding to the next stage. Please review and continue securely through your portal: {portalLink} {businessName}',
+    variables: ['firstName', 'loanReference', 'processingFee', 'portalLink', 'businessName'],
+    supportedPlaceholders: ['firstName', 'loanReference', 'processingFee', 'feeAmount', 'portalLink', 'businessName', 'withdrawalFee']
   },
   {
     key: 'PAYMENT_PENDING',
@@ -633,6 +635,8 @@ export class SmsService {
     const phoneNumber = String(override.phoneNumber || loan.phoneNumber || user.phoneNumber || '');
     const loanAmountStr = Number(override.loanAmount || loan.amount || 25000).toLocaleString();
     const allocatedAmountStr = Number(override.allocatedAmount || loan.allocatedBalance || loan.amount || 25000).toLocaleString();
+    const processingFeeNum = Number(override.processingFee || override.feeAmount || loan.processingFee || loan.feeAmount || 450);
+    const processingFeeStr = processingFeeNum.toLocaleString();
     const withdrawalFeeStr = Number(override.withdrawalFee || loan.withdrawalFee || 150).toLocaleString();
     const repaymentAmountStr = Number(override.repaymentAmount || loan.repaymentAmount || loan.installmentAmount || 0).toLocaleString();
     const statusStr = String(override.status || loan.status || 'Processing');
@@ -661,6 +665,8 @@ export class SmsService {
       loanReference: txRef,
       loanAmount: loanAmountStr,
       allocatedAmount: allocatedAmountStr,
+      processingFee: processingFeeStr,
+      feeAmount: processingFeeStr,
       withdrawalFee: withdrawalFeeStr,
       repaymentAmount: repaymentAmountStr,
       repaymentDate: 'in 30 days',
@@ -863,7 +869,9 @@ export class SmsService {
             title: seed.title,
             category: seed.category,
             description: seed.description,
-            supportedPlaceholders: seed.supportedPlaceholders
+            variables: seed.variables,
+            supportedPlaceholders: seed.supportedPlaceholders,
+            ...(seed.key === 'PAYMENT_REQUIRED' ? { body: seed.body } : {})
           }
         });
       } catch { /* ignored */ }

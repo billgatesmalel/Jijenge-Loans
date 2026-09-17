@@ -167,6 +167,8 @@ export const AdminDashboardModal: React.FC<AdminDashboardProps> = ({ onClose }) 
     loanReference: 'JL-89F3A12',
     loanAmount: '25,000',
     allocatedAmount: '25,000',
+    processingFee: '450',
+    feeAmount: '450',
     withdrawalFee: '500',
     repaymentAmount: '26,250',
     status: 'Approved',
@@ -3425,9 +3427,9 @@ export const AdminDashboardModal: React.FC<AdminDashboardProps> = ({ onClose }) 
                 </div>
                 <div style={{ display: 'flex', gap: '0.35rem', flexWrap: 'wrap' }}>
                   {[
-                    'firstName', 'loanReference', 'loanAmount', 'allocatedAmount', 'withdrawalFee',
-                    'repaymentAmount', 'status', 'applyLink', 'trackLink', 'portalLink', 'supportLink',
-                    'businessName', 'rejectionReason'
+                    'firstName', 'loanReference', 'loanAmount', 'allocatedAmount', 'processingFee',
+                    'withdrawalFee', 'repaymentAmount', 'status', 'applyLink', 'trackLink',
+                    'portalLink', 'supportLink', 'businessName', 'rejectionReason'
                   ].map(ph => (
                     <button
                       key={ph}
@@ -3486,6 +3488,8 @@ export const AdminDashboardModal: React.FC<AdminDashboardProps> = ({ onClose }) 
                     .replace(/\{loanReference\}/g, previewSampleValues.loanReference || 'JL-89F3A12')
                     .replace(/\{loanAmount\}/g, previewSampleValues.loanAmount || '25,000')
                     .replace(/\{allocatedAmount\}/g, previewSampleValues.allocatedAmount || '25,000')
+                    .replace(/\{processingFee\}/g, previewSampleValues.processingFee || '450')
+                    .replace(/\{feeAmount\}/g, previewSampleValues.processingFee || '450')
                     .replace(/\{withdrawalFee\}/g, previewSampleValues.withdrawalFee || '500')
                     .replace(/\{repaymentAmount\}/g, previewSampleValues.repaymentAmount || '26,250')
                     .replace(/\{status\}/g, previewSampleValues.status || 'Approved')
@@ -3532,6 +3536,8 @@ export const AdminDashboardModal: React.FC<AdminDashboardProps> = ({ onClose }) 
                 .replace(/\{loanReference\}/g, previewSampleValues.loanReference || 'JL-89F3A12')
                 .replace(/\{loanAmount\}/g, previewSampleValues.loanAmount || '25,000')
                 .replace(/\{allocatedAmount\}/g, previewSampleValues.allocatedAmount || '25,000')
+                .replace(/\{processingFee\}/g, previewSampleValues.processingFee || '450')
+                .replace(/\{feeAmount\}/g, previewSampleValues.processingFee || '450')
                 .replace(/\{withdrawalFee\}/g, previewSampleValues.withdrawalFee || '500')
                 .replace(/\{repaymentAmount\}/g, previewSampleValues.repaymentAmount || '26,250')
                 .replace(/\{status\}/g, previewSampleValues.status || 'Approved')
