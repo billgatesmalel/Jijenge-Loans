@@ -15,13 +15,17 @@ export interface PublicUrlsConfig {
 }
 
 export function getPublicUrls(overrideBaseUrl?: string): PublicUrlsConfig {
-  const rawBase =
+  let rawBase =
     overrideBaseUrl ||
     process.env.FRONTEND_URL ||
     process.env.PUBLIC_APP_URL ||
-    process.env.RENDER_EXTERNAL_URL ||
+    process.env.VERCEL_URL ||
     process.env.APP_URL ||
     'https://jijengeloans.vercel.app';
+
+  if (!rawBase.startsWith('http://') && !rawBase.startsWith('https://')) {
+    rawBase = `https://${rawBase}`;
+  }
 
   const baseUrl = rawBase.replace(/\/$/, '');
 
