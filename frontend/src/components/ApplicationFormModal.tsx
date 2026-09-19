@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { calculateProcessingFee } from '../lib/shared';
 import { apiFetch } from '../lib/api';
+import StkPushModal from './StkPushModal';
 
 interface ApplicationFormModalProps {
   onTabChange: (tabId: string) => void;
@@ -65,6 +66,7 @@ export const ApplicationFormModal: React.FC<ApplicationFormModalProps> = ({ onTa
   const [stkSent, setStkSent] = useState(false);
   const [stkMessage, setStkMessage] = useState('');
   const [stkError, setStkError] = useState('');
+  const [stkModalOpen, setStkModalOpen] = useState(false);
 
   // Unfinished Application Detection State
   const [unfinishedModalOpen, setUnfinishedModalOpen] = useState(false);
@@ -107,7 +109,9 @@ export const ApplicationFormModal: React.FC<ApplicationFormModalProps> = ({ onTa
         setCheckoutOpen(true);
         setCheckoutStage(2);
         setStkSent(true);
+        setStkModalOpen(true);
         setStkMessage(`STK Push prompt sent to ${d.loan.phoneNumber} for KES ${(d.loan.amount || 25000).toLocaleString()}. Please enter your M-Pesa PIN.`);
+        startPollingForPayment();
       } else {
         alert(d.message || 'Failed to resume application');
       }
@@ -469,6 +473,7 @@ export const ApplicationFormModal: React.FC<ApplicationFormModalProps> = ({ onTa
     setStkLoading(true);
     setStkMessage('');
     setStkError('');
+    setStkModalOpen(true);
 
     try {
       const targetPhone = loanOffer.phoneNumber || phoneNumber;
@@ -518,6 +523,7 @@ export const ApplicationFormModal: React.FC<ApplicationFormModalProps> = ({ onTa
             clearInterval(intervalId);
             setCheckoutStage(3);
             setStkLoading(false);
+            setStkModalOpen(false);
           } else if (data.loan.feeStatus === 'Failed' || data.loan.status === 'Payment_Failed') {
             clearInterval(intervalId);
             setStkError(data.loan.feeResultDesc || data.loan.resultDesc || 'M-Pesa STK Push prompt was cancelled or failed on your phone. Please click below to retry.');
@@ -1316,6 +1322,18 @@ export const ApplicationFormModal: React.FC<ApplicationFormModalProps> = ({ onTa
           </div>
         </div>
       )}
+
+      {/* ══ STK PUSH LOADING MODAL ══ */}
+      <StkPushModal
+        isOpen={stkModalOpen}
+        phoneNumber={loanOffer?.phoneNumber || phoneNumber}
+        amount={loanOffer?.processingFee || 450}
+        transactionRef={loanOffer?.transactionRef}
+        loading={stkLoading}
+        error={stkError}
+        onRetry={sendStkPush}
+        onClose={() => setStkModalOpen(false)}
+      />
     </>
   );
 };

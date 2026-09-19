@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Search, X, AlertCircle, CreditCard, ShieldCheck } from 'lucide-react';
 import { apiFetch } from '../lib/api';
+import StkPushModal from './StkPushModal';
 
 interface TrackLoanViewProps {
   onTabChange?: (tabId: string) => void;
@@ -18,6 +19,8 @@ export const TrackLoanView: React.FC<TrackLoanViewProps> = () => {
   const [paymentLoading, setPaymentLoading] = useState(false);
   const [paymentMessage, setPaymentMessage] = useState('');
   const [paymentError, setPaymentError] = useState('');
+  const [stkModalOpen, setStkModalOpen] = useState(false);
+
 
   // Status polling for active/pending loans
   useEffect(() => {
@@ -32,6 +35,7 @@ export const TrackLoanView: React.FC<TrackLoanViewProps> = () => {
             setLoan(data.loan);
             if (data.loan.feeStatus === 'Paid') {
               clearInterval(intervalId);
+              setStkModalOpen(false);
             }
           }
         } catch (e) {
@@ -79,6 +83,7 @@ export const TrackLoanView: React.FC<TrackLoanViewProps> = () => {
     setPaymentLoading(true);
     setPaymentMessage('');
     setPaymentError('');
+    setStkModalOpen(true);
 
     try {
       const res = await apiFetch('/api/payments/stkpush', {
@@ -348,6 +353,18 @@ export const TrackLoanView: React.FC<TrackLoanViewProps> = () => {
           )}
         </div>
       )}
+
+      {/* ══ STK PUSH LOADING MODAL ══ */}
+      <StkPushModal
+        isOpen={stkModalOpen}
+        phoneNumber={loan?.phoneNumber || ''}
+        amount={loan?.processingFee || 450}
+        transactionRef={loan?.transactionRef}
+        loading={paymentLoading}
+        error={paymentError}
+        onRetry={triggerPayment}
+        onClose={() => setStkModalOpen(false)}
+      />
     </div>
   );
 };
