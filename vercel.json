@@ -6,6 +6,18 @@
   },
   "rewrites": [
     {
+      "source": "/palpluss-callback",
+      "destination": "https://jijenge-loans-backend.onrender.com/api/webhooks/mpesa"
+    },
+    {
+      "source": "/api/palpluss-callback",
+      "destination": "https://jijenge-loans-backend.onrender.com/api/webhooks/mpesa"
+    },
+    {
+      "source": "/webhooks/mpesa",
+      "destination": "https://jijenge-loans-backend.onrender.com/api/webhooks/mpesa"
+    },
+    {
       "source": "/api/:path*",
       "destination": "https://jijenge-loans-backend.onrender.com/api/:path*"
     }

@@ -1,4 +1,4 @@
-import { Controller, Post, Get, Body, Param, Query, Headers } from '@nestjs/common';
+import { Controller, Post, Get, All, Body, Param, Query, Headers } from '@nestjs/common';
 import { ApiTags, ApiOperation } from '@nestjs/swagger';
 import { PaymentsService } from './payments.service';
 
@@ -22,7 +22,7 @@ export class PaymentsController {
   }
 
   @ApiOperation({ summary: 'PalPluss M-Pesa Callback Webhook Endpoint' })
-  @Post('webhooks/mpesa')
+  @All(['webhooks/mpesa', 'palpluss-callback', 'api/palpluss-callback', 'api/webhooks/mpesa', 'mpesa'])
   async handleMpesaWebhook(
     @Body() body: any,
     @Query('secret') secretQuery?: string,

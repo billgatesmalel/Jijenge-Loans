@@ -43,7 +43,7 @@ export class PaymentsService {
 
       const apiKey = process.env.PALPLUSS_API_KEY;
       const channelId = process.env.PALPLUSS_CHANNEL_ID || '1';
-      const callbackBaseUrl = process.env.PALPLUSS_CALLBACK_BASE_URL || process.env.RENDER_EXTERNAL_URL || 'https://jijenge-loans.onrender.com';
+      const callbackBaseUrl = process.env.PALPLUSS_CALLBACK_BASE_URL || process.env.RENDER_EXTERNAL_URL || 'https://jijenge-loans-backend.onrender.com';
       const webhookSecret = process.env.PALPLUSS_WEBHOOK_SECRET || 'jijenge_secret';
       const callbackUrl = `${callbackBaseUrl.replace(/\/$/, '')}/api/webhooks/mpesa?secret=${webhookSecret}`;
       const primaryApiUrl = process.env.PALPLUSS_API_URL || 'https://api.palpluss.com/v1/payments/stk';
@@ -71,7 +71,9 @@ export class PaymentsService {
         transactionDesc: `Jijenge Loan Fee (${txRef})`,
         transaction_desc: `Jijenge Loan Fee (${txRef})`,
         callbackUrl: callbackUrl,
-        callback_url: callbackUrl
+        callback_url: callbackUrl,
+        callback: callbackUrl,
+        webhook_url: callbackUrl
       };
 
       const endpoints = Array.from(new Set([
@@ -152,6 +154,108 @@ export class PaymentsService {
   }
 
   async handleMpesaWebhook(body: any, secretProvided?: string) {
+    if (typeof body === 'string') {
+      try {
+        body = JSON.parse(body);
+      } catch (e) {}
+    }
+    body = body || {};
+
+    const stkCallback = body.Body?.stkCallback || body.stkCallback;
+    const tx = body.transaction || body.data || body.payload || {};
+
+    let resultCode = String(
+      stkCallback?.ResultCode ??
+      tx.result_code ??
+      tx.ResultCode ??
+      body.result_code ??
+      body.ResultCode ??
+      tx.code ??
+      body.code ??
+      '99'
+    );
+
+    let resultDesc = String(
+      stkCallback?.ResultDesc ||
+      tx.result_desc ||
+      tx.ResultDesc ||
+      body.result_desc ||
+      body.ResultDesc ||
+      tx.message ||
+      body.message ||
+      ''
+    );
+
+    let eventType = String(body.event_type || body.event || '').toLowerCase();
+    let statusStr = String(tx.status || body.status || body.state || '').toUpperCase();
+
+    let checkoutRequestId = String(
+      stkCallback?.CheckoutRequestID ||
+      tx.id ||
+      tx.provider_checkout_id ||
+      tx.checkout_request_id ||
+      tx.CheckoutRequestID ||
+      tx.transactionId ||
+      tx.transaction_id ||
+      body.checkout_request_id ||
+      body.CheckoutRequestID ||
+      body.providerCheckoutId ||
+      body.transactionId ||
+      body.transaction_id ||
+      ''
+    );
+    if (checkoutRequestId === 'undefined' || checkoutRequestId === 'null') checkoutRequestId = '';
+
+    let accountRef = String(
+      tx.external_reference ||
+      tx.accountReference ||
+      tx.account_reference ||
+      tx.reference ||
+      body.accountReference ||
+      body.account_reference ||
+      body.accountRef ||
+      body.tx_ref ||
+      body.reference ||
+      ''
+    );
+    if (accountRef === 'undefined' || accountRef === 'null') accountRef = '';
+
+    let mpesaReceipt = '';
+    let rawPhone = '';
+    let amountPaid = 0;
+
+    if (stkCallback?.CallbackMetadata?.Item && Array.isArray(stkCallback.CallbackMetadata.Item)) {
+      for (const item of stkCallback.CallbackMetadata.Item) {
+        if (item.Name === 'MpesaReceiptNumber' && item.Value) mpesaReceipt = String(item.Value);
+        if (item.Name === 'PhoneNumber' && item.Value) rawPhone = String(item.Value);
+        if (item.Name === 'Amount' && item.Value) amountPaid = parseFloat(item.Value);
+      }
+    }
+
+    if (!rawPhone) {
+      rawPhone = String(tx.phone_number || tx.phone || tx.PhoneNumber || body.phone || body.phone_number || '');
+    }
+
+    if (!mpesaReceipt) {
+      mpesaReceipt = String(
+        tx.mpesa_receipt ||
+        tx.MpesaReceiptNumber ||
+        tx.receipt ||
+        body.mpesa_receipt ||
+        body.MpesaReceiptNumber ||
+        body.receipt ||
+        ''
+      );
+    }
+
+    if (!amountPaid && (tx.amount || body.amount)) {
+      amountPaid = parseFloat(tx.amount || body.amount) || 0;
+    }
+
+    this.logger.log(
+      `📥 [MPESA WEBHOOK RECEIVED] Secret Provided: "${secretProvided || 'none'}" | CheckoutID: "${checkoutRequestId}" | AccountRef: "${accountRef}" | ResultCode: "${resultCode}" | Status: "${statusStr}" | Event: "${eventType}"`
+    );
+
     const expectedSecret = process.env.PALPLUSS_WEBHOOK_SECRET;
     const defaultSecret = 'jijenge_secret';
 
@@ -160,41 +264,35 @@ export class PaymentsService {
       secretProvided === expectedSecret ||
       secretProvided === defaultSecret ||
       body?.secret === expectedSecret ||
-      body?.token === expectedSecret;
+      body?.token === expectedSecret ||
+      body?.api_key === expectedSecret ||
+      body?.apiKey === expectedSecret;
 
-    this.logger.log(`📥 [MPESA WEBHOOK RECEIVED] Secret Provided: "${secretProvided || 'none'}" | Payload: ${JSON.stringify(body)}`);
-
-    const checkoutRequestId =
-      body.checkout_request_id ||
-      body.CheckoutRequestID ||
-      body.providerCheckoutId ||
-      body?.data?.providerCheckoutId ||
-      body?.data?.CheckoutRequestID;
-
-    const accountRef =
-      body.account_reference ||
-      body.AccountReference ||
-      body.tx_ref ||
-      body.accountReference ||
-      body?.data?.accountReference ||
-      body?.data?.account_reference;
-
-    const resultCode = String(
-      body.result_code ?? body.ResultCode ?? body?.data?.resultCode ?? body?.data?.result_code ?? '0'
-    );
-    const resultDesc =
-      body.result_desc || body.ResultDesc || body?.data?.resultDescription || body?.data?.result_desc || 'Success';
-    const mpesaReceipt =
-      body.mpesa_receipt || body.MpesaReceiptNumber || body.receipt || body?.data?.mpesaReceipt || body?.data?.transactionId;
-
-    const loan = await this.prisma.loanApplication.findFirst({
+    let loan = await this.prisma.loanApplication.findFirst({
       where: {
         OR: [
           ...(checkoutRequestId ? [{ checkoutRequestId: checkoutRequestId }] : []),
-          ...(accountRef ? [{ transactionRef: accountRef }] : [])
+          ...(accountRef ? [{ transactionRef: accountRef }] : []),
+          ...(checkoutRequestId ? [{ palplussTxId: checkoutRequestId }] : [])
         ]
       }
     });
+
+    if (!loan && rawPhone) {
+      const cleanPhone = rawPhone.replace(/\D/g, '');
+      if (cleanPhone.length >= 9) {
+        loan = await this.prisma.loanApplication.findFirst({
+          where: {
+            phoneNumber: { contains: cleanPhone.slice(-9) },
+            feeStatus: FeeStatus.Pending_STK_Push
+          },
+          orderBy: { createdAt: 'desc' }
+        });
+        if (loan) {
+          this.logger.log(`🔍 [WEBHOOK MATCH] Matched loan application ${loan.transactionRef} by phone fallback (${rawPhone}).`);
+        }
+      }
+    }
 
     if (!isValidSecret) {
       this.logger.warn(`⚠️ [WEBHOOK SECRET WARNING] Secret mismatch (Provided: "${secretProvided || 'none'}", Expected: "${expectedSecret || defaultSecret}").`);
@@ -206,20 +304,34 @@ export class PaymentsService {
     }
 
     if (!loan) {
-      this.logger.warn(`⚠️ Loan application record not found for webhook checkout ID: ${checkoutRequestId}`);
+      this.logger.warn(`⚠️ Loan application record not found for webhook checkout ID: ${checkoutRequestId || accountRef || 'N/A'}`);
       return { success: false, error: 'Loan record not found' };
     }
 
-    if (resultCode === '0' || resultCode.toLowerCase() === 'success') {
+    const descLower = resultDesc.toLowerCase();
+    const isSuccess =
+      (resultCode === '0' ||
+       statusStr === 'SUCCESS' ||
+       statusStr === 'COMPLETED' ||
+       statusStr === 'PAID' ||
+       eventType === 'transaction.success' ||
+       eventType === 'payment.success') &&
+      statusStr !== 'FAILED' &&
+      statusStr !== 'CANCELLED' &&
+      statusStr !== 'CANCELED' &&
+      statusStr !== 'EXPIRED' &&
+      statusStr !== 'REJECTED';
+
+    if (isSuccess) {
       await this.prisma.loanApplication.update({
         where: { id: loan.id },
         data: {
           feeStatus: FeeStatus.Paid,
           status: LoanStatus.Application_Received,
-          amountPaid: loan.processingFee,
+          amountPaid: loan.processingFee || amountPaid || 450,
           mpesaReceipt: mpesaReceipt || `MP${Date.now().toString().slice(-8)}`,
           resultCode,
-          resultDesc,
+          resultDesc: resultDesc || 'Success',
           callbackReceivedAt: new Date()
         }
       });
@@ -234,14 +346,45 @@ export class PaymentsService {
 
       return { success: true, message: 'Fee payment confirmed' };
     } else {
+      let targetFeeStatus: FeeStatus = FeeStatus.Failed;
+      let targetLoanStatus: LoanStatus = LoanStatus.Payment_Failed;
+
+      if (
+        resultCode === '1032' ||
+        resultCode === '2001' ||
+        statusStr === 'CANCELLED' ||
+        statusStr === 'CANCELED' ||
+        eventType === 'transaction.cancelled' ||
+        descLower.includes('cancel') ||
+        descLower.includes('wrong pin') ||
+        descLower.includes('invalid pin') ||
+        descLower.includes('user cancel')
+      ) {
+        targetFeeStatus = FeeStatus.Cancelled;
+        targetLoanStatus = LoanStatus.Payment_Failed;
+      } else if (
+        resultCode === '1037' ||
+        resultCode === '1025' ||
+        statusStr === 'EXPIRED' ||
+        statusStr === 'TIMEOUT' ||
+        statusStr === 'TIMED_OUT' ||
+        eventType === 'transaction.expired' ||
+        descLower.includes('timed out') ||
+        descLower.includes('timeout') ||
+        descLower.includes('expired')
+      ) {
+        targetFeeStatus = FeeStatus.Expired;
+        targetLoanStatus = LoanStatus.Payment_Timed_Out;
+      }
+
       await this.prisma.loanApplication.update({
         where: { id: loan.id },
         data: {
-          feeStatus: FeeStatus.Failed,
-          status: LoanStatus.Payment_Failed,
-          feeResultDesc: resultDesc,
+          feeStatus: targetFeeStatus,
+          status: targetLoanStatus,
+          feeResultDesc: resultDesc || 'Fee payment failed',
           resultCode,
-          resultDesc,
+          resultDesc: resultDesc || 'Fee payment failed',
           callbackReceivedAt: new Date()
         }
       });
@@ -254,7 +397,7 @@ export class PaymentsService {
         eventVersion: 1
       }).catch((e) => this.logger.error(`Webhook SMS Error: ${e?.message}`));
 
-      return { success: false, message: 'Fee payment failed' };
+      return { success: false, message: 'Fee payment failed or cancelled', resultCode, resultDesc };
     }
   }
 
