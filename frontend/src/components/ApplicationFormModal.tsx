@@ -1131,7 +1131,6 @@ export const ApplicationFormModal: React.FC<ApplicationFormModalProps> = ({ onTa
                       setStkError('');
                       setStkSent(false);
                       setCheckoutStage(2);
-                      sendStkPush();
                     }}
                   >
                     Confirm &amp; Proceed to Payment &rarr;
