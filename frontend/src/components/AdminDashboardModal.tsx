@@ -1947,7 +1947,6 @@ export const AdminDashboardModal: React.FC<AdminDashboardProps> = ({ onClose }) 
                         <th style={{ width: '40px', textAlign: 'center' }}>
                           <input type="checkbox" checked={selectedAppIds.length === pagedApplications.length && pagedApplications.length > 0} onChange={handleToggleSelectAllApps} style={{ cursor: 'pointer' }} />
                         </th>
-                        <th>Reference</th>
                         <th>Applicant</th>
                         <th>Phone</th>
                         <th>National ID</th>
@@ -1955,13 +1954,13 @@ export const AdminDashboardModal: React.FC<AdminDashboardProps> = ({ onClose }) 
                         <th>Allocated</th>
                         <th>Fee Status</th>
                         <th>Status</th>
-                        <th>Actions</th>
+                        <th>Manage Profile</th>
                       </tr>
                     </thead>
                     <tbody>
                       {dataLoading ? (
                         Array.from({ length: 4 }).map((_, i) => (
-                          <tr key={i}><td colSpan={10} style={{ padding: '1.25rem', textAlign: 'center', color: '#94a3b8' }}>Loading applications registry...</td></tr>
+                          <tr key={i}><td colSpan={9} style={{ padding: '1.25rem', textAlign: 'center', color: '#94a3b8' }}>Loading applications registry...</td></tr>
                         ))
                       ) : pagedApplications.length > 0 ? pagedApplications.map((app: any) => {
                         const sc = statusBadge(app.status);
@@ -1972,7 +1971,6 @@ export const AdminDashboardModal: React.FC<AdminDashboardProps> = ({ onClose }) 
                             <td style={{ textAlign: 'center' }}>
                               <input type="checkbox" checked={isSelected} onChange={() => handleToggleSelectApp(app.id)} style={{ cursor: 'pointer' }} />
                             </td>
-                            <td style={{ fontFamily: 'monospace', fontWeight: 700, color: '#0f172a' }}>{app.transactionRef}</td>
                             <td style={{ fontWeight: 600, color: '#0f172a' }}>{app.fullName}</td>
                             <td style={{ color: '#475569' }}>{app.phoneNumber}</td>
                             <td style={{ color: '#475569' }}>{app.nationalId}</td>
@@ -1985,15 +1983,15 @@ export const AdminDashboardModal: React.FC<AdminDashboardProps> = ({ onClose }) 
                               <span style={{ padding: '3px 9px', borderRadius: '9999px', fontSize: '0.75rem', fontWeight: 700, color: sc.color, background: sc.bg, border: `1px solid ${sc.border}` }}>{sc.label}</span>
                             </td>
                             <td>
-                              <button className="admin-btn admin-btn-secondary" onClick={() => { setSelectedApp(app); setAllocateAmount(String(app.amount)); setNewStatus(app.status); }}>
-                                <Sliders size={13} /> Manage
+                              <button className="admin-btn admin-btn-secondary" onClick={() => { setSelectedApp(app); setAllocateAmount(String(app.amount)); setNewStatus(app.status); }} style={{ display: 'flex', alignItems: 'center', gap: '0.35rem', fontSize: '0.78rem' }}>
+                                <Sliders size={13} /> Manage Profile
                               </button>
                             </td>
                           </tr>
                         );
                       }) : (
                         <tr>
-                          <td colSpan={10} style={{ padding: '3rem', textAlign: 'center' }}>
+                          <td colSpan={9} style={{ padding: '3rem', textAlign: 'center' }}>
                             <Info size={32} style={{ color: '#cbd5e1', marginBottom: '0.5rem' }} />
                             <div style={{ fontWeight: 700, color: '#64748b' }}>No Applications Found</div>
                           </td>
@@ -2727,14 +2725,12 @@ export const AdminDashboardModal: React.FC<AdminDashboardProps> = ({ onClose }) 
                   <table className="admin-table">
                     <thead>
                       <tr>
-                        <th>Checkout ID</th>
                         <th>Applicant</th>
                         <th>Phone</th>
                         <th>Amount</th>
                         <th>Gateway</th>
                         <th>Status</th>
-                        <th>Callback Desc</th>
-                        <th>Actions</th>
+                        <th>Manage Profile</th>
                       </tr>
                     </thead>
                     <tbody>
@@ -2743,7 +2739,6 @@ export const AdminDashboardModal: React.FC<AdminDashboardProps> = ({ onClose }) 
                         const isGravity = pay.gatewayProvider === 'GRAVITYPAY';
                         return (
                           <tr key={pay.id}>
-                            <td style={{ fontFamily: 'monospace', fontSize: '0.78rem', color: '#64748b' }}>{pay.checkoutRequestId || '—'}</td>
                             <td style={{ fontWeight: 600, color: '#0f172a' }}>{pay.fullName}</td>
                             <td style={{ color: '#475569' }}>{pay.phoneNumber}</td>
                             <td style={{ fontWeight: 700, color: '#0f172a' }}>KES {Number(pay.processingFee || 450).toLocaleString()}</td>
@@ -2765,18 +2760,23 @@ export const AdminDashboardModal: React.FC<AdminDashboardProps> = ({ onClose }) 
                             <td>
                               <span style={{ padding: '3px 9px', borderRadius: '9999px', fontSize: '0.75rem', fontWeight: 700, color: fc.color, background: fc.bg }}>{fc.label}</span>
                             </td>
-                            <td style={{ color: '#64748b', fontSize: '0.8rem' }}>{pay.feeResultDesc || pay.resultDesc || 'Waiting for M-Pesa response...'}</td>
                             <td>
-                              {pay.feeStatus !== 'Paid' && (
-                                <button className="admin-btn admin-btn-primary" onClick={() => handleSimulateStkPush(pay.phoneNumber, pay.processingFee || 450, pay.transactionRef)} disabled={actionLoading}>
-                                  Retry STK
-                                </button>
-                              )}
+                              <button
+                                className="admin-btn admin-btn-secondary"
+                                onClick={() => {
+                                  setSelectedApp(pay);
+                                  setAllocateAmount(String(pay.amount));
+                                  setNewStatus(pay.status);
+                                }}
+                                style={{ display: 'flex', alignItems: 'center', gap: '0.35rem', fontSize: '0.78rem' }}
+                              >
+                                <Sliders size={13} /> Manage Profile
+                              </button>
                             </td>
                           </tr>
                         );
                       }) : (
-                        <tr><td colSpan={8} style={{ padding: '2rem', textAlign: 'center', color: '#94a3b8' }}>No M-Pesa transactions found.</td></tr>
+                        <tr><td colSpan={6} style={{ padding: '2rem', textAlign: 'center', color: '#94a3b8' }}>No M-Pesa transactions found.</td></tr>
                       )}
                     </tbody>
                   </table>
@@ -3844,7 +3844,7 @@ export const AdminDashboardModal: React.FC<AdminDashboardProps> = ({ onClose }) 
           <div className="admin-drawer" style={{ position: 'fixed', right: 0, top: 0, bottom: 0, width: '400px', background: '#fff', borderLeft: '1px solid #e2e8f0', boxShadow: '-8px 0 32px rgba(0,0,0,0.1)', zIndex: 99, display: 'flex', flexDirection: 'column' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '1.25rem 1.5rem', borderBottom: '1px solid #f1f5f9', position: 'sticky', top: 0, background: '#fff' }}>
               <div>
-                <h3 style={{ margin: '0 0 0.15rem', fontSize: '1rem', fontWeight: 800, color: '#0f172a' }}>Manage Application</h3>
+                <h3 style={{ margin: '0 0 0.15rem', fontSize: '1rem', fontWeight: 800, color: '#0f172a' }}>Manage Profile &amp; Application</h3>
                 <p style={{ margin: 0, fontSize: '0.72rem', color: '#64748b', fontFamily: 'monospace' }}>Ref: {selectedApp.transactionRef}</p>
               </div>
               <button onClick={() => setSelectedApp(null)} style={{ background: '#f1f5f9', border: 'none', borderRadius: '8px', cursor: 'pointer', padding: '0.5rem', display: 'flex', color: '#475569' }}>
@@ -3862,6 +3862,57 @@ export const AdminDashboardModal: React.FC<AdminDashboardProps> = ({ onClose }) 
                   <div><span style={{ color: '#94a3b8', display: 'block' }}>Allocated Balance</span><span style={{ fontWeight: 800, color: '#065f46' }}>KES {selectedApp.allocatedBalance.toLocaleString()}</span></div>
                   <div><span style={{ color: '#94a3b8', display: 'block' }}>Fee Status</span><span style={{ fontWeight: 700 }}>{selectedApp.feeStatus}</span></div>
                   <div><span style={{ color: '#94a3b8', display: 'block' }}>Status Step</span><span style={{ fontWeight: 700 }}>{selectedApp.status}</span></div>
+                </div>
+              </div>
+
+              {/* Payment Channel & STK Details Card */}
+              <div style={{ background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: '12px', padding: '1.1rem', marginBottom: '1.25rem' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.75rem' }}>
+                  <h4 style={{ margin: 0, fontSize: '0.78rem', fontWeight: 800, color: '#0f172a', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+                    💳 Payment Channel &amp; STK Details
+                  </h4>
+                  <span
+                    style={{
+                      padding: '2px 8px',
+                      borderRadius: '6px',
+                      fontSize: '0.72rem',
+                      fontWeight: 800,
+                      background: selectedApp.gatewayProvider === 'GRAVITYPAY' ? '#F3E8FF' : '#ECFDF5',
+                      color: selectedApp.gatewayProvider === 'GRAVITYPAY' ? '#7E22CE' : '#047857',
+                      border: `1px solid ${selectedApp.gatewayProvider === 'GRAVITYPAY' ? '#D8B4FE' : '#A7F3D0'}`,
+                    }}
+                  >
+                    {selectedApp.gatewayProvider === 'GRAVITYPAY' ? '⚡ GravityPay' : '💳 Palplus'}
+                  </span>
+                </div>
+
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: '0.55rem', fontSize: '0.8rem' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', borderBottom: '1px dashed #e2e8f0', paddingBottom: '0.35rem' }}>
+                    <span style={{ color: '#64748b' }}>Loan Ref:</span>
+                    <span style={{ fontWeight: 700, fontFamily: 'monospace', color: '#0f172a' }}>{selectedApp.transactionRef}</span>
+                  </div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', borderBottom: '1px dashed #e2e8f0', paddingBottom: '0.35rem' }}>
+                    <span style={{ color: '#64748b' }}>Checkout ID:</span>
+                    <span style={{ fontWeight: 600, fontFamily: 'monospace', color: '#1e293b', maxWidth: '210px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }} title={selectedApp.checkoutRequestId || '—'}>
+                      {selectedApp.checkoutRequestId || '—'}
+                    </span>
+                  </div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', borderBottom: '1px dashed #e2e8f0', paddingBottom: '0.35rem' }}>
+                    <span style={{ color: '#64748b' }}>Processing Fee:</span>
+                    <span style={{ fontWeight: 700, color: '#0f172a' }}>KES {Number(selectedApp.processingFee || 450).toLocaleString()}</span>
+                  </div>
+                  {selectedApp.mpesaReceipt && (
+                    <div style={{ display: 'flex', justifyContent: 'space-between', borderBottom: '1px dashed #e2e8f0', paddingBottom: '0.35rem' }}>
+                      <span style={{ color: '#64748b' }}>M-Pesa Receipt:</span>
+                      <span style={{ fontWeight: 700, fontFamily: 'monospace', color: '#16a34a' }}>{selectedApp.mpesaReceipt}</span>
+                    </div>
+                  )}
+                  <div style={{ paddingTop: '0.2rem' }}>
+                    <span style={{ color: '#64748b', display: 'block', fontSize: '0.75rem', marginBottom: '0.25rem' }}>Callback Desc:</span>
+                    <div style={{ background: '#ffffff', border: '1px solid #e2e8f0', borderRadius: '6px', padding: '0.45rem 0.6rem', color: '#334155', fontSize: '0.76rem', lineHeight: '1.35' }}>
+                      {selectedApp.feeResultDesc || selectedApp.resultDesc || 'Waiting for M-Pesa response...'}
+                    </div>
+                  </div>
                 </div>
               </div>
 
@@ -3923,11 +3974,33 @@ export const AdminDashboardModal: React.FC<AdminDashboardProps> = ({ onClose }) 
               </div>
 
               <div style={{ border: '1px solid #e2e8f0', borderRadius: '12px', padding: '1.15rem', marginTop: '1rem' }}>
-                <h4 style={{ margin: '0 0 0.75rem', fontSize: '0.8rem', fontWeight: 700, color: '#3b82f6', textTransform: 'uppercase' }}>⚡ STK &amp; Application Reset Controls</h4>
+                <h4 style={{ margin: '0 0 0.75rem', fontSize: '0.8rem', fontWeight: 700, color: '#3b82f6', textTransform: 'uppercase' }}>⚡ STK &amp; Application Actions</h4>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                  <button
+                    onClick={() => handleSimulateStkPush(selectedApp.phoneNumber, selectedApp.processingFee || 450, selectedApp.transactionRef)}
+                    disabled={actionLoading}
+                    style={{
+                      width: '100%',
+                      padding: '0.65rem',
+                      background: '#FF6600',
+                      color: '#fff',
+                      border: 'none',
+                      borderRadius: '8px',
+                      cursor: 'pointer',
+                      fontWeight: 700,
+                      fontSize: '0.82rem',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      gap: '0.4rem',
+                      boxShadow: '0 2px 6px rgba(255, 102, 0, 0.25)',
+                    }}
+                  >
+                    ⚡ Retry STK Push Prompt
+                  </button>
                   <button onClick={() => handleRetriggerStkAdmin(selectedApp.id)} disabled={actionLoading}
                     style={{ width: '100%', padding: '0.6rem', background: '#3b82f6', color: '#fff', border: 'none', borderRadius: '8px', cursor: 'pointer', fontWeight: 700, fontSize: '0.82rem' }}>
-                    ⚡ Re-trigger STK Push Prompt
+                    📡 Re-trigger STK + Customer SMS Notice
                   </button>
                   <button onClick={() => handleResetAppAdmin(selectedApp.id)} disabled={actionLoading}
                     style={{ width: '100%', padding: '0.6rem', background: '#f1f5f9', color: '#ef4444', border: '1px solid #fecaca', borderRadius: '8px', cursor: 'pointer', fontWeight: 700, fontSize: '0.82rem' }}>
