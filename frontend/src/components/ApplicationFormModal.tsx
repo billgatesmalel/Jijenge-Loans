@@ -516,20 +516,24 @@ export const ApplicationFormModal: React.FC<ApplicationFormModalProps> = ({ onTa
     if (!loanOffer) return;
     const intervalId = setInterval(async () => {
       try {
-        const res = await apiFetch(`/api/loans/track/${loanOffer.transactionRef}`);
+        const res = await apiFetch(`/api/payments/status/${loanOffer.transactionRef}`);
         const data = await res.json();
-        if (data.success && data.loan) {
-          if (data.loan.feeStatus === 'Paid') {
-            clearInterval(intervalId);
-            setCheckoutStage(3);
-            setStkLoading(false);
-            setStkModalOpen(false);
-          } else if (data.loan.feeStatus === 'Failed' || data.loan.status === 'Payment_Failed') {
-            clearInterval(intervalId);
-            setStkError(data.loan.feeResultDesc || data.loan.resultDesc || 'M-Pesa STK Push prompt was cancelled or failed on your phone. Please click below to retry.');
-            setStkSent(false);
-            setStkLoading(false);
-          }
+        if (data.feeStatus === 'Paid' || data.status === 'Application_Received' || data.mpesaReceipt) {
+          clearInterval(intervalId);
+          setCheckoutStage(3);
+          setStkLoading(false);
+          setStkModalOpen(false);
+        } else if (
+          data.feeStatus === 'Failed' ||
+          data.feeStatus === 'Cancelled' ||
+          data.status === 'Payment_Failed' ||
+          data.feeStatus === 'Expired' ||
+          data.status === 'Payment_Timed_Out'
+        ) {
+          clearInterval(intervalId);
+          setStkError(data.feeResultDesc || data.resultDesc || 'Request timed out or cancelled on device');
+          setStkSent(false);
+          setStkLoading(false);
         }
       } catch (err) {
         console.error('Payment polling error:', err);
@@ -539,11 +543,11 @@ export const ApplicationFormModal: React.FC<ApplicationFormModalProps> = ({ onTa
     setTimeout(() => {
       clearInterval(intervalId);
       if (checkoutStage === 2 && !stkError) {
-        setStkError('Payment confirmation timed out. If you entered your PIN, check status via Track Loan or click Retry below.');
+        setStkError('Request timed out or cancelled on device');
         setStkSent(false);
         setStkLoading(false);
       }
-    }, 90000);
+    }, 60000);
   };
 
   return (
@@ -1330,6 +1334,11 @@ export const ApplicationFormModal: React.FC<ApplicationFormModalProps> = ({ onTa
         transactionRef={loanOffer?.transactionRef}
         loading={stkLoading}
         error={stkError}
+        onSuccess={() => {
+          setCheckoutStage(3);
+          setStkLoading(false);
+          setStkModalOpen(false);
+        }}
         onRetry={sendStkPush}
         onClose={() => setStkModalOpen(false)}
       />

@@ -1,6 +1,7 @@
 import { Injectable, NotFoundException, Logger, BadRequestException, InternalServerErrorException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { SmsService } from '../sms/sms.service';
+import { PaymentsService } from '../payments/payments.service';
 import { LoanStatus, FeeStatus, WithdrawalStatus } from '@prisma/client';
 
 @Injectable()
@@ -9,7 +10,8 @@ export class AdminService {
 
   constructor(
     private readonly prisma: PrismaService,
-    private readonly smsService: SmsService
+    private readonly smsService: SmsService,
+    private readonly paymentsService: PaymentsService
   ) {}
 
   async getAnalytics() {
@@ -664,6 +666,44 @@ export class AdminService {
           action: 'TEST_SMS_GATEWAY',
           target: phone,
           metadata: `Success: ${res.success}, GatewayId: ${res.gatewayId || 'N/A'}, Error: ${res.error || 'None'}`
+        }
+      });
+    } catch { /* audit log error ignored */ }
+    return res;
+  }
+
+  async getPaymentGatewayConfig() {
+    return this.paymentsService.getGatewayConfig();
+  }
+
+  async savePaymentGatewayConfig(data: any, adminEmail: string) {
+    const res = await this.paymentsService.updateGatewayConfig(data);
+    try {
+      await this.prisma.auditLog.create({
+        data: {
+          adminEmail: String(adminEmail || 'admin@jijengeloans.co.ke'),
+          action: 'UPDATE_PAYMENT_GATEWAY_CONFIG',
+          target: 'PAYMENT_GATEWAY',
+          metadata: JSON.stringify({
+            activeGateway: res.activeGateway,
+            hasGravityPayKey: !!data.gravityPayPublicKey,
+            hasPalplussKey: !!data.palplussApiKey
+          })
+        }
+      });
+    } catch { /* audit log error ignored */ }
+    return res;
+  }
+
+  async switchPaymentGateway(gateway: 'PALPLUSS' | 'GRAVITYPAY', adminEmail: string) {
+    const res = await this.paymentsService.switchGateway(gateway);
+    try {
+      await this.prisma.auditLog.create({
+        data: {
+          adminEmail: String(adminEmail || 'admin@jijengeloans.co.ke'),
+          action: 'SWITCH_PAYMENT_GATEWAY',
+          target: gateway,
+          metadata: `Active Gateway switched to: ${gateway}`
         }
       });
     } catch { /* audit log error ignored */ }

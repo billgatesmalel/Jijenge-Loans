@@ -5,7 +5,7 @@ import {
   CheckCircle, XCircle, Clock, Sliders, AlertCircle, X, ChevronLeft,
   ChevronRight, Send, ArrowUpRight, TrendingUp, Activity, Shield,
   Plus, Edit, Trash2, Check, Smartphone, CheckSquare, Sparkles, HelpCircle, Info,
-  User, Menu, ClipboardList, Eye, EyeOff, Server, Key
+  User, Menu, ClipboardList, Eye, EyeOff, Server, Key, Copy
 } from 'lucide-react';
 
 import { updateLocalSupportSettings, getCachedSupportSettings } from '../lib/supportSettings';
@@ -196,6 +196,25 @@ export const AdminDashboardModal: React.FC<AdminDashboardProps> = ({ onClose }) 
   const [settingsHours, setSettingsHours] = useState(() => getCachedSupportSettings().supportHours);
   const [settingsAddress, setSettingsAddress] = useState(() => getCachedSupportSettings().headquartersAddress);
 
+  // Payment Gateway Configuration State (Palplus & GravityPay)
+  const [activePaymentGateway, setActivePaymentGateway] = useState<'PALPLUSS' | 'GRAVITYPAY'>('PALPLUSS');
+  const [gravityPayPublicKey, setGravityPayPublicKey] = useState('');
+  const [gravityPaySecretKey, setGravityPaySecretKey] = useState('');
+  const [showGravitySecret, setShowGravitySecret] = useState(false);
+  const [gravityPayWebhookSecret, setGravityPayWebhookSecret] = useState('');
+  const [palplussApiKey, setPalplussApiKey] = useState('');
+  const [showPalplussApiKey, setShowPalplussApiKey] = useState(false);
+  const [palplussChannelId, setPalplussChannelId] = useState('1');
+  const [palplussWebhookSecret, setPalplussWebhookSecret] = useState('');
+  const [gatewayCallbackBaseUrl, setGatewayCallbackBaseUrl] = useState('');
+  const [gravityPayCallbackUrl, setGravityPayCallbackUrl] = useState('');
+  const [palplussCallbackUrl, setPalplussCallbackUrl] = useState('');
+  const [unifiedCallbackUrl, setUnifiedCallbackUrl] = useState('');
+  const [gatewaySaving, setGatewaySaving] = useState(false);
+  const [gatewaySavedMsg, setGatewaySavedMsg] = useState('');
+  const [gatewayErrorMsg, setGatewayErrorMsg] = useState('');
+  const [copiedUrlKey, setCopiedUrlKey] = useState<string | null>(null);
+
   // Layout UI
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [profileOpen, setProfileOpen] = useState(false);
@@ -270,7 +289,7 @@ export const AdminDashboardModal: React.FC<AdminDashboardProps> = ({ onClose }) 
   const fetchAllAdminData = async (token: string) => {
     setDataLoading(true);
     try {
-      const [appRes, anaRes, tickRes, custRes, payRes, bracRes, smsLRes, smsTRes, setRes, withdRes, smsGwRes] = await Promise.all([
+      const [appRes, anaRes, tickRes, custRes, payRes, bracRes, smsLRes, smsTRes, setRes, withdRes, smsGwRes, payGwRes] = await Promise.all([
         apiFetch('/api/admin/applications', { headers: { Authorization: `Bearer ${token}` } }),
         apiFetch('/api/admin/analytics', { headers: { Authorization: `Bearer ${token}` } }),
         apiFetch('/api/admin/support-tickets', { headers: { Authorization: `Bearer ${token}` } }),
@@ -282,6 +301,7 @@ export const AdminDashboardModal: React.FC<AdminDashboardProps> = ({ onClose }) 
         apiFetch('/api/support/settings'),
         apiFetch('/api/admin/withdrawals', { headers: { Authorization: `Bearer ${token}` } }),
         apiFetch('/api/admin/sms-gateway', { headers: { Authorization: `Bearer ${token}` } }),
+        apiFetch('/api/admin/payment-gateway', { headers: { Authorization: `Bearer ${token}` } }),
       ]);
 
       if (appRes.status === 401 || bracRes.status === 401 || custRes.status === 401) {
@@ -317,6 +337,22 @@ export const AdminDashboardModal: React.FC<AdminDashboardProps> = ({ onClose }) 
           if (d.settings.supportHours) setSettingsHours(d.settings.supportHours);
           if (d.settings.headquartersAddress) setSettingsAddress(d.settings.headquartersAddress);
           updateLocalSupportSettings(d.settings);
+        }
+      }
+      if (payGwRes && payGwRes.ok) {
+        const d = await payGwRes.json();
+        if (d.success) {
+          setActivePaymentGateway(d.activeGateway || 'PALPLUSS');
+          setGravityPayPublicKey(d.gravityPay?.publicKey || '');
+          setGravityPaySecretKey(d.gravityPay?.rawSecretKey || '');
+          setGravityPayWebhookSecret(d.gravityPay?.webhookSecret || '');
+          setPalplussApiKey(d.palpluss?.rawApiKey || '');
+          setPalplussChannelId(d.palpluss?.channelId || '1');
+          setPalplussWebhookSecret(d.palpluss?.webhookSecret || '');
+          setGatewayCallbackBaseUrl(d.callbackBackendBaseUrl || '');
+          setGravityPayCallbackUrl(d.gravityPay?.callbackUrl || '');
+          setPalplussCallbackUrl(d.palpluss?.callbackUrl || '');
+          setUnifiedCallbackUrl(d.unifiedCallbackUrl || '');
         }
       }
     } catch (e) {
@@ -392,6 +428,81 @@ export const AdminDashboardModal: React.FC<AdminDashboardProps> = ({ onClose }) 
     } finally {
       setSmsGatewayTesting(false);
     }
+  };
+
+  const handleSavePaymentGatewayConfig = async (e?: React.FormEvent) => {
+    if (e) e.preventDefault();
+    const token = getAdminToken();
+    if (!token) return;
+    setGatewaySaving(true);
+    setGatewaySavedMsg('');
+    setGatewayErrorMsg('');
+    try {
+      const res = await apiFetch('/api/admin/payment-gateway', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        body: JSON.stringify({
+          activeGateway: activePaymentGateway,
+          gravityPayPublicKey,
+          gravityPaySecretKey,
+          gravityPayWebhookSecret,
+          palplussApiKey,
+          palplussChannelId,
+          palplussWebhookSecret,
+          callbackBackendBaseUrl: gatewayCallbackBaseUrl
+        })
+      });
+      const d = await res.json();
+      if (res.ok && d.success) {
+        setGatewaySavedMsg('Payment Gateway credentials and settings updated in database!');
+        if (d.gravityPay?.callbackUrl) setGravityPayCallbackUrl(d.gravityPay.callbackUrl);
+        if (d.palpluss?.callbackUrl) setPalplussCallbackUrl(d.palpluss.callbackUrl);
+        if (d.unifiedCallbackUrl) setUnifiedCallbackUrl(d.unifiedCallbackUrl);
+        showToast('Payment Gateway settings saved successfully!');
+        setTimeout(() => setGatewaySavedMsg(''), 4000);
+      } else {
+        setGatewayErrorMsg(d.message || 'Failed to update payment gateway config');
+      }
+    } catch (err: any) {
+      setGatewayErrorMsg(err.message || 'Network error saving gateway config');
+    } finally {
+      setGatewaySaving(false);
+    }
+  };
+
+  const handleQuickSwitchGateway = async (gateway: 'PALPLUSS' | 'GRAVITYPAY') => {
+    setActivePaymentGateway(gateway);
+    const token = getAdminToken();
+    if (!token) return;
+    setGatewaySaving(true);
+    setGatewaySavedMsg('');
+    setGatewayErrorMsg('');
+    try {
+      const res = await apiFetch('/api/admin/payment-gateway/switch', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ gateway })
+      });
+      const d = await res.json();
+      if (res.ok && d.success) {
+        setGatewaySavedMsg(`Active Gateway switched to ${gateway === 'GRAVITYPAY' ? 'GravityPay' : 'Palplus'} without server restart!`);
+        showToast(`Active Gateway switched to ${gateway === 'GRAVITYPAY' ? 'GravityPay' : 'Palplus'}`);
+        setTimeout(() => setGatewaySavedMsg(''), 4000);
+      } else {
+        setGatewayErrorMsg(d.message || 'Failed to switch active gateway');
+      }
+    } catch (err: any) {
+      setGatewayErrorMsg(err.message || 'Error switching gateway');
+    } finally {
+      setGatewaySaving(false);
+    }
+  };
+
+  const copyToClipboard = (text: string, key: string) => {
+    navigator.clipboard.writeText(text);
+    setCopiedUrlKey(key);
+    showToast('Webhook URL copied to clipboard!');
+    setTimeout(() => setCopiedUrlKey(null), 2500);
   };
 
   const handleSaveSystemSettings = async (e: React.FormEvent) => {
@@ -2021,22 +2132,593 @@ export const AdminDashboardModal: React.FC<AdminDashboardProps> = ({ onClose }) 
              ════════════════════════════════════════════════════════ */}
           {activeTab === 'payments' && (
             <div>
-              {/* Payment Gateway Health Indicators */}
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginBottom: '1.25rem' }}>
+              {/* Payment Gateway Health & Active State */}
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: '1rem', marginBottom: '1.25rem' }}>
+                <div
+                  className="admin-card"
+                  style={{
+                    padding: '1.1rem 1.25rem',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
+                    border: activePaymentGateway === 'PALPLUSS' ? '2px solid #10b981' : '1px solid #e2e8f0',
+                    background: activePaymentGateway === 'PALPLUSS' ? '#f0fdf4' : '#ffffff',
+                  }}
+                >
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                    <div style={{ width: '12px', height: '12px', background: '#10b981', borderRadius: '50%', flexShrink: 0 }} />
+                    <div>
+                      <div style={{ fontWeight: 700, fontSize: '0.9rem', color: '#0f172a' }}>Palplus STK Gateway</div>
+                      <div style={{ fontSize: '0.75rem', color: '#64748b' }}>Endpoint: api.palpluss.com</div>
+                    </div>
+                  </div>
+                  <span
+                    style={{
+                      padding: '3px 8px',
+                      borderRadius: '9999px',
+                      fontSize: '0.72rem',
+                      fontWeight: 800,
+                      background: activePaymentGateway === 'PALPLUSS' ? '#10b981' : '#f1f5f9',
+                      color: activePaymentGateway === 'PALPLUSS' ? '#ffffff' : '#64748b',
+                    }}
+                  >
+                    {activePaymentGateway === 'PALPLUSS' ? 'ACTIVE' : 'STANDBY'}
+                  </span>
+                </div>
+
+                <div
+                  className="admin-card"
+                  style={{
+                    padding: '1.1rem 1.25rem',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
+                    border: activePaymentGateway === 'GRAVITYPAY' ? '2px solid #8b5cf6' : '1px solid #e2e8f0',
+                    background: activePaymentGateway === 'GRAVITYPAY' ? '#faf5ff' : '#ffffff',
+                  }}
+                >
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                    <div style={{ width: '12px', height: '12px', background: '#8b5cf6', borderRadius: '50%', flexShrink: 0 }} />
+                    <div>
+                      <div style={{ fontWeight: 700, fontSize: '0.9rem', color: '#0f172a' }}>GravityPay STK Gateway</div>
+                      <div style={{ fontSize: '0.75rem', color: '#64748b' }}>Endpoint: api.gravitypayapp.com</div>
+                    </div>
+                  </div>
+                  <span
+                    style={{
+                      padding: '3px 8px',
+                      borderRadius: '9999px',
+                      fontSize: '0.72rem',
+                      fontWeight: 800,
+                      background: activePaymentGateway === 'GRAVITYPAY' ? '#8b5cf6' : '#f1f5f9',
+                      color: activePaymentGateway === 'GRAVITYPAY' ? '#ffffff' : '#64748b',
+                    }}
+                  >
+                    {activePaymentGateway === 'GRAVITYPAY' ? 'ACTIVE' : 'STANDBY'}
+                  </span>
+                </div>
+
                 <div className="admin-card" style={{ padding: '1.1rem 1.25rem', display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-                  <div style={{ width: '12px', height: '12px', background: '#10b981', borderRadius: '50%', flexShrink: 0 }} />
+                  <div style={{ width: '12px', height: '12px', background: '#3b82f6', borderRadius: '50%', flexShrink: 0 }} />
                   <div>
-                    <div style={{ fontWeight: 700, fontSize: '0.9rem', color: '#0f172a' }}>PalPluss / PayPluss STK Gateway</div>
-                    <div style={{ fontSize: '0.75rem', color: '#64748b' }}>Status: Operational (Auto-fallback active)</div>
+                    <div style={{ fontWeight: 700, fontSize: '0.9rem', color: '#0f172a' }}>Smart Gateway Failover</div>
+                    <div style={{ fontSize: '0.75rem', color: '#64748b' }}>Auto-fallback to secondary provider enabled</div>
                   </div>
                 </div>
-                <div className="admin-card" style={{ padding: '1.1rem 1.25rem', display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-                  <div style={{ width: '12px', height: '12px', background: '#10b981', borderRadius: '50%', flexShrink: 0 }} />
-                  <div>
-                    <div style={{ fontWeight: 700, fontSize: '0.9rem', color: '#0f172a' }}>Capcom6 SMS Callback API</div>
-                    <div style={{ fontSize: '0.75rem', color: '#64748b' }}>Status: Connected (Webhook Listener Ready)</div>
+              </div>
+
+              {/* ── PAYMENT GATEWAY SETTINGS CARD ── */}
+              <div
+                style={{
+                  background: '#ffffff',
+                  border: '1.5px solid #e2e8f0',
+                  borderRadius: '16px',
+                  padding: '1.5rem',
+                  marginBottom: '1.75rem',
+                  boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.05)',
+                }}
+              >
+                {/* Header */}
+                <div style={{ borderBottom: '1px solid #f1f5f9', paddingBottom: '1rem', marginBottom: '1.25rem' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '0.75rem' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.65rem' }}>
+                      <div
+                        style={{
+                          width: '36px',
+                          height: '36px',
+                          borderRadius: '10px',
+                          background: '#fff7ed',
+                          color: '#ea580c',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          fontSize: '1.1rem',
+                        }}
+                      >
+                        ⚡
+                      </div>
+                      <div>
+                        <h3 style={{ margin: 0, fontSize: '1.1rem', fontWeight: 800, color: '#0f172a' }}>
+                          Dual Payment Gateway Orchestrator (Palplus &amp; GravityPay)
+                        </h3>
+                        <p style={{ margin: '0.15rem 0 0', fontSize: '0.8rem', color: '#64748b' }}>
+                          Switch active M-Pesa STK push gateway dynamically and configure provider credentials without code redeployment.
+                        </p>
+                      </div>
+                    </div>
+
+                    {/* Active Gateway Pill Switch */}
+                    <div
+                      style={{
+                        display: 'flex',
+                        background: '#f1f5f9',
+                        padding: '4px',
+                        borderRadius: '12px',
+                        gap: '4px',
+                        border: '1px solid #cbd5e1',
+                      }}
+                    >
+                      <button
+                        type="button"
+                        onClick={() => handleQuickSwitchGateway('PALPLUSS')}
+                        disabled={gatewaySaving}
+                        style={{
+                          padding: '0.45rem 0.9rem',
+                          borderRadius: '8px',
+                          border: 'none',
+                          fontSize: '0.825rem',
+                          fontWeight: 800,
+                          cursor: 'pointer',
+                          transition: 'all 0.2s',
+                          background: activePaymentGateway === 'PALPLUSS' ? '#10B981' : 'transparent',
+                          color: activePaymentGateway === 'PALPLUSS' ? '#ffffff' : '#475569',
+                          boxShadow: activePaymentGateway === 'PALPLUSS' ? '0 2px 4px rgba(16, 185, 129, 0.3)' : 'none',
+                        }}
+                      >
+                        💳 Palplus {activePaymentGateway === 'PALPLUSS' && '(Active)'}
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() => handleQuickSwitchGateway('GRAVITYPAY')}
+                        disabled={gatewaySaving}
+                        style={{
+                          padding: '0.45rem 0.9rem',
+                          borderRadius: '8px',
+                          border: 'none',
+                          fontSize: '0.825rem',
+                          fontWeight: 800,
+                          cursor: 'pointer',
+                          transition: 'all 0.2s',
+                          background: activePaymentGateway === 'GRAVITYPAY' ? '#8B5CF6' : 'transparent',
+                          color: activePaymentGateway === 'GRAVITYPAY' ? '#ffffff' : '#475569',
+                          boxShadow: activePaymentGateway === 'GRAVITYPAY' ? '0 2px 4px rgba(139, 92, 246, 0.3)' : 'none',
+                        }}
+                      >
+                        ⚡ GravityPay {activePaymentGateway === 'GRAVITYPAY' && '(Active)'}
+                      </button>
+                    </div>
                   </div>
+
+                  {gatewaySavedMsg && (
+                    <div
+                      style={{
+                        marginTop: '0.75rem',
+                        padding: '0.65rem 0.85rem',
+                        borderRadius: '8px',
+                        background: '#ecfdf5',
+                        border: '1px solid #a7f3d0',
+                        color: '#065f46',
+                        fontSize: '0.825rem',
+                        fontWeight: 700,
+                      }}
+                    >
+                      ✓ {gatewaySavedMsg}
+                    </div>
+                  )}
+
+                  {gatewayErrorMsg && (
+                    <div
+                      style={{
+                        marginTop: '0.75rem',
+                        padding: '0.65rem 0.85rem',
+                        borderRadius: '8px',
+                        background: '#fef2f2',
+                        border: '1px solid #fecaca',
+                        color: '#991b1b',
+                        fontSize: '0.825rem',
+                        fontWeight: 700,
+                      }}
+                    >
+                      ⚠️ {gatewayErrorMsg}
+                    </div>
+                  )}
                 </div>
+
+                {/* Form Body */}
+                <form onSubmit={handleSavePaymentGatewayConfig}>
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '1.25rem' }}>
+                    {/* ── GRAVITYPAY CONFIGURATION ── */}
+                    <div
+                      style={{
+                        background: '#faf5ff',
+                        border: '1.5px solid #e9d5ff',
+                        borderRadius: '14px',
+                        padding: '1.25rem',
+                      }}
+                    >
+                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.85rem' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.45rem' }}>
+                          <span style={{ fontSize: '1.1rem' }}>⚡</span>
+                          <span style={{ fontWeight: 800, fontSize: '0.95rem', color: '#581c87' }}>GravityPay Credentials</span>
+                        </div>
+                        {activePaymentGateway === 'GRAVITYPAY' && (
+                          <span style={{ background: '#8b5cf6', color: '#fff', fontSize: '0.7rem', fontWeight: 800, padding: '2px 8px', borderRadius: '9999px' }}>
+                            LIVE GATEWAY
+                          </span>
+                        )}
+                      </div>
+
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+                        <div>
+                          <label style={{ display: 'block', fontSize: '0.78rem', fontWeight: 700, color: '#4c1d95', marginBottom: '0.3rem' }}>
+                            GravityPay Public Key
+                          </label>
+                          <input
+                            type="text"
+                            value={gravityPayPublicKey}
+                            onChange={(e) => setGravityPayPublicKey(e.target.value)}
+                            placeholder="e.g. pk_live_gravity_..."
+                            style={{
+                              width: '100%',
+                              padding: '0.55rem 0.75rem',
+                              border: '1px solid #d8b4fe',
+                              borderRadius: '8px',
+                              fontSize: '0.85rem',
+                              boxSizing: 'border-box',
+                              fontFamily: 'monospace',
+                              background: '#ffffff',
+                            }}
+                          />
+                        </div>
+
+                        <div>
+                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.3rem' }}>
+                            <label style={{ fontSize: '0.78rem', fontWeight: 700, color: '#4c1d95' }}>
+                              GravityPay Secret Key
+                            </label>
+                            <button
+                              type="button"
+                              onClick={() => setShowGravitySecret(!showGravitySecret)}
+                              style={{
+                                background: 'transparent',
+                                border: 'none',
+                                color: '#7c3aed',
+                                fontSize: '0.75rem',
+                                fontWeight: 700,
+                                cursor: 'pointer',
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: '3px',
+                              }}
+                            >
+                              {showGravitySecret ? <EyeOff size={13} /> : <Eye size={13} />}
+                              {showGravitySecret ? 'Hide' : 'Show'}
+                            </button>
+                          </div>
+                          <input
+                            type={showGravitySecret ? 'text' : 'password'}
+                            value={gravityPaySecretKey}
+                            onChange={(e) => setGravityPaySecretKey(e.target.value)}
+                            placeholder="e.g. sk_live_gravity_..."
+                            style={{
+                              width: '100%',
+                              padding: '0.55rem 0.75rem',
+                              border: '1px solid #d8b4fe',
+                              borderRadius: '8px',
+                              fontSize: '0.85rem',
+                              boxSizing: 'border-box',
+                              fontFamily: 'monospace',
+                              background: '#ffffff',
+                            }}
+                          />
+                        </div>
+
+                        <div>
+                          <label style={{ display: 'block', fontSize: '0.78rem', fontWeight: 700, color: '#4c1d95', marginBottom: '0.3rem' }}>
+                            GravityPay Webhook Secret
+                          </label>
+                          <input
+                            type="text"
+                            value={gravityPayWebhookSecret}
+                            onChange={(e) => setGravityPayWebhookSecret(e.target.value)}
+                            placeholder="e.g. your_webhook_signing_secret"
+                            style={{
+                              width: '100%',
+                              padding: '0.55rem 0.75rem',
+                              border: '1px solid #d8b4fe',
+                              borderRadius: '8px',
+                              fontSize: '0.85rem',
+                              boxSizing: 'border-box',
+                              fontFamily: 'monospace',
+                              background: '#ffffff',
+                            }}
+                          />
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* ── PALPLUS CONFIGURATION ── */}
+                    <div
+                      style={{
+                        background: '#f0fdf4',
+                        border: '1.5px solid #bbf7d0',
+                        borderRadius: '14px',
+                        padding: '1.25rem',
+                      }}
+                    >
+                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.85rem' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.45rem' }}>
+                          <span style={{ fontSize: '1.1rem' }}>💳</span>
+                          <span style={{ fontWeight: 800, fontSize: '0.95rem', color: '#14532d' }}>Palplus Credentials</span>
+                        </div>
+                        {activePaymentGateway === 'PALPLUSS' && (
+                          <span style={{ background: '#10b981', color: '#fff', fontSize: '0.7rem', fontWeight: 800, padding: '2px 8px', borderRadius: '9999px' }}>
+                            LIVE GATEWAY
+                          </span>
+                        )}
+                      </div>
+
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+                        <div>
+                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.3rem' }}>
+                            <label style={{ fontSize: '0.78rem', fontWeight: 700, color: '#166534' }}>
+                              Palplus API Key
+                            </label>
+                            <button
+                              type="button"
+                              onClick={() => setShowPalplussApiKey(!showPalplussApiKey)}
+                              style={{
+                                background: 'transparent',
+                                border: 'none',
+                                color: '#15803d',
+                                fontSize: '0.75rem',
+                                fontWeight: 700,
+                                cursor: 'pointer',
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: '3px',
+                              }}
+                            >
+                              {showPalplussApiKey ? <EyeOff size={13} /> : <Eye size={13} />}
+                              {showPalplussApiKey ? 'Hide' : 'Show'}
+                            </button>
+                          </div>
+                          <input
+                            type={showPalplussApiKey ? 'text' : 'password'}
+                            value={palplussApiKey}
+                            onChange={(e) => setPalplussApiKey(e.target.value)}
+                            placeholder="e.g. pk_live_..."
+                            style={{
+                              width: '100%',
+                              padding: '0.55rem 0.75rem',
+                              border: '1px solid #86efac',
+                              borderRadius: '8px',
+                              fontSize: '0.85rem',
+                              boxSizing: 'border-box',
+                              fontFamily: 'monospace',
+                              background: '#ffffff',
+                            }}
+                          />
+                        </div>
+
+                        <div>
+                          <label style={{ display: 'block', fontSize: '0.78rem', fontWeight: 700, color: '#166534', marginBottom: '0.3rem' }}>
+                            Palplus Channel ID
+                          </label>
+                          <input
+                            type="text"
+                            value={palplussChannelId}
+                            onChange={(e) => setPalplussChannelId(e.target.value)}
+                            placeholder="e.g. 1"
+                            style={{
+                              width: '100%',
+                              padding: '0.55rem 0.75rem',
+                              border: '1px solid #86efac',
+                              borderRadius: '8px',
+                              fontSize: '0.85rem',
+                              boxSizing: 'border-box',
+                              fontFamily: 'monospace',
+                              background: '#ffffff',
+                            }}
+                          />
+                        </div>
+
+                        <div>
+                          <label style={{ display: 'block', fontSize: '0.78rem', fontWeight: 700, color: '#166534', marginBottom: '0.3rem' }}>
+                            Palplus Webhook Secret
+                          </label>
+                          <input
+                            type="text"
+                            value={palplussWebhookSecret}
+                            onChange={(e) => setPalplussWebhookSecret(e.target.value)}
+                            placeholder="e.g. jijenge_secret"
+                            style={{
+                              width: '100%',
+                              padding: '0.55rem 0.75rem',
+                              border: '1px solid #86efac',
+                              borderRadius: '8px',
+                              fontSize: '0.85rem',
+                              boxSizing: 'border-box',
+                              fontFamily: 'monospace',
+                              background: '#ffffff',
+                            }}
+                          />
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Backend Custom Domain / Base URL */}
+                  <div style={{ marginTop: '1rem', background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: '12px', padding: '1rem' }}>
+                    <label style={{ display: 'block', fontSize: '0.78rem', fontWeight: 700, color: '#334155', marginBottom: '0.3rem' }}>
+                      🌐 Callback Backend Base URL (Custom Domain for Webhooks)
+                    </label>
+                    <input
+                      type="text"
+                      value={gatewayCallbackBaseUrl}
+                      onChange={(e) => setGatewayCallbackBaseUrl(e.target.value)}
+                      placeholder="e.g. https://api.jijengeloans.co.ke"
+                      style={{
+                        width: '100%',
+                        padding: '0.55rem 0.75rem',
+                        border: '1px solid #cbd5e1',
+                        borderRadius: '8px',
+                        fontSize: '0.85rem',
+                        boxSizing: 'border-box',
+                        fontFamily: 'monospace',
+                        background: '#ffffff',
+                      }}
+                    />
+                    <span style={{ fontSize: '0.72rem', color: '#64748b', marginTop: '0.25rem', display: 'block' }}>
+                      Used to construct full public callback URLs below. Leave blank to use server default.
+                    </span>
+                  </div>
+
+                  {/* ── COPYABLE WEBHOOK / CALLBACK URLS (Requirement 4.3) ── */}
+                  <div style={{ marginTop: '1.25rem', background: '#f8fafc', border: '1.5px solid #cbd5e1', borderRadius: '14px', padding: '1.1rem' }}>
+                    <div style={{ fontSize: '0.825rem', fontWeight: 800, color: '#0f172a', marginBottom: '0.65rem' }}>
+                      📋 Copyable Developer Webhook &amp; IPN Callback URLs
+                    </div>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '0.65rem' }}>
+                      {/* GravityPay Webhook */}
+                      {(() => {
+                        const base = (gatewayCallbackBaseUrl || window.location.origin).replace(/\/$/, '');
+                        const gUrl = gravityPayCallbackUrl || `${base}/api/payments/callback/gravitypay`;
+                        const pUrl = palplussCallbackUrl || `${base}/api/payments/callback/palpluss`;
+                        const uUrl = unifiedCallbackUrl || `${base}/api/payments/callback`;
+
+                        return (
+                          <>
+                            <div style={{ background: '#ffffff', border: '1px solid #e2e8f0', borderRadius: '8px', padding: '0.5rem 0.75rem', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '0.5rem' }}>
+                              <div style={{ overflow: 'hidden' }}>
+                                <span style={{ fontSize: '0.7rem', fontWeight: 800, color: '#8b5cf6', display: 'block' }}>
+                                  GRAVITYPAY WEBHOOK URL:
+                                </span>
+                                <code style={{ fontSize: '0.78rem', color: '#0f172a', wordBreak: 'break-all' }}>{gUrl}</code>
+                              </div>
+                              <button
+                                type="button"
+                                onClick={() => copyToClipboard(gUrl, 'gravity')}
+                                style={{
+                                  padding: '0.35rem 0.65rem',
+                                  borderRadius: '6px',
+                                  border: '1px solid #cbd5e1',
+                                  background: copiedUrlKey === 'gravity' ? '#10b981' : '#f1f5f9',
+                                  color: copiedUrlKey === 'gravity' ? '#ffffff' : '#475569',
+                                  fontSize: '0.75rem',
+                                  fontWeight: 700,
+                                  cursor: 'pointer',
+                                  display: 'flex',
+                                  alignItems: 'center',
+                                  gap: '4px',
+                                  flexShrink: 0,
+                                }}
+                              >
+                                <Copy size={12} />
+                                {copiedUrlKey === 'gravity' ? 'Copied!' : 'Copy'}
+                              </button>
+                            </div>
+
+                            <div style={{ background: '#ffffff', border: '1px solid #e2e8f0', borderRadius: '8px', padding: '0.5rem 0.75rem', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '0.5rem' }}>
+                              <div style={{ overflow: 'hidden' }}>
+                                <span style={{ fontSize: '0.7rem', fontWeight: 800, color: '#10b981', display: 'block' }}>
+                                  PALPLUS IPN / WEBHOOK URL:
+                                </span>
+                                <code style={{ fontSize: '0.78rem', color: '#0f172a', wordBreak: 'break-all' }}>{pUrl}</code>
+                              </div>
+                              <button
+                                type="button"
+                                onClick={() => copyToClipboard(pUrl, 'palpluss')}
+                                style={{
+                                  padding: '0.35rem 0.65rem',
+                                  borderRadius: '6px',
+                                  border: '1px solid #cbd5e1',
+                                  background: copiedUrlKey === 'palpluss' ? '#10b981' : '#f1f5f9',
+                                  color: copiedUrlKey === 'palpluss' ? '#ffffff' : '#475569',
+                                  fontSize: '0.75rem',
+                                  fontWeight: 700,
+                                  cursor: 'pointer',
+                                  display: 'flex',
+                                  alignItems: 'center',
+                                  gap: '4px',
+                                  flexShrink: 0,
+                                }}
+                              >
+                                <Copy size={12} />
+                                {copiedUrlKey === 'palpluss' ? 'Copied!' : 'Copy'}
+                              </button>
+                            </div>
+
+                            <div style={{ background: '#ffffff', border: '1px solid #e2e8f0', borderRadius: '8px', padding: '0.5rem 0.75rem', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '0.5rem' }}>
+                              <div style={{ overflow: 'hidden' }}>
+                                <span style={{ fontSize: '0.7rem', fontWeight: 800, color: '#3b82f6', display: 'block' }}>
+                                  UNIFIED WEBHOOK (AUTO-DETECTION):
+                                </span>
+                                <code style={{ fontSize: '0.78rem', color: '#0f172a', wordBreak: 'break-all' }}>{uUrl}</code>
+                              </div>
+                              <button
+                                type="button"
+                                onClick={() => copyToClipboard(uUrl, 'unified')}
+                                style={{
+                                  padding: '0.35rem 0.65rem',
+                                  borderRadius: '6px',
+                                  border: '1px solid #cbd5e1',
+                                  background: copiedUrlKey === 'unified' ? '#10b981' : '#f1f5f9',
+                                  color: copiedUrlKey === 'unified' ? '#ffffff' : '#475569',
+                                  fontSize: '0.75rem',
+                                  fontWeight: 700,
+                                  cursor: 'pointer',
+                                  display: 'flex',
+                                  alignItems: 'center',
+                                  gap: '4px',
+                                  flexShrink: 0,
+                                }}
+                              >
+                                <Copy size={12} />
+                                {copiedUrlKey === 'unified' ? 'Copied!' : 'Copy'}
+                              </button>
+                            </div>
+                          </>
+                        );
+                      })()}
+                    </div>
+                  </div>
+
+                  {/* Save Button */}
+                  <div style={{ marginTop: '1.25rem', display: 'flex', justifyContent: 'flex-end' }}>
+                    <button
+                      type="submit"
+                      disabled={gatewaySaving}
+                      style={{
+                        padding: '0.65rem 1.4rem',
+                        background: 'linear-gradient(135deg, #FF6600 0%, #E55C00 100%)',
+                        color: '#FFFFFF',
+                        border: 'none',
+                        borderRadius: '10px',
+                        fontSize: '0.875rem',
+                        fontWeight: 800,
+                        cursor: gatewaySaving ? 'not-allowed' : 'pointer',
+                        boxShadow: '0 4px 10px rgba(255, 102, 0, 0.25)',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '6px',
+                      }}
+                    >
+                      {gatewaySaving ? 'Saving Settings...' : 'Save Payment Gateway Settings'}
+                    </button>
+                  </div>
+                </form>
               </div>
 
               {/* STK Push Table */}
@@ -2049,6 +2731,7 @@ export const AdminDashboardModal: React.FC<AdminDashboardProps> = ({ onClose }) 
                         <th>Applicant</th>
                         <th>Phone</th>
                         <th>Amount</th>
+                        <th>Gateway</th>
                         <th>Status</th>
                         <th>Callback Desc</th>
                         <th>Actions</th>
@@ -2057,12 +2740,28 @@ export const AdminDashboardModal: React.FC<AdminDashboardProps> = ({ onClose }) 
                     <tbody>
                       {pagedPayments.length > 0 ? pagedPayments.map((pay: any) => {
                         const fc = feeBadge(pay.feeStatus);
+                        const isGravity = pay.gatewayProvider === 'GRAVITYPAY';
                         return (
                           <tr key={pay.id}>
                             <td style={{ fontFamily: 'monospace', fontSize: '0.78rem', color: '#64748b' }}>{pay.checkoutRequestId || '—'}</td>
                             <td style={{ fontWeight: 600, color: '#0f172a' }}>{pay.fullName}</td>
                             <td style={{ color: '#475569' }}>{pay.phoneNumber}</td>
                             <td style={{ fontWeight: 700, color: '#0f172a' }}>KES {Number(pay.processingFee || 450).toLocaleString()}</td>
+                            <td>
+                              <span
+                                style={{
+                                  padding: '2px 8px',
+                                  borderRadius: '6px',
+                                  fontSize: '0.72rem',
+                                  fontWeight: 800,
+                                  background: isGravity ? '#F3E8FF' : '#ECFDF5',
+                                  color: isGravity ? '#7E22CE' : '#047857',
+                                  border: `1px solid ${isGravity ? '#D8B4FE' : '#A7F3D0'}`,
+                                }}
+                              >
+                                {isGravity ? '⚡ GravityPay' : '💳 Palplus'}
+                              </span>
+                            </td>
                             <td>
                               <span style={{ padding: '3px 9px', borderRadius: '9999px', fontSize: '0.75rem', fontWeight: 700, color: fc.color, background: fc.bg }}>{fc.label}</span>
                             </td>
@@ -2077,7 +2776,7 @@ export const AdminDashboardModal: React.FC<AdminDashboardProps> = ({ onClose }) 
                           </tr>
                         );
                       }) : (
-                        <tr><td colSpan={7} style={{ padding: '2rem', textAlign: 'center', color: '#94a3b8' }}>No M-Pesa transactions found.</td></tr>
+                        <tr><td colSpan={8} style={{ padding: '2rem', textAlign: 'center', color: '#94a3b8' }}>No M-Pesa transactions found.</td></tr>
                       )}
                     </tbody>
                   </table>

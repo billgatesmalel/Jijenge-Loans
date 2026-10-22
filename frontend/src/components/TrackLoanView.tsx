@@ -362,6 +362,20 @@ export const TrackLoanView: React.FC<TrackLoanViewProps> = () => {
         transactionRef={loan?.transactionRef}
         loading={paymentLoading}
         error={paymentError}
+        onSuccess={async () => {
+          setPaymentLoading(false);
+          setStkModalOpen(false);
+          if (loan?.transactionRef) {
+            try {
+              const res = await apiFetch(`/api/loans/track/${loan.transactionRef}`);
+              const d = await res.json();
+              if (d?.success && d?.loan) {
+                setLoan(d.loan);
+                if (d.stages) setStages(d.stages);
+              }
+            } catch { /* ignore */ }
+          }
+        }}
         onRetry={triggerPayment}
         onClose={() => setStkModalOpen(false)}
       />

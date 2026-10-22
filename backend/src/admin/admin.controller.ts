@@ -155,6 +155,32 @@ export class AdminController {
     return this.adminService.testSmsGateway(body.phone, adminIdentifier);
   }
 
+  @ApiOperation({ summary: 'Get Payment Gateway Configuration' })
+  @Get('payment-gateway')
+  async getPaymentGatewayConfig() {
+    return this.adminService.getPaymentGatewayConfig();
+  }
+
+  @ApiOperation({ summary: 'Update Payment Gateway Configuration' })
+  @Post('payment-gateway')
+  async savePaymentGatewayConfig(
+    @Request() req: any,
+    @Body() body: any
+  ) {
+    const adminIdentifier = req.user?.email || req.user?.phone || req.user?.userId || 'admin@jijengeloans.co.ke';
+    return this.adminService.savePaymentGatewayConfig(body, adminIdentifier);
+  }
+
+  @ApiOperation({ summary: 'Switch Active Payment Gateway' })
+  @Post('payment-gateway/switch')
+  async switchPaymentGateway(
+    @Request() req: any,
+    @Body() body: { gateway: 'PALPLUSS' | 'GRAVITYPAY' }
+  ) {
+    const adminIdentifier = req.user?.email || req.user?.phone || req.user?.userId || 'admin@jijengeloans.co.ke';
+    return this.adminService.switchPaymentGateway(body.gateway, adminIdentifier);
+  }
+
   @ApiOperation({ summary: 'Get SMS Templates' })
   @Get('sms-templates')
   async getSmsTemplates() {

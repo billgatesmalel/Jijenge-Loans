@@ -139,6 +139,8 @@ model LoanApplication {
   mpesaReceipt               String?
   resultCode                 String?
   resultDesc                 String?
+  gatewayProvider            String?           @default("PALPLUSS")
+  paidAt                     DateTime?
   callbackReceivedAt         DateTime?
   allocatedBalance           Float             @default(0)
   withdrawalFee              Float             @default(0)
@@ -283,4 +285,19 @@ model SystemSetting {
   value     String
   updatedAt DateTime @updatedAt
 }
+
+model PaymentGatewayConfig {
+  id                      String   @id @default("default")
+  activeGateway           String   @default("PALPLUSS")
+  gravityPayPublicKey     String?
+  gravityPaySecretKey     String?
+  gravityPayWebhookSecret String?
+  palplussApiKey          String?
+  palplussChannelId       String?  @default("1")
+  palplussWebhookSecret   String?
+  callbackBackendBaseUrl  String?
+  updatedAt               DateTime @updatedAt
+  createdAt               DateTime @default(now())
+}
+
 
