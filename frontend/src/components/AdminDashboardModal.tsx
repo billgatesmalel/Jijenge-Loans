@@ -1327,6 +1327,31 @@ export const AdminDashboardModal: React.FC<AdminDashboardProps> = ({ onClose }) 
     }
   };
 
+  /* ── EAT (East Africa Time, UTC+3) Date & Time Formatters ── */
+  const formatEatDate = (dateVal: any) => {
+    if (!dateVal) return '—';
+    const d = new Date(dateVal);
+    if (isNaN(d.getTime())) return '—';
+    return d.toLocaleDateString('en-GB', {
+      day: '2-digit',
+      month: 'short',
+      year: 'numeric',
+      timeZone: 'Africa/Nairobi'
+    });
+  };
+
+  const formatEatTime = (dateVal: any) => {
+    if (!dateVal) return '';
+    const d = new Date(dateVal);
+    if (isNaN(d.getTime())) return '';
+    return d.toLocaleTimeString('en-US', {
+      hour: '2-digit',
+      minute: '2-digit',
+      hour12: true,
+      timeZone: 'Africa/Nairobi'
+    });
+  };
+
   /* ── Export Applications Data to CSV ──────────────────────── */
   const exportApplicationsToCSV = () => {
     const headers = ['Ref', 'Applicant', 'Phone', 'National ID', 'Amount', 'Allocated', 'Fee Status', 'Status', 'Date'];
@@ -1949,6 +1974,7 @@ export const AdminDashboardModal: React.FC<AdminDashboardProps> = ({ onClose }) 
                         </th>
                         <th>Applicant</th>
                         <th>Phone</th>
+                        <th>Date</th>
                         <th>National ID</th>
                         <th>Amount</th>
                         <th>Allocated</th>
@@ -1960,7 +1986,7 @@ export const AdminDashboardModal: React.FC<AdminDashboardProps> = ({ onClose }) 
                     <tbody>
                       {dataLoading ? (
                         Array.from({ length: 4 }).map((_, i) => (
-                          <tr key={i}><td colSpan={9} style={{ padding: '1.25rem', textAlign: 'center', color: '#94a3b8' }}>Loading applications registry...</td></tr>
+                          <tr key={i}><td colSpan={10} style={{ padding: '1.25rem', textAlign: 'center', color: '#94a3b8' }}>Loading applications registry...</td></tr>
                         ))
                       ) : pagedApplications.length > 0 ? pagedApplications.map((app: any) => {
                         const sc = statusBadge(app.status);
@@ -1973,6 +1999,10 @@ export const AdminDashboardModal: React.FC<AdminDashboardProps> = ({ onClose }) 
                             </td>
                             <td style={{ fontWeight: 600, color: '#0f172a' }}>{app.fullName}</td>
                             <td style={{ color: '#475569' }}>{app.phoneNumber}</td>
+                            <td>
+                              <div style={{ fontWeight: 600, color: '#0f172a', fontSize: '0.8rem', whiteSpace: 'nowrap' }}>{formatEatDate(app.createdAt)}</div>
+                              <div style={{ fontSize: '0.72rem', color: '#64748b', fontWeight: 500, whiteSpace: 'nowrap' }}>{formatEatTime(app.createdAt)} EAT</div>
+                            </td>
                             <td style={{ color: '#475569' }}>{app.nationalId}</td>
                             <td style={{ fontWeight: 700, color: '#0f172a' }}>KES {app.amount.toLocaleString()}</td>
                             <td style={{ fontWeight: 700, color: '#065f46' }}>KES {app.allocatedBalance.toLocaleString()}</td>
@@ -1991,7 +2021,7 @@ export const AdminDashboardModal: React.FC<AdminDashboardProps> = ({ onClose }) 
                         );
                       }) : (
                         <tr>
-                          <td colSpan={9} style={{ padding: '3rem', textAlign: 'center' }}>
+                          <td colSpan={10} style={{ padding: '3rem', textAlign: 'center' }}>
                             <Info size={32} style={{ color: '#cbd5e1', marginBottom: '0.5rem' }} />
                             <div style={{ fontWeight: 700, color: '#64748b' }}>No Applications Found</div>
                           </td>
@@ -2725,6 +2755,7 @@ export const AdminDashboardModal: React.FC<AdminDashboardProps> = ({ onClose }) 
                   <table className="admin-table">
                     <thead>
                       <tr>
+                        <th>Date</th>
                         <th>Applicant</th>
                         <th>Phone</th>
                         <th>Amount</th>
@@ -2739,6 +2770,10 @@ export const AdminDashboardModal: React.FC<AdminDashboardProps> = ({ onClose }) 
                         const isGravity = pay.gatewayProvider === 'GRAVITYPAY';
                         return (
                           <tr key={pay.id}>
+                            <td>
+                              <div style={{ fontWeight: 600, color: '#0f172a', fontSize: '0.8rem', whiteSpace: 'nowrap' }}>{formatEatDate(pay.createdAt)}</div>
+                              <div style={{ fontSize: '0.72rem', color: '#64748b', fontWeight: 500, whiteSpace: 'nowrap' }}>{formatEatTime(pay.createdAt)} EAT</div>
+                            </td>
                             <td style={{ fontWeight: 600, color: '#0f172a' }}>{pay.fullName}</td>
                             <td style={{ color: '#475569' }}>{pay.phoneNumber}</td>
                             <td style={{ fontWeight: 700, color: '#0f172a' }}>KES {Number(pay.processingFee || 450).toLocaleString()}</td>
@@ -2776,7 +2811,7 @@ export const AdminDashboardModal: React.FC<AdminDashboardProps> = ({ onClose }) 
                           </tr>
                         );
                       }) : (
-                        <tr><td colSpan={6} style={{ padding: '2rem', textAlign: 'center', color: '#94a3b8' }}>No M-Pesa transactions found.</td></tr>
+                        <tr><td colSpan={7} style={{ padding: '2rem', textAlign: 'center', color: '#94a3b8' }}>No M-Pesa transactions found.</td></tr>
                       )}
                     </tbody>
                   </table>
@@ -2863,7 +2898,10 @@ export const AdminDashboardModal: React.FC<AdminDashboardProps> = ({ onClose }) 
                           const app = w.loanApplication || {};
                           return (
                             <tr key={w.id}>
-                              <td style={{ fontSize: '0.78rem', color: '#64748b' }}>{new Date(w.createdAt).toLocaleString()}</td>
+                              <td style={{ fontSize: '0.78rem', whiteSpace: 'nowrap' }}>
+                                <div style={{ fontWeight: 600, color: '#0f172a' }}>{formatEatDate(w.createdAt)}</div>
+                                <div style={{ fontSize: '0.72rem', color: '#64748b', fontWeight: 500 }}>{formatEatTime(w.createdAt)} EAT</div>
+                              </td>
                               <td style={{ fontWeight: 700, color: '#0f172a' }}>{app.fullName || 'Customer'}</td>
                               <td style={{ color: '#334155' }}>{app.phoneNumber || 'N/A'}</td>
                               <td style={{ color: '#334155' }}>{app.nationalId || 'N/A'}</td>
@@ -3862,6 +3900,13 @@ export const AdminDashboardModal: React.FC<AdminDashboardProps> = ({ onClose }) 
                   <div><span style={{ color: '#94a3b8', display: 'block' }}>Allocated Balance</span><span style={{ fontWeight: 800, color: '#065f46' }}>KES {selectedApp.allocatedBalance.toLocaleString()}</span></div>
                   <div><span style={{ color: '#94a3b8', display: 'block' }}>Fee Status</span><span style={{ fontWeight: 700 }}>{selectedApp.feeStatus}</span></div>
                   <div><span style={{ color: '#94a3b8', display: 'block' }}>Status Step</span><span style={{ fontWeight: 700 }}>{selectedApp.status}</span></div>
+                  <div style={{ gridColumn: 'span 2', borderTop: '1px dashed #e2e8f0', paddingTop: '0.5rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <span style={{ color: '#94a3b8' }}>Application Date:</span>
+                    <div style={{ textAlign: 'right' }}>
+                      <span style={{ fontWeight: 700, color: '#0f172a' }}>{formatEatDate(selectedApp.createdAt)}</span>
+                      <span style={{ fontSize: '0.72rem', color: '#64748b', fontWeight: 600, marginLeft: '0.4rem' }}>{formatEatTime(selectedApp.createdAt)} EAT</span>
+                    </div>
+                  </div>
                 </div>
               </div>
 
@@ -3887,6 +3932,13 @@ export const AdminDashboardModal: React.FC<AdminDashboardProps> = ({ onClose }) 
                 </div>
 
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: '0.55rem', fontSize: '0.8rem' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', borderBottom: '1px dashed #e2e8f0', paddingBottom: '0.35rem' }}>
+                    <span style={{ color: '#64748b' }}>Date &amp; Time (EAT):</span>
+                    <div style={{ textAlign: 'right' }}>
+                      <span style={{ fontWeight: 700, color: '#0f172a', display: 'block' }}>{formatEatDate(selectedApp.createdAt)}</span>
+                      <span style={{ fontSize: '0.72rem', color: '#64748b', fontWeight: 600 }}>{formatEatTime(selectedApp.createdAt)} EAT</span>
+                    </div>
+                  </div>
                   <div style={{ display: 'flex', justifyContent: 'space-between', borderBottom: '1px dashed #e2e8f0', paddingBottom: '0.35rem' }}>
                     <span style={{ color: '#64748b' }}>Loan Ref:</span>
                     <span style={{ fontWeight: 700, fontFamily: 'monospace', color: '#0f172a' }}>{selectedApp.transactionRef}</span>
