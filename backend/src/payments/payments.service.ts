@@ -3,7 +3,7 @@ import { PrismaService } from '../prisma/prisma.service';
 import { SmsService } from '../sms/sms.service';
 import { PaymentGatewayManager } from './payment-gateway.manager';
 import { LoanStatus, FeeStatus } from '@prisma/client';
-import { WebhookResult } from './interfaces/payment-gateway.interface';
+import { WebhookResult, cleanGatewayErrorMessage } from './interfaces/payment-gateway.interface';
 
 @Injectable()
 export class PaymentsService {
@@ -65,7 +65,11 @@ export class PaymentsService {
     } catch (err: any) {
       this.logger.error(`❌ [STK PUSH ERROR] ${err.message}`);
       if (err instanceof BadRequestException) throw err;
-      throw new BadRequestException(err.message || 'Failed to trigger M-Pesa STK Push');
+      const cleanMsg = cleanGatewayErrorMessage(
+        err.message,
+        'Failed to trigger M-Pesa STK Push. Please verify details and retry.'
+      );
+      throw new BadRequestException(cleanMsg);
     }
   }
 
@@ -79,12 +83,15 @@ export class PaymentsService {
       `📥 [WEBHOOK PROCESSING] Gateway: ${gatewayProvider} | Status: ${status} | CheckoutID: "${checkoutRequestId || 'none'}" | Ref: "${transactionRef || 'none'}"`
     );
 
+    const cleanRef = transactionRef ? transactionRef.replace(/[^A-Za-z0-9]/g, '') : '';
+
     // Locate matching loan record
     let loan = await this.prisma.loanApplication.findFirst({
       where: {
         OR: [
           ...(checkoutRequestId ? [{ checkoutRequestId: checkoutRequestId }] : []),
           ...(transactionRef ? [{ transactionRef: transactionRef }] : []),
+          ...(cleanRef ? [{ transactionRef: { contains: cleanRef, mode: 'insensitive' as const } }] : []),
           ...(checkoutRequestId ? [{ palplussTxId: checkoutRequestId }] : [])
         ]
       }

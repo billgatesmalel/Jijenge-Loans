@@ -5,7 +5,8 @@ import {
   StkPushResponse,
   PaymentStatusResponse,
   WebhookResult,
-  PalplussConfig
+  PalplussConfig,
+  cleanGatewayErrorMessage
 } from '../interfaces/payment-gateway.interface';
 
 @Injectable()
@@ -24,10 +25,11 @@ export class PalplussProvider implements PaymentGatewayProvider {
   }
 
   async initiateStkPush(params: StkPushParams, config: PalplussConfig): Promise<StkPushResponse> {
-    const apiKey = config.apiKey || process.env.PALPLUSS_API_KEY;
-    const channelId = config.channelId || process.env.PALPLUSS_CHANNEL_ID || '1';
+    const apiKey = (config.apiKey || process.env.PALPLUSS_API_KEY || '').trim();
+    const channelId = (config.channelId || process.env.PALPLUSS_CHANNEL_ID || '1').trim();
     const callbackBase =
       config.callbackBaseUrl ||
+      process.env.CALLBACK_BACKEND_BASE_URL ||
       process.env.PALPLUSS_CALLBACK_BASE_URL ||
       process.env.RENDER_EXTERNAL_URL ||
       'https://jijenge-loans-backend.onrender.com';
@@ -35,93 +37,90 @@ export class PalplussProvider implements PaymentGatewayProvider {
     const callbackUrl =
       params.callbackUrl ||
       `${callbackBase.replace(/\/$/, '')}/api/payments/callback/palpluss?secret=${encodeURIComponent(webhookSecret)}`;
-    const primaryApiUrl =
-      config.apiUrl ||
-      process.env.PALPLUSS_API_URL ||
-      'https://api.palpluss.com/v1/payments/stk';
+    const configuredApiUrl = (config.apiUrl || process.env.PALPLUSS_API_URL || 'https://api.palpluss.com/v1/payments/stk').trim();
 
     if (!apiKey) {
       throw new Error('Palplus API Key is not configured. Please supply palplussApiKey in settings or environment.');
     }
 
     const formattedPhone = this.formatPhone(params.phoneNumber);
-    const authHeader =
-      apiKey.startsWith('pk_') || apiKey.startsWith('pp_')
-        ? `Basic ${apiKey}`
-        : 'Basic ' + Buffer.from(apiKey + ':').toString('base64');
+    const authHeader = apiKey.startsWith('Basic ') || apiKey.startsWith('Bearer ')
+      ? apiKey
+      : 'Basic ' + Buffer.from(apiKey + ':').toString('base64');
 
-    const payload = {
+    let cleanRef = String(params.transactionRef || '').replace(/[^A-Za-z0-9]/g, '').trim();
+    if (!cleanRef) {
+      cleanRef = 'JJG' + Math.floor(100000 + Math.random() * 900000);
+    } else if (cleanRef.length > 12) {
+      cleanRef = cleanRef.substring(0, 12);
+    }
+
+    const amountInt = Math.max(1, parseInt(String(params.amount), 10) || 1);
+
+    const payload: any = {
       apiKey,
       api_key: apiKey,
       channelId,
       channel_id: channelId,
       phone: formattedPhone,
       phone_number: formattedPhone,
-      amount: params.amount,
-      accountReference: params.transactionRef,
-      account_reference: params.transactionRef,
-      reference: params.transactionRef,
-      transactionDesc: params.description || `Jijenge Loan Fee (${params.transactionRef})`,
-      transaction_desc: params.description || `Jijenge Loan Fee (${params.transactionRef})`,
+      amount: amountInt,
+      accountReference: cleanRef,
+      account_reference: cleanRef,
+      reference: cleanRef,
+      transactionDesc: String(params.description || `Loan Fee ${cleanRef}`).substring(0, 30),
+      transaction_desc: String(params.description || `Loan Fee ${cleanRef}`).substring(0, 30),
       callbackUrl,
-      callback_url: callbackUrl,
-      callback: callbackUrl,
-      webhook_url: callbackUrl
+      callback_url: callbackUrl
     };
 
-    const endpoints = Array.from(
-      new Set([
-        primaryApiUrl,
-        'https://api.palpluss.com/v1/payments/stk',
-        'https://palpluss.com/v1/payments/stk',
-        'https://palpluss.com/api/v1/stkpush'
-      ])
-    );
+    const headers: Record<string, string> = {
+      'Content-Type': 'application/json',
+      Accept: 'application/json',
+      Authorization: authHeader,
+      'x-api-key': apiKey
+    };
 
-    let lastError: any = null;
-    let data: any = null;
-
-    for (const endpoint of endpoints) {
-      try {
-        const res = await fetch(endpoint, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            Authorization: authHeader
-          },
-          body: JSON.stringify(payload)
-        });
-
-        const contentType = res.headers.get('content-type') || '';
-        let resData: any = null;
-        if (contentType.includes('application/json')) {
-          resData = await res.json();
-        } else {
-          const rawText = await res.text();
-          resData = { message: rawText };
-        }
-
-        this.logger.log(`💳 [PALPLUSS STK TRY] Endpoint: ${endpoint} | Status: ${res.status}`);
-
-        if (res.ok && resData.success !== false && !resData.error) {
-          data = resData;
-          break;
-        } else {
-          lastError = resData;
-        }
-      } catch (endpointErr: any) {
-        this.logger.warn(`⚠️ [PALPLUSS API UNREACHABLE] Endpoint ${endpoint} failed: ${endpointErr.message}`);
-        lastError = endpointErr;
-      }
+    if (channelId) {
+      headers['x-channel-id'] = channelId;
+      headers['channel-id'] = channelId;
     }
 
-    if (!data || data.success === false || data.error) {
-      const errMsg =
-        data?.error?.message ||
-        data?.message ||
-        lastError?.message ||
-        'Palplus payment gateway request failed. Verify API key and account status.';
-      this.logger.error(`❌ [PALPLUSS STK FAILURE] ${errMsg}`);
+    // Ensure endpoint targets the Palpluss API host (never palpluss.com web application)
+    const endpoint = configuredApiUrl.includes('palpluss.com') && !configuredApiUrl.includes('api.palpluss.com')
+      ? 'https://api.palpluss.com/v1/payments/stk'
+      : configuredApiUrl;
+
+    this.logger.log(`💳 [PALPLUSS STK DISPATCH] Endpoint: ${endpoint} | Ref: ${cleanRef} | Phone: ${formattedPhone} | Amount: ${amountInt}`);
+
+    let data: any = null;
+    let resStatus = 0;
+    try {
+      const res = await fetch(endpoint, {
+        method: 'POST',
+        headers,
+        body: JSON.stringify(payload)
+      });
+      resStatus = res.status;
+      const contentType = res.headers.get('content-type') || '';
+      if (contentType.includes('application/json')) {
+        data = await res.json();
+      } else {
+        const rawText = await res.text();
+        const cleaned = cleanGatewayErrorMessage(rawText, `Palplus service error (HTTP ${resStatus})`);
+        data = { message: cleaned };
+      }
+    } catch (endpointErr: any) {
+      this.logger.error(`❌ [PALPLUSS NETWORK ERROR] ${endpointErr.message}`);
+      throw new Error(`Palplus network error: ${endpointErr.message}`);
+    }
+
+    if (resStatus >= 400 || !data || data.success === false || data.error) {
+      const errMsg = cleanGatewayErrorMessage(
+        data?.error?.message || data?.message || data?.error,
+        `Palplus STK initiation failed (HTTP ${resStatus || 500})`
+      );
+      this.logger.error(`❌ [PALPLUSS STK FAILURE] HTTP ${resStatus} | Error: ${errMsg}`);
       throw new Error(errMsg);
     }
 
@@ -132,15 +131,14 @@ export class PalplussProvider implements PaymentGatewayProvider {
       data?.data?.providerCheckoutId ||
       data.tx_id ||
       data?.data?.transactionId ||
-      data.id;
-
-    const providerRef = data.tx_id || data?.data?.transactionId || data.id;
+      data.id ||
+      cleanRef;
 
     return {
       success: true,
-      message: data.message || 'STK Push sent successfully via Palplus. Enter M-Pesa PIN on your phone.',
+      message: data.message || 'STK Push sent successfully via Palplus. Please enter your M-Pesa PIN.',
       checkoutRequestId: checkoutRequestId ? String(checkoutRequestId) : undefined,
-      providerRef: providerRef ? String(providerRef) : undefined,
+      providerRef: data.tx_id || data?.data?.transactionId || data.id ? String(data.tx_id || data?.data?.transactionId || data.id) : undefined,
       gatewayProvider: 'PALPLUSS',
       rawResponse: data
     };

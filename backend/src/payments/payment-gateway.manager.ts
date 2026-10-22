@@ -8,7 +8,9 @@ import {
   StkPushResponse,
   PaymentStatusResponse,
   WebhookResult,
-  ResolvedGatewayConfig
+  ResolvedGatewayConfig,
+  cleanGatewayErrorMessage,
+  isRealCredential
 } from './interfaces/payment-gateway.interface';
 
 @Injectable()
@@ -143,22 +145,23 @@ export class PaymentGatewayManager {
     try {
       return await primaryProvider.initiateStkPush(params, primaryConfig);
     } catch (primaryErr: any) {
+      const cleanPrimary = cleanGatewayErrorMessage(primaryErr.message, `${primaryName} request failed`);
       this.logger.warn(
-        `⚠️ [GATEWAY FAILOVER TRIGGERED] Primary gateway ${primaryName} failed: ${primaryErr.message}. Attempting secondary fallback ${secondaryName}...`
+        `⚠️ [GATEWAY FAILOVER TRIGGERED] Primary gateway ${primaryName} failed: ${cleanPrimary}. Checking secondary fallback ${secondaryName}...`
       );
 
       const secondaryProvider = this.getProvider(secondaryName);
       const secondaryConfig = secondaryName === 'PALPLUSS' ? config.palpluss : config.gravityPay;
 
-      // Ensure secondary provider has minimum credentials before attempting failover
+      // Ensure secondary provider has real credentials before attempting failover
       const hasSecondaryCreds =
         secondaryName === 'PALPLUSS'
-          ? !!config.palpluss.apiKey
-          : !!(config.gravityPay.publicKey || config.gravityPay.secretKey);
+          ? isRealCredential(config.palpluss.apiKey)
+          : isRealCredential(config.gravityPay.secretKey) || isRealCredential(config.gravityPay.publicKey);
 
       if (!hasSecondaryCreds) {
-        this.logger.error(`❌ Secondary gateway ${secondaryName} has no credentials configured. Aborting failover.`);
-        throw primaryErr;
+        this.logger.warn(`ℹ️ Secondary gateway ${secondaryName} has no valid credentials configured. Skipping failover.`);
+        throw new Error(`${primaryName}: ${cleanPrimary}`);
       }
 
       try {
@@ -166,8 +169,9 @@ export class PaymentGatewayManager {
         this.logger.log(`✅ [FAILOVER SUCCESS] Secondary gateway ${secondaryName} succeeded for Ref: ${params.transactionRef}`);
         return secondaryResponse;
       } catch (secondaryErr: any) {
+        const cleanSecondary = cleanGatewayErrorMessage(secondaryErr.message, `${secondaryName} request failed`);
         this.logger.error(`❌ [FAILOVER FAILED] Both primary (${primaryName}) and secondary (${secondaryName}) gateways failed.`);
-        throw new Error(`Payment gateway error: ${primaryErr.message} | Failover error: ${secondaryErr.message}`);
+        throw new Error(`${primaryName}: ${cleanPrimary} | ${secondaryName}: ${cleanSecondary}`);
       }
     }
   }

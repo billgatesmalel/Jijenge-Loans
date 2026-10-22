@@ -5,7 +5,8 @@ import {
   StkPushResponse,
   PaymentStatusResponse,
   WebhookResult,
-  GravityPayConfig
+  GravityPayConfig,
+  cleanGatewayErrorMessage
 } from '../interfaces/payment-gateway.interface';
 
 @Injectable()
@@ -37,10 +38,11 @@ export class GravityPayProvider implements PaymentGatewayProvider {
   }
 
   async initiateStkPush(params: StkPushParams, config: GravityPayConfig): Promise<StkPushResponse> {
-    const publicKey = config.publicKey || process.env.GRAVITYPAY_PUBLIC_KEY;
-    const secretKey = config.secretKey || process.env.GRAVITYPAY_SECRET_KEY;
+    const publicKey = (config.publicKey || process.env.GRAVITYPAY_PUBLIC_KEY || '').trim();
+    const secretKey = (config.secretKey || process.env.GRAVITYPAY_SECRET_KEY || '').trim();
     const callbackBase =
       config.callbackBaseUrl ||
+      process.env.CALLBACK_BACKEND_BASE_URL ||
       process.env.GRAVITYPAY_CALLBACK_BASE_URL ||
       process.env.PALPLUSS_CALLBACK_BASE_URL ||
       process.env.RENDER_EXTERNAL_URL ||
@@ -55,25 +57,31 @@ export class GravityPayProvider implements PaymentGatewayProvider {
       throw new Error('GravityPay credentials missing. Please configure GravityPay Public Key and Secret Key in settings.');
     }
 
-    const { international, local } = this.formatPhones(params.phoneNumber);
+    const { international } = this.formatPhones(params.phoneNumber);
 
-    const payload = {
-      publicKey,
+    // GravityPay strict rule: reference must be strictly 1-12 alphanumeric characters!
+    let cleanRef = String(params.transactionRef || '').replace(/[^A-Za-z0-9]/g, '').trim();
+    if (!cleanRef) {
+      cleanRef = 'JJG' + Math.floor(100000 + Math.random() * 900000);
+    }
+    if (cleanRef.length > 12) {
+      cleanRef = cleanRef.substring(0, 12);
+    }
+
+    const amountInt = Math.max(1, parseInt(String(params.amount), 10) || 1);
+    const authBearer = secretKey ? (secretKey.startsWith('Bearer ') ? secretKey : `Bearer ${secretKey}`) : undefined;
+
+    const payload: any = {
       phoneNumber: international,
-      phone: international,
-      msisdn: local,
-      customerPhone: international,
-      amount: Number(params.amount),
-      reference: params.transactionRef,
-      transactionRef: params.transactionRef,
-      accountReference: params.transactionRef,
-      account_reference: params.transactionRef,
-      description: params.description || `Jijenge Loan Fee (${params.transactionRef})`,
-      narrative: params.description || `Jijenge Loan Fee (${params.transactionRef})`,
+      amount: amountInt,
+      reference: cleanRef,
+      description: String(params.description || `Loan Fee ${cleanRef}`).substring(0, 20),
       callbackUrl,
-      callback_url: callbackUrl,
-      webhookUrl: callbackUrl,
-      webhook_url: callbackUrl
+      metadata: {
+        source: 'jijenge-loans',
+        fullRef: params.transactionRef,
+        timestamp: new Date().toISOString()
+      }
     };
 
     const headers: Record<string, string> = {
@@ -81,68 +89,50 @@ export class GravityPayProvider implements PaymentGatewayProvider {
       Accept: 'application/json'
     };
 
+    if (authBearer) {
+      headers['Authorization'] = authBearer;
+    }
     if (publicKey) {
+      headers['x-api-key'] = publicKey;
       headers['X-Public-Key'] = publicKey;
-      headers['x-public-key'] = publicKey;
     }
     if (secretKey) {
       headers['X-Secret-Key'] = secretKey;
-      headers['x-secret-key'] = secretKey;
-      headers['Authorization'] = `Bearer ${secretKey}`;
-      headers['X-API-KEY'] = secretKey;
     }
 
-    // Try primary GravityPay STK push endpoints
-    const endpoints = [
-      `${baseUrl}/api/v1/stk/push`,
-      `${baseUrl}/v1/payments/stkpush`,
-      `${baseUrl}/api/v1/payments/stkpush`,
-      `${baseUrl}/api/stkpush`,
-      `${baseUrl}/v1/stk`
-    ];
+    // Only legitimate GravityPay STK push endpoint
+    const endpoint = baseUrl.includes('/api/v1') ? baseUrl : `${baseUrl}/api/v1/stk/push`;
+
+    this.logger.log(`💳 [GRAVITYPAY STK DISPATCH] Endpoint: ${endpoint} | Ref: ${cleanRef} | Phone: ${international} | Amount: ${amountInt}`);
 
     let data: any = null;
-    let lastError: any = null;
-
-    for (const endpoint of endpoints) {
-      try {
-        const res = await fetch(endpoint, {
-          method: 'POST',
-          headers,
-          body: JSON.stringify(payload)
-        });
-
-        const contentType = res.headers.get('content-type') || '';
-        let resData: any = null;
-        if (contentType.includes('application/json')) {
-          resData = await res.json();
-        } else {
-          const rawText = await res.text();
-          resData = { message: rawText };
-        }
-
-        this.logger.log(`💳 [GRAVITYPAY STK TRY] Endpoint: ${endpoint} | Status: ${res.status}`);
-
-        if (res.ok && resData.success !== false && !resData.error) {
-          data = resData;
-          break;
-        } else {
-          lastError = resData;
-        }
-      } catch (err: any) {
-        this.logger.warn(`⚠️ [GRAVITYPAY API UNREACHABLE] Endpoint ${endpoint} failed: ${err.message}`);
-        lastError = err;
+    let resStatus = 0;
+    try {
+      const res = await fetch(endpoint, {
+        method: 'POST',
+        headers,
+        body: JSON.stringify(payload)
+      });
+      resStatus = res.status;
+      const contentType = res.headers.get('content-type') || '';
+      if (contentType.includes('application/json')) {
+        data = await res.json();
+      } else {
+        const rawText = await res.text();
+        const cleaned = cleanGatewayErrorMessage(rawText, `GravityPay service error (HTTP ${resStatus})`);
+        data = { message: cleaned };
       }
+    } catch (fetchErr: any) {
+      this.logger.error(`❌ [GRAVITYPAY NETWORK ERROR] ${fetchErr.message}`);
+      throw new Error(`GravityPay network error: ${fetchErr.message}`);
     }
 
-    if (!data || data.success === false || data.error) {
-      const errMsg =
-        data?.message ||
-        data?.error?.message ||
-        data?.error ||
-        lastError?.message ||
-        'GravityPay STK push initiation failed. Please verify API credentials and balance.';
-      this.logger.error(`❌ [GRAVITYPAY STK FAILURE] ${errMsg}`);
+    if (resStatus >= 400 || !data || data.success === false || data.error) {
+      const errMsg = cleanGatewayErrorMessage(
+        data?.message || data?.error?.message || data?.error,
+        `GravityPay STK initiation failed (HTTP ${resStatus || 500})`
+      );
+      this.logger.error(`❌ [GRAVITYPAY STK FAILURE] HTTP ${resStatus} | Error: ${errMsg}`);
       throw new Error(errMsg);
     }
 
@@ -156,7 +146,8 @@ export class GravityPayProvider implements PaymentGatewayProvider {
       data.id ||
       data?.data?.checkoutRequestId ||
       data?.data?.transactionId ||
-      data?.data?.id;
+      data?.data?.id ||
+      cleanRef;
 
     const providerRef =
       data.reference ||
@@ -164,7 +155,7 @@ export class GravityPayProvider implements PaymentGatewayProvider {
       data.transactionId ||
       data.tx_id ||
       data?.data?.transactionId ||
-      checkoutRequestId;
+      cleanRef;
 
     return {
       success: true,

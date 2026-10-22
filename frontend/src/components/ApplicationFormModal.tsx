@@ -28,6 +28,29 @@ const isValidNationalId = (val: string): boolean => {
   return clean.length >= 6 && clean.length <= 9;
 };
 
+/* Helper to sanitize gateway errors so raw HTML is never shown to customer */
+const cleanErrorMessage = (msg: any): string => {
+  if (!msg) return 'Failed to trigger M-Pesa STK Push. Please verify phone number and retry.';
+  const text = String(msg);
+  if (text.includes('<!DOCTYPE') || text.includes('<html') || text.includes('<pre>') || text.includes('<body') || text.includes('<head>')) {
+    const preMatch = text.match(/<pre[^>]*>([\s\S]*?)<\/pre>/i);
+    if (preMatch && preMatch[1]) {
+      const clean = preMatch[1].replace(/<[^>]+>/g, '').trim();
+      if (clean && clean.length < 150) return clean;
+    }
+    const titleMatch = text.match(/<title[^>]*>([\s\S]*?)<\/title>/i);
+    if (titleMatch && titleMatch[1]) {
+      const cleanTitle = titleMatch[1].replace(/<[^>]+>/g, '').trim();
+      if (cleanTitle && !cleanTitle.toLowerCase().includes('error')) return cleanTitle;
+    }
+    return 'Payment gateway service temporarily unavailable. Please retry in a few moments.';
+  }
+  if (text.length > 200) {
+    return text.substring(0, 200) + '...';
+  }
+  return text.trim();
+};
+
 export const ApplicationFormModal: React.FC<ApplicationFormModalProps> = ({ onTabChange }) => {
   // Step State
   const [currentStep, setCurrentStep] = useState(1);
@@ -493,11 +516,11 @@ export const ApplicationFormModal: React.FC<ApplicationFormModalProps> = ({ onTa
         setStkMessage(data.message || `STK push prompt sent to ${targetPhone}. Please enter your M-Pesa secret PIN.`);
         startPollingForPayment();
       } else {
-        setStkError(data.message || 'Failed to trigger M-Pesa STK Push. Please verify phone number and retry.');
+        setStkError(cleanErrorMessage(data.message) || 'Failed to trigger M-Pesa STK Push. Please verify phone number and retry.');
         setStkSent(false);
       }
     } catch (err: any) {
-      setStkError(err.message || 'Network connection error. Failed to send STK push prompt.');
+      setStkError(cleanErrorMessage(err.message) || 'Network connection error. Failed to send STK push prompt.');
       setStkSent(false);
     } finally {
       setStkLoading(false);
