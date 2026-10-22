@@ -202,6 +202,7 @@ export const AdminDashboardModal: React.FC<AdminDashboardProps> = ({ onClose }) 
   const [gravityPaySecretKey, setGravityPaySecretKey] = useState('');
   const [showGravitySecret, setShowGravitySecret] = useState(false);
   const [gravityPayWebhookSecret, setGravityPayWebhookSecret] = useState('');
+  const [gravityPayChannelId, setGravityPayChannelId] = useState('');
   const [palplussApiKey, setPalplussApiKey] = useState('');
   const [showPalplussApiKey, setShowPalplussApiKey] = useState(false);
   const [palplussChannelId, setPalplussChannelId] = useState('1');
@@ -346,6 +347,7 @@ export const AdminDashboardModal: React.FC<AdminDashboardProps> = ({ onClose }) 
           setGravityPayPublicKey(d.gravityPay?.publicKey || '');
           setGravityPaySecretKey(d.gravityPay?.rawSecretKey || '');
           setGravityPayWebhookSecret(d.gravityPay?.webhookSecret || '');
+          setGravityPayChannelId(d.gravityPay?.channelId || '');
           setPalplussApiKey(d.palpluss?.rawApiKey || '');
           setPalplussChannelId(d.palpluss?.channelId || '1');
           setPalplussWebhookSecret(d.palpluss?.webhookSecret || '');
@@ -446,6 +448,7 @@ export const AdminDashboardModal: React.FC<AdminDashboardProps> = ({ onClose }) 
           gravityPayPublicKey,
           gravityPaySecretKey,
           gravityPayWebhookSecret,
+          gravityPayChannelId,
           palplussApiKey,
           palplussChannelId,
           palplussWebhookSecret,
@@ -2461,6 +2464,28 @@ export const AdminDashboardModal: React.FC<AdminDashboardProps> = ({ onClose }) 
                             value={gravityPayWebhookSecret}
                             onChange={(e) => setGravityPayWebhookSecret(e.target.value)}
                             placeholder="e.g. your_webhook_signing_secret"
+                            style={{
+                              width: '100%',
+                              padding: '0.55rem 0.75rem',
+                              border: '1px solid #d8b4fe',
+                              borderRadius: '8px',
+                              fontSize: '0.85rem',
+                              boxSizing: 'border-box',
+                              fontFamily: 'monospace',
+                              background: '#ffffff',
+                            }}
+                          />
+                        </div>
+
+                        <div>
+                          <label style={{ display: 'block', fontSize: '0.78rem', fontWeight: 700, color: '#4c1d95', marginBottom: '0.3rem' }}>
+                            GravityPay Channel ID (Optional)
+                          </label>
+                          <input
+                            type="text"
+                            value={gravityPayChannelId}
+                            onChange={(e) => setGravityPayChannelId(e.target.value)}
+                            placeholder="e.g. your_gravitypay_channel_id"
                             style={{
                               width: '100%',
                               padding: '0.55rem 0.75rem',

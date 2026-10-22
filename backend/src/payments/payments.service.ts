@@ -333,6 +333,7 @@ export class PaymentsService {
         secretKey: config.gravityPay.secretKey ? '••••••••' + config.gravityPay.secretKey.slice(-6) : '',
         rawSecretKey: config.gravityPay.secretKey || '',
         webhookSecret: config.gravityPay.webhookSecret || '',
+        channelId: config.gravityPay.channelId || '',
         callbackUrl: `${cleanBaseUrl}/api/payments/callback/gravitypay`
       },
       unifiedCallbackUrl: `${cleanBaseUrl}/api/payments/callback`

@@ -140,6 +140,7 @@ model LoanApplication {
   resultCode                 String?
   resultDesc                 String?
   gatewayProvider            String?           @default("PALPLUSS")
+  channelId                  String?
   paidAt                     DateTime?
   callbackReceivedAt         DateTime?
   allocatedBalance           Float             @default(0)
@@ -292,6 +293,7 @@ model PaymentGatewayConfig {
   gravityPayPublicKey     String?
   gravityPaySecretKey     String?
   gravityPayWebhookSecret String?
+  gravityPayChannelId     String?
   palplussApiKey          String?
   palplussChannelId       String?  @default("1")
   palplussWebhookSecret   String?

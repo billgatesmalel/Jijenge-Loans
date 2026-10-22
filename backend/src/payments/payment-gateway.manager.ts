@@ -62,6 +62,7 @@ export class PaymentGatewayManager {
         publicKey: dbConfig?.gravityPayPublicKey || process.env.GRAVITYPAY_PUBLIC_KEY,
         secretKey: dbConfig?.gravityPaySecretKey || process.env.GRAVITYPAY_SECRET_KEY,
         webhookSecret: dbConfig?.gravityPayWebhookSecret || process.env.GRAVITYPAY_WEBHOOK_SECRET || 'jijenge_gravity_secret',
+        channelId: dbConfig?.gravityPayChannelId || process.env.GRAVITYPAY_CHANNEL_ID || '',
         apiUrl: process.env.GRAVITYPAY_API_URL,
         callbackBaseUrl: callbackBackendBaseUrl
       }
@@ -83,6 +84,7 @@ export class PaymentGatewayManager {
     gravityPayPublicKey?: string;
     gravityPaySecretKey?: string;
     gravityPayWebhookSecret?: string;
+    gravityPayChannelId?: string;
     palplussApiKey?: string;
     palplussChannelId?: string;
     palplussWebhookSecret?: string;
@@ -100,6 +102,7 @@ export class PaymentGatewayManager {
       ...(data.gravityPayPublicKey !== undefined && { gravityPayPublicKey: data.gravityPayPublicKey }),
       ...(data.gravityPaySecretKey !== undefined && { gravityPaySecretKey: data.gravityPaySecretKey }),
       ...(data.gravityPayWebhookSecret !== undefined && { gravityPayWebhookSecret: data.gravityPayWebhookSecret }),
+      ...(data.gravityPayChannelId !== undefined && { gravityPayChannelId: data.gravityPayChannelId }),
       ...(data.palplussApiKey !== undefined && { palplussApiKey: data.palplussApiKey }),
       ...(data.palplussChannelId !== undefined && { palplussChannelId: data.palplussChannelId }),
       ...(data.palplussWebhookSecret !== undefined && { palplussWebhookSecret: data.palplussWebhookSecret }),

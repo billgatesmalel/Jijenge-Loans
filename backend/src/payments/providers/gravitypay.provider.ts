@@ -71,15 +71,19 @@ export class GravityPayProvider implements PaymentGatewayProvider {
     const amountInt = Math.max(1, parseInt(String(params.amount), 10) || 1);
     const authBearer = secretKey ? (secretKey.startsWith('Bearer ') ? secretKey : `Bearer ${secretKey}`) : undefined;
 
+    const channelId = (config.channelId || process.env.GRAVITYPAY_CHANNEL_ID || '').trim();
+
     const payload: any = {
       phoneNumber: international,
       amount: amountInt,
       reference: cleanRef,
       description: String(params.description || `Loan Fee ${cleanRef}`).substring(0, 20),
       callbackUrl,
+      ...(channelId ? { channelId, channel_id: channelId } : {}),
       metadata: {
         source: 'jijenge-loans',
         fullRef: params.transactionRef,
+        ...(channelId ? { channelId } : {}),
         timestamp: new Date().toISOString()
       }
     };
@@ -98,6 +102,10 @@ export class GravityPayProvider implements PaymentGatewayProvider {
     }
     if (secretKey) {
       headers['X-Secret-Key'] = secretKey;
+    }
+    if (channelId) {
+      headers['x-channel-id'] = channelId;
+      headers['channel-id'] = channelId;
     }
 
     // Only legitimate GravityPay STK push endpoint

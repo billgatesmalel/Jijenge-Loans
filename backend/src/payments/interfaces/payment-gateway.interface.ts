@@ -55,6 +55,7 @@ export interface GravityPayConfig {
   publicKey?: string;
   secretKey?: string;
   webhookSecret?: string;
+  channelId?: string;
   apiUrl?: string;
   callbackBaseUrl?: string;
 }
